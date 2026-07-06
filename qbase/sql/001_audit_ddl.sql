@@ -21,13 +21,17 @@ CREATE OR REPLACE FUNCTION audit.log_ddl() RETURNS event_trigger
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = audit, pg_temp AS $$
 DECLARE r record;
 BEGIN
+  -- 注意:dropped_objects() 与 ddl_commands() 列不同 —— 前者无 in_extension(有 is_temporary),
+  -- 各分支只 SELECT 自己存在的列,避免 record 缺字段。
   IF TG_EVENT = 'sql_drop' THEN
-    FOR r IN SELECT * FROM pg_event_trigger_dropped_objects() LOOP
+    FOR r IN SELECT object_type, object_identity
+             FROM pg_event_trigger_dropped_objects() WHERE NOT is_temporary LOOP
       INSERT INTO audit.ddl_audit(actor,command_tag,object_type,object_identity,in_extension)
-      VALUES (session_user, TG_TAG, r.object_type, r.object_identity, r.in_extension);
+      VALUES (session_user, TG_TAG, r.object_type, r.object_identity, NULL);
     END LOOP;
   ELSE
-    FOR r IN SELECT * FROM pg_event_trigger_ddl_commands() LOOP
+    FOR r IN SELECT object_type, object_identity, in_extension
+             FROM pg_event_trigger_ddl_commands() LOOP
       INSERT INTO audit.ddl_audit(actor,command_tag,object_type,object_identity,in_extension)
       VALUES (session_user, TG_TAG, r.object_type, r.object_identity, r.in_extension);
     END LOOP;
