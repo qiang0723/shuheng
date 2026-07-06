@@ -44,3 +44,18 @@
 - **GitHub 推送授权**:加我公钥为 deploy key(写)或给 PAT;**并确认仓库设为 private**(项目机密性)。
 - 剩余第一日项:备份链(每日 pg_dump + 异地同步 AWS)、观澜每日备份轮转(D 已批)。
 - A 恢复演练 + 防拆实测两份实物待签收。
+
+---
+
+## 节点 2026-07-06(晚)· 备份链(Q1 前义务)
+
+### 做了(A 已签收,证据规格立为惯例)
+- **备份链**(commit `8b654de`):`backup.sh`(pg_dump qbase + globals + 观澜轮转 → GPG-AES256)root cron 03:00;`offsite_pull_aws.sh` AWS 主动拉密文 cron 03:30;明文留境内、只密文离境(调和 §2.1)。
+- **三件验收实物 + 加验**:①首次归档 ✅成功 ②AWS 异地 sha256 校验通过 ③观澜轮转首份 `guanlan-2026-07-06.db` ④境内 restore-verify(解密→pg_restore→audit=17/selftest=2/观澜=21)。留档 `qbase/quality/backup-chain-2026-07-06.md`。
+- GPG 恢复口令在阿里云 `/etc/shuheng/backup_gpg.pass`(root 600),已交人离线保存。
+
+### 待办 / 记录
+- **#2/#2b 协议(b)**:切片1 台账落地时执行——原 #2 置关闭、result_json 记「数据前提不成立(池表覆盖式无成员历史)」、族 drawdown_rebuy 计数 +1;#2b 待人冻结参数后才登记,在此前不实现任何池逻辑。
+- **Q3 换源约束**(人补记):老库退役日数据迁入新机,归一视图须集中管理、换源只改视图不动消费方。见 ROADMAP。
+- **第一日剩项**:到期台账 cron(季度恢复演练等提醒;「观澜轮转备份的恢复」纳入季度演练)。
+- 备份链验收实物待签收。之后开 Q1。
