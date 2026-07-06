@@ -23,10 +23,18 @@
 - `entity_alias` 是 **append-only 名史表**,`alias_type='name'` 的名字**天然重复**:跨 batch 重复(每次种子=新 batch,同名再现)、同 batch 内同名多段(如 `000995.SZ 皇台酒业` 在一批里出现 5 次不同 start_date)、甚至忠实存全下同 `(ts_code,name,start_date)` 多行。任何含 `name` 行的 `(alias_type,alias)` 唯一约束都会**拒掉合法历史行**。
 - 巨潮码行 (`cninfo_seccode`/`orgId`) 是**映射语义**(1:1 身份码),与名史语义不同,不能共用一条唯一规则。
 
-**订正方案(Q2 落地时做,scoped 到巨潮码行,不碰 name 行)**:
-1. 正向(每主体每类型一码):`UNIQUE (batch_id, ts_code, alias_type) WHERE alias_type IN ('cninfo_seccode','cninfo_orgid')`(partial)。
-2. 反向(每码映一主体):`UNIQUE (batch_id, alias_type, alias) WHERE alias_type IN ('cninfo_seccode','cninfo_orgid')`(partial)。
-3. 查询加速(可选、非唯一):`INDEX (alias_type, alias)` 供码→ts_code 反查,**无害可随时加**。
+**订正方案(Q2 落地时做,scoped 到巨潮码行,不碰 name 行;且按码类型分基数)**:
+
+⚠ 关键:secCode 与 orgId 基数不同,**不能对称加约束**——
+- `cninfo_seccode`(证券代码)↔ ts_code **1:1**;
+- `cninfo_orgid`(机构 ID)**N:1**:一公司(一 orgId)可挂多证券(如万科 `000002.SZ`/`200002.SZ` 共 orgId;A+H 同理),**反向不能唯一**。
+
+| 方向 | secCode | orgId |
+|---|---|---|
+| 正向 每 ts_code 一码:`UNIQUE (batch_id, ts_code, alias_type) WHERE alias_type='cninfo_*'` | ✅ | ✅ |
+| 反向 每码映一主体:`UNIQUE (batch_id, alias) WHERE alias_type='cninfo_seccode'` | ✅ | ❌ 不加(会拒万科B) |
+
+3. 查询加速(可选、非唯一):`INDEX (alias_type, alias)` 供码→ts_code 反查,无害可随时加。
 4. **name 行不加任何唯一约束**(维持忠实存全)。
 
-具体键组合待 Q2 巨潮码填充语义确定(每 ts_code 是否恰一 secCode/一 orgId)再定。DDL 会触发哨兵审计,属正常留痕。**请人确认此订正后,L2 按订正方案执行。**
+**现在不预焊**:巨潮真实基数(A/B 股共 orgId、退市码 orgId 复用等)须等 Q2 采集件 + 真数据核实后再定死键组合,焊只焊数据证明的。DDL 会触发哨兵审计,属正常留痕。**L2 保持待 Q2 落地核实,不提前建约束。**
