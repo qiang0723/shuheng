@@ -1,0 +1,20 @@
+# ── secrets: NEVER commit (行业底线) ──────────────────────
+.env
+.env.*
+!.env.example
+
+# python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# R
+.Rhistory
+.RData
+
+# os / editor
+.DS_Store
+
+# local logs / scratch
+*.log
