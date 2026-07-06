@@ -55,9 +55,11 @@ def fetch_stock_basic(pro):
 def fetch_namechange(pro, ts_codes, sleep_s):
     """分 ts_code 分片全量拉(抗 #1858);另做一次整表单拉测截断,返回 (rows, bulk_n, raw_n)。
 
-    tushare namechange 已知会**整行重复交付**同一改名记录(每条出现两遍,所有字段相同)。
-    落库前按整行去重(保序):只去字节完全相同的重复投递,不做任何判断/过滤。
-    若存在「同自然键不同 end_date/ann_date」的真异常,两行都会留下 → COPY 撞唯一约束报错,不被掩盖。
+    tushare namechange 源系统性脏:①整行重复交付(每条常出现两遍,全字段相同);
+    ②同一段命名会并存 end 空/填、U/W 后缀、甚至错别字等多个 distinct 行(全宇宙 18% 的票有此碰撞)。
+    L1 忠实底料(qbase 铁律7,人批 2026-07-06):落库前只做**整行去重**(去逐字节完全相同的双投递,保序),
+    其余 distinct 行**全部照落,零判断**——"哪个 end 真 / 哪个名 canonical"留给 Q3 v_entity_alias 视图集中归一。
+    唯一约束已放宽到全字段元组(005),故这些同自然键的 distinct 行不再撞约束。
     """
     # 整表单拉(受 #1858 截断,仅作对照证据)
     try:
@@ -90,7 +92,7 @@ def fetch_namechange(pro, ts_codes, sleep_s):
             print(f"  namechange 分片 {done}/{len(ts_codes)} … 累计 {len(rows)} 名(含源双发)", flush=True)
         time.sleep(sleep_s)
     raw_n = len(rows)
-    rows = list(dict.fromkeys(rows))  # 整行去重:去 tushare 双发,保序;真异常仍会撞约束暴露
+    rows = list(dict.fromkeys(rows))  # 整行去重:只去逐字节相同的双投递,保序;同键 distinct 行照落(忠实,归一留 Q3 视图)
     return rows, bulk_n, raw_n
 
 
@@ -160,8 +162,9 @@ def main():
                     ))
 
             # batch 2:namechange
-            note_n = (f"tushare namechange 分 ts_code 分片全量;源拉={raw_n} 去双发后={sharded_n}"
-                      f"(去{dup_dropped}) 整拉={bulk_n} 去重后多出={delta}(#1858;源整行双发已去重)")
+            note_n = (f"tushare namechange 分 ts_code 分片全量;源拉={raw_n} 整行去重后={sharded_n}"
+                      f"(去纯双投递{dup_dropped}) 整拉对照={bulk_n} 多出={delta}(#1858)"
+                      f";忠实存全口径(人批 2026-07-06):同键 end空/填、U/W后缀、错别字等 distinct 行全照落,归一留 Q3 视图")
             cur.execute(
                 "INSERT INTO public.entity_batch(source,asof_date,pull_time,note) "
                 "VALUES (%s,%s,%s,%s) RETURNING batch_id",
