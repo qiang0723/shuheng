@@ -53,7 +53,12 @@ def fetch_stock_basic(pro):
 
 
 def fetch_namechange(pro, ts_codes, sleep_s):
-    """分 ts_code 分片全量拉(抗 #1858);另做一次整表单拉测截断,返回 (rows, bulk_n)。"""
+    """分 ts_code 分片全量拉(抗 #1858);另做一次整表单拉测截断,返回 (rows, bulk_n, raw_n)。
+
+    tushare namechange 已知会**整行重复交付**同一改名记录(每条出现两遍,所有字段相同)。
+    落库前按整行去重(保序):只去字节完全相同的重复投递,不做任何判断/过滤。
+    若存在「同自然键不同 end_date/ann_date」的真异常,两行都会留下 → COPY 撞唯一约束报错,不被掩盖。
+    """
     # 整表单拉(受 #1858 截断,仅作对照证据)
     try:
         bulk_n = len(pro.namechange(fields="ts_code,name,start_date,end_date,ann_date"))
@@ -82,9 +87,11 @@ def fetch_namechange(pro, ts_codes, sleep_s):
                 time.sleep(1.5 * (attempt + 1))
         done += 1
         if done % 500 == 0:
-            print(f"  namechange 分片 {done}/{len(ts_codes)} … 累计 {len(rows)} 名", flush=True)
+            print(f"  namechange 分片 {done}/{len(ts_codes)} … 累计 {len(rows)} 名(含源双发)", flush=True)
         time.sleep(sleep_s)
-    return rows, bulk_n
+    raw_n = len(rows)
+    rows = list(dict.fromkeys(rows))  # 整行去重:去 tushare 双发,保序;真异常仍会撞约束暴露
+    return rows, bulk_n, raw_n
 
 
 def main():
@@ -116,11 +123,12 @@ def main():
     n_delist = int((basic["list_status"] == "D").sum())
     print(f"stock_basic 合计 {len(basic)} 行 / 唯一 ts_code {len(universe)}(退市 D={n_delist})", flush=True)
 
-    alias_rows, bulk_n = fetch_namechange(pro, universe, args.sleep)
-    sharded_n = len(alias_rows)
+    alias_rows, bulk_n, raw_n = fetch_namechange(pro, universe, args.sleep)
+    sharded_n = len(alias_rows)          # 去重后(落库数)
+    dup_dropped = raw_n - sharded_n      # tushare 双发去掉的行数
     delta = sharded_n - bulk_n if bulk_n >= 0 else None
-    print(f"namechange 分片全量 {sharded_n} 名 / 整拉对照 {bulk_n} "
-          f"/ 分片多出 {delta}(#1858 截断证据)", flush=True)
+    print(f"namechange 分片:源拉 {raw_n} 行 → 整行去重后 {sharded_n} 名(去双发 {dup_dropped})"
+          f" / 整拉对照 {bulk_n} / 去重后仍多出 {delta}(#1858 截断证据)", flush=True)
 
     if args.dry:
         print("--dry:不落库,结束。", flush=True)
@@ -152,8 +160,8 @@ def main():
                     ))
 
             # batch 2:namechange
-            note_n = (f"tushare namechange 分 ts_code 分片全量;分片={sharded_n} "
-                      f"整拉={bulk_n} 分片多出={delta}(#1858)")
+            note_n = (f"tushare namechange 分 ts_code 分片全量;源拉={raw_n} 去双发后={sharded_n}"
+                      f"(去{dup_dropped}) 整拉={bulk_n} 去重后多出={delta}(#1858;源整行双发已去重)")
             cur.execute(
                 "INSERT INTO public.entity_batch(source,asof_date,pull_time,note) "
                 "VALUES (%s,%s,%s,%s) RETURNING batch_id",
