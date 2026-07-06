@@ -23,4 +23,24 @@
 - 信息类:人 ledger CSV 落点(老 `research_view.ledger` 空表,疑走 CSV);观澜是否加每日备份轮转。
 
 ### 下一步
-等人示意进 **Q1**(Entity Master 最小版)。焊死结构(受限用户 / `ddl_audit` 事件触发器 / 备份 cron / 哨兵 + DROP TRIGGER 防拆验收)随 Q1 建库一起落。
+等人示意进 **Q1**(Entity Master 最小版)。
+
+---
+
+## 节点 2026-07-06(下午)· 焊死结构 + 防拆实测(人批 A/B 提前拉起)
+
+### 做了
+- **GitHub 认领 + 部署管线**:GitHub `qiang0723/shuheng` 定为代码库(待授权推送,见待办);已建 AWS→阿里云 bare-repo 部署管线(`/opt/quant.git` + post-receive checkout → `/opt/quant`),`git status` 干净。
+- **飞书告警链路**:webhook + 签名秘钥入阿里云 `/etc/shuheng/sentinel.env`(root 600,不进 git);连通测试 `StatusMessage:success`。
+- **焊死结构**(commit `6733bf8`+`7676789`):建 `qbase` 库;`audit.ddl_audit` + security-definer 事件触发器(postgres 属主);`qbase_app` 运维角色(DDL 权、对 audit 零权);`_sentinel_selftest` append-only 夹具 + 冻结触发器;`sentinel.sh`+`feishu_notify.py`;root cron 每日 08:30。
+- **防拆实测**:`qbase_app` 真拆 `DROP TRIGGER` → ddl_audit 留痕 → 销痕被拒 → 哨兵 🔴 飞书触达 → 恢复。留档 `qbase/quality/tamper-drill-2026-07-06.md`。
+- **雷达股池事实报告**(C):`qbase/quality/radar-pool-facts-2026-07-06.md`——`entities` 仅当前快照无历史,佐证协议 (b)。
+- **文档**:设计 §2.1 补记「数据域归属原则」(commit `71b3c1a`)。
+
+### 诚实记录
+防拆实测**首跑暴露审计函数 bug**(sql_drop 分支误引 `in_extension`,致 DROP 报错回滚且不留痕),已修(`7676789`)后重跑干净。附实物制度当场兑现价值。
+
+### 待人拍板 / 待办
+- **GitHub 推送授权**:加我公钥为 deploy key(写)或给 PAT;**并确认仓库设为 private**(项目机密性)。
+- 剩余第一日项:备份链(每日 pg_dump + 异地同步 AWS)、观澜每日备份轮转(D 已批)。
+- A 恢复演练 + 防拆实测两份实物待签收。
