@@ -9,6 +9,14 @@ BDIR=/var/backups/shuheng
 GDIR=$BDIR/guanlan
 LOGDIR=/var/log/shuheng
 PASS=/etc/shuheng/backup_gpg.pass
+
+# ── 行情类表出境排除位(§2.1 预裁 2026-07-06)────────────────────────────
+# 人预裁:自产数据(台账/快照)+ 公共公告事实(预告/减持,巨潮公开)密文出境异地 = 允许。
+# 行情大表将来迁入本机后,其备份"是否出境"届时另裁,默认倾向境内跨区 OSS 替代出境。
+# 届时把行情表名填入下列清单,离境打包按此裁剪(境内全量、离境剔除)。现为空、不实现。
+OFFSITE_EXCLUDE_TABLES=""   # 例(勿填,现无):md.bar_daily_raw md.adj_factor md.daily_basic
+# ────────────────────────────────────────────────────────────────────────
+
 mkdir -p "$BDIR" "$GDIR" "$LOGDIR"
 DAY=$(date +%F)
 LOG="$LOGDIR/backup-$DAY.log"
