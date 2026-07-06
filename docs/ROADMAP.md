@@ -10,7 +10,7 @@
 | 阶段 | 验收点 | 状态 | 备注 |
 |---|---|---|---|
 | **第一日** | 骨架 / 单向通道 / 恢复演练 / 焊死 / 备份链 / 到期台账 | ✅ | **全部落成并签收**:git+GitHub 中枢、bootstrap、恢复演练、前置查询、焊死+防拆实测、备份链(GPG 异地+密文恢复验证)、到期台账 cron。四份 quality 留档已签收 |
-| **Q1** | Entity Master 最小版(ts_code 锚 + 别名;stock_basic/namechange 种子) | 🟡 | 机器就位(三表 DDL 已 apply+焊死实测 / 采集脚本 / venv / 哨兵扩展)。**卡 tushare token**:人写入 `.env` 后跑种子→核行数→留档 |
+| **Q1** | Entity Master 最小版(ts_code 锚 + 别名;stock_basic/namechange 种子) | 🟡 | **种子落库完成,待人签收**:master 5861(含退市 D=334)/ alias 20005(忠实存全)。namechange 源系统性脏,人批「忠实存全、归一留 Q3 视图」口径(005 放宽约束)。10 项回读核查全过,留档 `quality/q1-entity-master-2026-07-06.md` |
 | **Q2** | 公共事实回填 PIT(forecast+holdertrade 全市场史 append-only + 巨潮采集件);三层核对协议验收 | 🔒 | **⚠ 密封预判钩子:开跑前喊人**;巨潮 cninfo 代码需借阅(问人要 GitHub) |
 | **Q3** | 归一视图最小版(v_signal_radar / v_judgment_rv / explore_reader 族,holdout 焊 WHERE)+ 三角色权限隔离 | ⬜ | 验收 = 淘沙 reader 取到数 & 实测取不到 holdout 区。**换源约束见下 ⬇** |
 | **Q3a** | LLM 截止日登记表(五列,人工种子) | ⬜ | |
@@ -25,4 +25,4 @@
 
 ## 当前位置
 
-**Q1 进行中(🟡)**:三表 DDL 已 apply 到 qbase 并焊死实测、采集脚本+venv 就位、哨兵已扩。**卡在 tushare token**——人写入阿里云 `/opt/quant/.env` 后即可跑种子→核行数→出留档→标 ✅ 待签收。逐节点日志见 `CONSTRUCTION-LOG.md`。
+**Q1 进行中(🟡)· 种子落库完成,待人签收**:token 已写入,种子跑通——entity_master 5861(含退市 D=334)、entity_alias 20005 忠实存全,10 项回读核查全过,留档已出。落库中发现 tushare namechange 源系统性脏(18% 的票同自然键碰撞),已请人拍板「忠实存全、归一留 Q3 视图」口径(迁移 005 放宽唯一约束)。**人签收后标 ✅ 进 Q2**。逐节点日志见 `CONSTRUCTION-LOG.md`。
