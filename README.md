@@ -20,6 +20,17 @@ docs/     设计方案 / 施工清单 / 哨兵加固 / 体系速览
 - **跨云三铁则**:写权限只在阿里云 / 代码单向下行数据不上行 / 服务只读结果副本。
 - **秘钥只住 `.env`**,不进代码不进 git(见 `.env.example`)。
 
+## 部署流水线(代码单向下行)
+
+```
+AWS 工地  --push-->  GitHub(qiang0723/shuheng, private, 唯一真身)  <--pull--  阿里云 /opt/quant
+```
+
+- **AWS**:改码 → `git push origin main`。
+- **阿里云**:只读 deploy key,`git pull --ff-only`,从不 push、从不本地改。部署由 AWS 触发:
+  `ssh aliyun-new 'cd /opt/quant && git pull --ff-only'`。
+- `.env` 不在 git 内,各机自持(阿里云 `/opt/quant/.env`;哨兵秘钥 `/etc/shuheng/sentinel.env`)。
+
 ## 施工节奏
 
 按《施工清单 v0.3》验收点串行:第一日初始化 → Q1 Entity Master → Q2 回填 →
