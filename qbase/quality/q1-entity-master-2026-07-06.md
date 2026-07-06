@@ -65,7 +65,31 @@ tushare ∖ md.security = ∅(新库无任何老库外的多余票)
 ```
 
 它是 D 态,**同时**吃掉总数(5862→5861)与 D 数(335→334)各 1,两处 off-by-one 归一到这一只。
-**归因**:tushare 现行 stock_basic 已剔除该 2006 年极早退市码("T"前缀老格式),老 marketdata 快照建得早仍留存——tushare 口径随时间对上古退市的收缩,非我方丢数。⚠ 如实标注:说明 tushare "含退市全宇宙" 对 2007 前退市并非绝对完备;若需补齐,Q2 marketdata 回填(含老库)可捞回 T00018.SH。
+
+**对账方法 + 差集原文**(两库同字段口径取全集,只比 ts_code 集):
+```
+老库:  ssh aliyun-old sudo -u postgres psql marketdata -tAF','
+         -c "SELECT ts_code,list_status,name,delist_date FROM md.security ORDER BY ts_code"          → 5862 行
+新库:  psql "$QBASE_APP_DSN" -tAF','
+         -c "SELECT ts_code,list_status,name,delist_date FROM public.entity_master ORDER BY ts_code"  → 5861 行
+
+$ comm -23 old_ts.txt new_ts.txt      # md.security ∖ tushare(老有新无)
+T00018.SH
+$ comm -13 old_ts.txt new_ts.txt      # tushare ∖ md.security(新有老无)
+                                       ← 无输出 = 反向差集为空(新库无任何老库外多余票)
+```
+
+**tushare 现行接口直查 T00018.SH 原文**(证 tushare 侧已剔除,非我方管线丢弃):
+```
+=== tushare stock_basic 三态直查 ts_code=T00018.SH ===
+  list_status=L: 返回 0 行
+  list_status=D: 返回 0 行
+  list_status=P: 返回 0 行
+  → 三态合计 0 行(tushare 现行宇宙已无此码)
+对照 600193.SH(退市创兴,D)返回 1 行 → 证接口/参数无误,唯 T00018 查不到
+```
+
+**归因**:tushare 现行 stock_basic 已剔除该 2006 年极早退市码("T"前缀老格式),老 marketdata 快照建得早仍留存——tushare 口径随时间对上古退市的收缩,非我方丢数。⚠ 如实标注:说明 tushare "含退市全宇宙" 对 2007 前退市并非绝对完备;若需补齐,Q2 marketdata 回填(含老库)可捞回 T00018.SH(登记为可选项,见 `caveats-and-ledger.md`)。
 
 ### 证据② · 巨潮映射位(验收单原项,显式确认)
 `entity_alias` 现有 `alias_type` 取值**仅 `name`(20005 行),Q1 未落任何巨潮码**。
