@@ -54,6 +54,34 @@ namechange 分片:源拉 34330 行 → 整行去重后 20005 名(去双发 14325
 - **DDL 审计**:apply 005(ALTER TABLE ×2)进 `audit.ddl_audit`,哨兵当日报 🔴 待人工复核(=本职,明日归 0)。
 - **identity 跳号**:entity_batch batch_id 从 6 起(1–5 为先前失败/诊断批次占号,失败批已随事务回滚,无脏批行)。identity 跳号正常,不影响。
 
+## 补充证据(应验收要求,2026-07-07 补,人签收前提)
+
+### 证据① · 对账差一落名字(5861 vs md.security 5862;D 334 vs 335)
+`md.security`(老库)与 `entity_master`(tushare)ts_code 全集对称差 = **恰一只**:
+
+```
+T00018.SH  上港集箱(退)  list_status=D  delist_date=2006-10-20   ← 老库有、tushare 现行 stock_basic 已不返
+tushare ∖ md.security = ∅(新库无任何老库外的多余票)
+```
+
+它是 D 态,**同时**吃掉总数(5862→5861)与 D 数(335→334)各 1,两处 off-by-one 归一到这一只。
+**归因**:tushare 现行 stock_basic 已剔除该 2006 年极早退市码("T"前缀老格式),老 marketdata 快照建得早仍留存——tushare 口径随时间对上古退市的收缩,非我方丢数。⚠ 如实标注:说明 tushare "含退市全宇宙" 对 2007 前退市并非绝对完备;若需补齐,Q2 marketdata 回填(含老库)可捞回 T00018.SH。
+
+### 证据② · 巨潮映射位(验收单原项,显式确认)
+`entity_alias` 现有 `alias_type` 取值**仅 `name`(20005 行),Q1 未落任何巨潮码**。
+巨潮 secCode/orgId 映射位**已预留、非专列**:按 004 DDL 设计(§4.1),走 `alias_type` 通用位——Q2 起加 `alias_type='cninfo_seccode'/'cninfo_orgid'`、`alias`=码值,**无需改表**。**预留于 (alias_type, alias) 多态对,Q2 采集件落地时填充**。
+
+### 证据③ · #1858 直接实证(NULL ann_date 行未被丢弃 = 防生存偏差)
+tushare namechange 一次性全量拉受硬截断;缺陷杀伤集中在**无公告日(ann_date=NULL)的上古改名行**。分片 vs 一次性核对:
+
+```
+分片落库(我方表,忠实全量) total=20005 | ann_date=NULL 14966(75%) | 非NULL 5039
+一次性全量拉 namechange()    total=10000 | ann_date=NULL  6502       | 非NULL 3498(单次调用硬上限 10000)
+差 10005 行,其中 NULL-ann 占 8464(85%)—— 被截断丢掉的绝大多数正是无公告日的老改名行
+```
+
+**证明未丢**:14966 条 NULL-ann 行**已在库**(占 alias 75%);若用一次性拉,总量封顶 10000、且 85% 的丢失量恰是这些 NULL-ann 老行(退市/早期改名)。分片全保住 → 生存偏差未从第一张表混入。
+
 ## 结论
 
-Q1 Entity Master 种子采集**落库完成、核行数一致、忠实存全口径落实、焊死在岗**。待人验收签收 → ROADMAP 标 ✅。
+Q1 Entity Master 种子采集**落库完成、核行数一致、忠实存全口径落实、焊死在岗**,三项补充证据已补齐。待人签收 → ROADMAP 标 ✅。
