@@ -55,3 +55,27 @@
 - 其"与估计窗对齐"理由**作废**(估计窗实为 160 非 120,对齐前提不成立);台账注记改读 **"人拍池定义"**。
 
 > 留痕范围:密封卡本体不改;本澄清裁决 + 错误归因写入本验收文档(此节)与 STATE(`ops/STATE.md`);核对单 item 6 已改读;#2b 台账注记改"人拍池定义"。
+
+---
+
+## 〔item 7-11 开工两裁 + 施工设计〕(2026-07-07,人拍 + 我自决报留否决权)
+
+开工令下发 item 7-11(三段串行:引擎骨架→A股口径件→纪律收尾)。开工前两处提请人裁、已拍定死;三条设计我自决、报留否决权。裁决留痕本 commit 先于施工代码(F 条)。
+
+### S2-DEC2 · item 11 落库演示方式(人拍)
+
+- **专设合成冒烟登记行**:新登记一条 `[SMOKE] slice2合成落库验收`,`source_type=llm`、`verdict_power=prescreen`、`contamination_note='切片2合成fixture,非真实结论,勿用于判决'`;走 `registered→frozen→running→done` **既有全路径**写 `result_json`(快照批次=`SYNTH`),**永久留台账**作 append-only 实证。
+- **不写六条创始行**——保护其一次性 `result` 槽留给切片3真实数据(触发器一次性写入焊死、不可回滚);**不另建影子表/通路**——复用切片1 已终签台账触发器(item 11 原义"不另建通路")。
+- 备选(事务内跑通即 ROLLBACK)已否决:不留 append-only 实证,与 item 11"落库"字面不符。
+
+### S2-DEC3 · 事件窗 τ=0 锚点(人拍,消解 item 8 ↔ spec §5 潜在打架)
+
+- **τ=0 := 首个可交易日 = T+1**(事件日 T 盘后披露→前视规避→观测自 T+1 起,spec §5"可交易时点=T+1、CAR 起点=T+1")。
+- 主窗 **[0,+2] = T+1..T+3**、稳健窗 **[0,+5] = T+1..T+6**;逐日 AR 从 τ=0 记;**CAR 起点 = τ=0 = T+1**。
+- 结论:核对单 item 8 之 `[0,+2]/[0,+5]` 与 spec §5 起点口径**对齐无冲突**,读法钉死(非 spec 让位)。
+
+### 施工设计(我自决,报留否决权)
+
+1. **reader 列契约**:spec 未给 `explore_reader` 列级定义(那是 Q3 真视图)。我方现定《explore_reader 列契约(淘沙侧要求)》供 Q3 **零改造照建**,列至少含 `(ts_code, trade_date, close, is_suspended, limit_flag/一字板, industry, board, is_st, first_ann_date, mkt_return)`;holdout `trade_date < 2024-07-01` 焊在视图 WHERE(reader 结构上拿不到)。
+2. **fixture 分家**:`harness/make_fixture.py`(86e905f 对台证据,锚 estudy2)**不动**。A股口径(item 7/8)另建合成 fixture——**≥30 事件**(现 6 证券×1 事件=6 恒 INSUFFICIENT,跑不通完整路径)、**跨年**(剔除率按年份分解)、**跨越 2020-08-24**(创业板涨跌幅 regime 边界)、注入停牌/涨跌停/板块/ST。
+3. **新增 A股参数**(各板涨跌停限幅、regime 日期、事件窗 [0,+2]/[0,+5]、样本闸 30)全部进 `frozen_config` 只读(item 10 焊死,运行时不可覆写)。
