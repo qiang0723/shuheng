@@ -65,13 +65,13 @@ def _founding():
                 extra={"exit_rule": "策略版离场:成本−20%强平 或 收盘破20日线,先到先出",
                        "inherit_from": "drawdown_rebuy #2 事件定义/进出场冻结原文"}),
         ),
-        dict(  # #3 ⚠ 挂起:source_type 文档打架(§4 单值 vs §6 literature+platform),待人裁后补登
-            _hold="§4 source_type 单值 CHECK vs §6 'literature+platform' 打架,待人裁",
+        dict(  # #3 裁1(2026-07-07):source_type=literature,platform 成分记 contamination_note
             family="holder_sell", title="减持计划首次预披露漂移",
             source_type="literature", verdict_power="full",
             contamination_note=("§6:惯例参数由 LLM 按文献惯例拟定、人批、未接触样本数据。"
-                                "⚠ 源标注:§6 记 literature+platform,§4 单值 → 暂取 literature"
-                                "(文献动机),platform 数据=stk_holdertrade;待人裁"),
+                                "源:§6 记 literature+platform → 裁1 取主值 literature(文献动机);"
+                                "platform 成分=stk_holdertrade 实施结果辅助;效力 full(均非 LLM 来源,"
+                                "主值选择不影响效力判定)"),
             pap=P.build_pap(
                 event_def=("减持计划首次预披露公告(巨潮自建采集,announcementTime 为时间戳金标准),"
                            "减持比例≥总股本1%;2024新规前历史样本用当时口径首次公告日。"
@@ -111,7 +111,23 @@ def _founding():
     ]
 
 
+def _register_item(item, conn):
+    """登记+冻结(创始存量 allow_meta_null 豁免);带 _close 者随后关闭。返回 exp_id。"""
+    close_reason = item.get("_close")
+    exp_id = ledger.register(
+        family=item["family"], title=item["title"],
+        source_type=item["source_type"], verdict_power=item["verdict_power"],
+        pap=item["pap"], contamination_note=item["contamination_note"],
+        allow_meta_null=True, conn=conn)      # 创始=存量转录,元数据留 NULL(裁3)
+    ledger.freeze(exp_id, conn=conn)
+    if close_reason:
+        ledger.close(exp_id, close_reason, conn=conn)
+    print(f"  登记 exp_id={exp_id} {item['family']} [{'closed' if close_reason else 'frozen'}]")
+    return exp_id
+
+
 def main():
+    """全量创始种子(仅空台账)。"""
     conn = ledger.connect()
     try:
         with conn.cursor() as cur:
@@ -119,20 +135,7 @@ def main():
             if cur.fetchone()[0] != 0:
                 raise SystemExit("台账非空,拒绝重复种子(append-only)。如需重来请人工重建 taosha 库。")
         for item in _founding():
-            hold = item.pop("_hold", None)
-            if hold:
-                print(f"  ⏸ 挂起 {item['family']}(待人裁): {hold}")
-                continue
-            close_reason = item.pop("_close", None)
-            exp_id = ledger.register(
-                family=item["family"], title=item["title"],
-                source_type=item["source_type"], verdict_power=item["verdict_power"],
-                pap=item["pap"], contamination_note=item["contamination_note"], conn=conn)
-            ledger.freeze(exp_id, conn=conn)                 # 登记即冻结
-            if close_reason:
-                ledger.close(exp_id, close_reason, conn=conn)  # #2 关闭
-            print(f"  登记 exp_id={exp_id} {item['family']} "
-                  f"[{'closed' if close_reason else 'frozen'}]")
+            _register_item(item, conn)
         conn.commit()
         print("创始五条 + #2b 登记冻结完成。")
     except Exception:
@@ -142,5 +145,28 @@ def main():
         conn.close()
 
 
+def register_held(target_family: str):
+    """补登单个此前挂起的族(裁后)。要求该族当前不在台账。"""
+    conn = ledger.connect()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT count(*) FROM experiment WHERE family=%s", (target_family,))
+            if cur.fetchone()[0] != 0:
+                raise SystemExit(f"{target_family} 已在台账,拒绝重复登记。")
+        item = next(i for i in _founding() if i["family"] == target_family)
+        _register_item(item, conn)
+        conn.commit()
+        print(f"补登 {target_family} 完成。")
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
+
+
 if __name__ == "__main__":
-    main()
+    import sys
+    if len(sys.argv) == 3 and sys.argv[1] == "--register-held":
+        register_held(sys.argv[2])
+    else:
+        main()

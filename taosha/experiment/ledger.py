@@ -29,15 +29,20 @@ def connect():
 
 
 def register(*, family, title, source_type, verdict_power, pap, contamination_note,
-             data_class=None, crowding_prior=None, conn=None) -> int:
+             data_class=None, crowding_prior=None, allow_meta_null=False, conn=None) -> int:
     """登记一条假设(status=registered)。family_trial 由触发器自增,忽略传值。
-    源效力校验:llm→prescreen 由触发器强制,此处提前挡以给友好报错。返回 exp_id。"""
+    源效力校验:llm→prescreen 由触发器强制,此处提前挡以给友好报错。返回 exp_id。
+
+    裁3(v1.5):data_class/crowding_prior 新登记**强制填写**;仅创始存量转录可用
+    allow_meta_null=True 豁免(留 NULL、不回填)。"""
     if source_type not in pap_mod.VALID_SOURCE_TYPES:
         raise ValueError(f"source_type 非法: {source_type}")
     if verdict_power not in pap_mod.VALID_VERDICT_POWER:
         raise ValueError(f"verdict_power 非法: {verdict_power}")
     if source_type == "llm" and verdict_power != "prescreen":
         raise ValueError("铁律①: source_type=llm 强制 verdict_power=prescreen")
+    if not allow_meta_null and (data_class is None or crowding_prior is None):
+        raise ValueError("裁3: 新登记强制填 data_class 与 crowding_prior(存量转录用 allow_meta_null)")
     pap_mod.validate_pap(pap)
 
     own = conn is None
@@ -93,6 +98,23 @@ def close(exp_id: int, reason: str, *, conn=None) -> None:
                 (Json({"closure": reason}), exp_id))
             if cur.rowcount != 1:
                 raise RuntimeError(f"exp {exp_id} 关闭失败(态非 registered/frozen 或不存在)")
+        if own:
+            conn.commit()
+    finally:
+        if own:
+            conn.close()
+
+
+def set_meta(exp_id: int, *, data_class, crowding_prior, conn=None) -> None:
+    """填/改元数据列 data_class/crowding_prior(非冻结列,不作筛选依据;裁3:#2b 等)。"""
+    own = conn is None
+    conn = conn or connect()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("UPDATE experiment SET data_class=%s, crowding_prior=%s WHERE exp_id=%s",
+                        (data_class, crowding_prior, exp_id))
+            if cur.rowcount != 1:
+                raise RuntimeError(f"exp {exp_id} set_meta 失败(不存在)")
         if own:
             conn.commit()
     finally:
