@@ -17,6 +17,7 @@ FROM public.trade_cal_snap c
 WHERE c.batch_id = (SELECT max(batch_id) FROM public.fact_batch WHERE source='tushare:trade_cal')
   AND c.is_open = 1
   AND c.cal_date < DATE '2024-07-01';    -- holdout 焊死
+                                         -- 注:北交所排除不适用于本视图(交易日轴、无 ts_code 标的维度;SSE 权威轴)
 
 -- ══ 视图 2:explore_reader_prices(逐 [证券×真实交易日] 价格行 + 归一列)══
 -- 契约 PRICE_COLUMNS=(ts_code,trade_date,close,is_suspended,limit_status,board,is_st,industry)。
@@ -78,6 +79,7 @@ base AS (
    AND (seg.next_start IS NULL OR b.trade_date < seg.next_start)
   WHERE b.batch_id = (SELECT max(batch_id) FROM public.fact_batch WHERE source='tushare:daily')
     AND b.trade_date < DATE '2024-07-01'   -- holdout 焊死
+    AND b.ts_code !~ '\.BJ$'               -- 北交所排除(体系原则 2026-07-07,同 holdout DDL 焊法;识别用 .BJ 后缀,920段实证/数字段口径作废)
 ),
 lim AS (
   SELECT base.*,
@@ -128,6 +130,7 @@ WITH orig AS (   -- 每 (票,first_ann_date) 取原始披露行(ann_date 最早)
   WHERE f.batch_id = (SELECT max(batch_id) FROM public.fact_batch WHERE source='tushare:forecast')
     AND f.first_ann_date IS NOT NULL          -- 缺锚剔除(C3:不可定位事件日)
     AND f.first_ann_date < DATE '2024-07-01'  -- holdout 焊死
+    AND f.ts_code !~ '\.BJ$'                   -- 北交所排除(体系原则 2026-07-07,同 holdout DDL 焊法)
   ORDER BY f.ts_code, f.first_ann_date, f.ann_date ASC NULLS LAST   -- 最早 ann_date=原始披露
 )
 SELECT
