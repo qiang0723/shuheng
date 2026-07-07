@@ -72,8 +72,12 @@ def sim_fit(security: Sequence[Num], market: Sequence[Num],
     resid = [y - (alpha + beta * x) for y, x in zip(ys, xs)]
     ar_bar = sum(resid) / delta
     est_ar_sd = math.sqrt(sum((e - ar_bar) ** 2 for e in resid) / (delta - 1))
-    xbar = sum(xs) / delta
-    sxx = sum((x - xbar) ** 2 for x in xs)
+    # x̄/Sxx 用于 BMP 预测误差修正,须对齐 estudy2 boehmer:897-908 的 market_estimation:
+    # 取 regressor 在**估计窗内的全部非缺观测**(na.rm),而非 OLS complete.cases 样本。
+    # 无停牌缺口时二者相同;有缺口时(如 S3)证券侧缺日仍计入 market_estimation → 与 estudy2 一致。
+    mkt_est = [rm for rm, in_est in zip(market, est_mask) if in_est and rm is not None]
+    xbar = sum(mkt_est) / len(mkt_est)
+    sxx = sum((x - xbar) ** 2 for x in mkt_est)
 
     # 全期 AR:r 或 rm 缺项则 None(禁零填充)
     abnormal: list[Num] = []
