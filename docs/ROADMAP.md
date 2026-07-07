@@ -11,7 +11,7 @@
 |---|---|---|---|
 | **第一日** | 骨架 / 单向通道 / 恢复演练 / 焊死 / 备份链 / 到期台账 | ✅ | **全部落成并签收**:git+GitHub 中枢、bootstrap、恢复演练、前置查询、焊死+防拆实测、备份链(GPG 异地+密文恢复验证)、到期台账 cron。四份 quality 留档已签收 |
 | **Q1** | Entity Master 最小版(ts_code 锚 + 别名;stock_basic/namechange 种子) | ✅ | **已签收(2026-07-07)**:master 5861(含退市 D=334)/ alias 20005(忠实存全)。namechange 源系统性脏,人批「忠实存全、归一留 Q3 视图」口径(005 放宽约束)。10 项核查 + 三项补证(对账差一 T00018.SH / 巨潮预留位 / #1858 实证)全过。留档 `quality/q1-entity-master-2026-07-06.md`;口径与挂账见 `quality/caveats-and-ledger.md` |
-| **Q2** | 公共事实回填 PIT(forecast+holdertrade 全市场史 append-only + 巨潮采集件);三层核对协议验收 | 🔒 | **开跑门 = 人封存密封预判后通知**(封存动作人方完成;我不擅自开跑)。**开跑顺序:行情四件套优先,巨潮采集件并行、不阻塞切片2**。巨潮 cninfo 采集件 **GitHub 借阅已批准**(开跑时需人给仓库指针)。**挂账**(见 `quality/caveats-and-ledger.md`):L1 巨潮码填充验收(行数+对射抽查)、L2 映射约束(方向已认、四行表=设计意向、不预焊,Q2 真数据核实基数 + 答"反向唯一 batch scoped vs 全局");口径 C1 T00018.SH 是否捞回默认不捞、待拍 |
+| **Q2** | 公共事实回填 PIT(forecast+holdertrade 全市场史 append-only + 巨潮采集件);三层核对协议验收 | 🟡 | **行情主线 ✅ 收口(2026-07-07)**:forecast_snap 138458 / holdertrade_snap 179843(源=tushare 分片全量,锚 batch=6 含退市);V1–V5 全过、C3 关闭、#4 三层映射冻结(`taosha/docs/taosha-spec-appendix-C.md`,污染标注)。留档 `quality/q2-facts-backfill-2026-07-07.md`。**巨潮腿**:`cninfo.py` 采集件已借入(确权+sha256)+ 覆盖自查(**人裁档位二**,减持须 PIT 读取)。范围裁定:仅 `forecast`+`stk_holdertrade` 两张("四件套"作废)。**待办**(`quality/caveats-and-ledger.md`):L1 巨潮码填充、L3 减持 PDF 解析增补(钉死3字段,切片2后随 v1.5)、L4 category 抽验、L2 映射基数核实;C1 T00018.SH 默认不捞 |
 | **Q3** | 归一视图最小版(v_signal_radar / v_judgment_rv / explore_reader 族,holdout 焊 WHERE)+ 三角色权限隔离 | ⬜ | 验收 = 淘沙 reader 取到数 & 实测取不到 holdout 区。**换源约束见下 ⬇** |
 | **Q3a** | LLM 截止日登记表(五列,人工种子) | ⬜ | |
 | **Q4** | 六对象 schema 纸面稿 | 🔒 | 等人批;Q1–Q3 不等它 |
@@ -25,5 +25,6 @@
 
 ## 当前位置
 
-**Q1 最终签收 ✅(2026-07-07)**:entity_master 5861(含退市 D=334)、entity_alias 20005 忠实存全;10 项核查 + 三项补证(含反向差集原文 + tushare 直查 T00018.SH 阳性对照)全过。人批「忠实存全、归一留 Q3 视图」口径(迁移 005)。留档 `quality/q1-entity-master-2026-07-06.md`,口径/挂账 `quality/caveats-and-ledger.md`。
-**下一步 = Q2(公共事实回填 PIT)**,🔒 未开跑。**开跑门 = 人封存密封预判后通知**(回测口径+可交易口径两个数;封存人方完成,我不擅自开跑)。开跑后顺序:**行情四件套优先,巨潮采集件并行、不阻塞切片2**;巨潮 GitHub 借阅已批(开跑时要仓库指针)。挂账 L2 方向已认、待 Q2 真数据核实基数。逐节点日志见 `CONSTRUCTION-LOG.md`。
+**Q2 行情主线 ✅ 全部收口(2026-07-07)**:密封预判已封存(门已开)。回填 forecast_snap 138458 / holdertrade_snap 179843(tushare 分片全量,含退市宇宙);V1–V5 验收全过(源口径≠老机 md / 去重零残留 / 退市 324-334 / first_ann 非空 99.93% 证 #4 锚 first_ann_date / PIT 快照链)。C3(91 行 null-first_ann)驳回重挂后关闭:#4 锚 first_ann_date 无 fallback,type→#4 三层映射人批冻结(附录C,污染标注),35 行实层缺锚排除、按年份分解。留档 `quality/q2-facts-backfill-2026-07-07.md`。
+**巨潮腿(并行、不阻塞切片2)**:`cninfo.py` 已借入(源 `github.com/quant-newman/radar`,确权+sha256 逐字等价),覆盖自查=人裁**档位二**,减持 PDF 解析件立为增补项 L3(切片2后随 v1.5)。
+**下一步 = 待人令**:淘沙切片2(引擎/estudy2)或 巨潮件采集(L1 填充 + 减持采集)。挂账 L1/L2/L3/L4 + C1 在册。逐节点日志见 `CONSTRUCTION-LOG.md`。
