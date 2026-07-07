@@ -57,14 +57,38 @@ _DATE = r"\d{4}\s*年\s*\d{1,2}\s*月\s*\d{1,2}\s*日"
 # 减持期间(绝对式):"减持期间：起-止" 或 "计划在 起-止 …方式减持"(特别提示句)。
 _RE_PERIOD_LABELED = re.compile(r"减持期间[：:]\s*(" + _DATE + r")\s*[-—~至]+\s*(" + _DATE + r")")
 _RE_PERIOD_PLAN = re.compile(r"计划在\s*(" + _DATE + r")\s*[-—~至]+\s*(" + _DATE + r")")
-# 减持期间(相对式):"…本公告(披露)之日起 N 个交易日后的 M 个月内 …减持"(无绝对日,如实捕获原文)。
-_RE_PERIOD_REL = re.compile(r"(本公告(?:披露)?之日起[^，。；]{0,50}?(?:个月内|日内|之内))")
-# 股东名:"股东(的)?名称：XXX"(的 可选,覆盖"股东名称：");退"…股东XXX(（|计划在)"(公司名收尾前止)。
+# 减持期间(相对式):"…本(减持计划)?公告(披露)之日起 N…个月内"(无绝对日,如实捕获原文)。
+# 覆盖 "本公告之日起" / "本减持计划公告之日起" / "本公告披露之日起" 三种起算措辞。
+_RE_PERIOD_REL = re.compile(
+    r"(本(?:次)?(?:减持计划)?公告(?:披露)?之日起[^，。；]{0,50}?(?:个月内|日内|之内))")
+# 股东名(精度优先:宁可失败也不出垃圾。三锚 + 噪声词拒绝过滤)。
 _RE_HOLDER_LABELED = re.compile(r"股东的?名称[：:]\s*([^，。；、（(]{2,40})")
-_RE_HOLDER_PLAN = re.compile(r"的股东([^，。；（(]{2,40}?)(?:（|计划在)")
-# 董监高减持:多为个人(+一致行动人),无"股东名称"字段→抓主减持人姓名(高管/股东、职务 XXX 先生/女士)。
-# institutional 多主体合并披露仍会落空→如实失败标注(不强凑,守"不做通用框架")。
-_RE_HOLDER_PERSON = re.compile(r"(?:高级管理人员|股东、[^，。（(]{0,8}?)([一-龥]{2,4})(?:先生|女士)")
+# 机构名:实体后缀收尾 + 右界须紧跟 (以下简称|计划|拟|，|将等,防吞正文);左界 股东-标志紧邻(≤6字修饰)。
+_ENT_SUFFIX = (r"(?:股份有限公司|有限责任公司|有限公司|合伙企业|投资中心|管理中心|"
+               r"资产管理|基金|集团|银行|证券|保险|信托)")
+_RE_HOLDER_ENTITY = re.compile(
+    r"(?:持股[^，。；、]{0,10}?股东|公司股东|控股股东|第[一二三四五六]大股东|、股东|的股东|^股东|。股东)"
+    r"([一-龥]{2,26}?" + _ENT_SUFFIX + r")(?:（[^）]{0,25}）)?\s*(?:计划|拟|将|，|、|（以下)")
+# 个人(董监高/一致行动人):姓名紧邻 先生/女士 前 2-4 字;前缀非捕获、限≤10 字防跨句。
+_RE_HOLDER_PERSON = re.compile(
+    r"(?:高级管理人员|监事|董事|控股股东|一致行动人)[^，。；]{0,10}?([一-龥]{2,4})(?:先生|女士)")
+# 噪声词:干净公司/人名不含这些标题/正文词;含即判垃圾(横跨标题吞进的误匹配)→拒绝、判失败。
+_RE_HOLDER_NOISE = re.compile(r"减持|预披露|公告|计划|情况|披露|本公司|证券交易所")
+# 个人名前的角色/关系前缀:剥离(如"董事李杰"→"李杰"、"及其一致行动人林林"→"林林")。
+_RE_ROLE_PREFIX = re.compile(
+    r"^(?:独立董事|董事会秘书|副总经理|财务总监|高级管理人员|总经理|副总裁|董事|监事|董秘|"
+    r"及其一致行动人|一致行动人|之一)+")
+
+
+def _valid_holder(name):
+    """精度过滤:去边缘符 + 剥角色前缀、拒噪声词污染名、拒过短/过长。返回干净名或 None(判失败)。"""
+    if not name:
+        return None
+    name = name.strip("的。、，（(“\" ")
+    name = _RE_ROLE_PREFIX.sub("", name).strip("的、 ")
+    if not (2 <= len(name) <= 40) or _RE_HOLDER_NOISE.search(name):
+        return None
+    return name
 # 拟减持比例上限:**必须锚在减持句"不超过…总股本…X%"**。陷阱:同段并列**股东持股比例**
 #   ("持有…股份 N 股(占…总股本…8.08%)"),不含"不超过"→若只匹配"总股本…X%"会误抓持股比例。
 #   故强制"不超过 … 总股本 … X%"(覆盖 占总股本比例为X% / 公司总股本比例的X% 两种措辞)。
@@ -101,12 +125,16 @@ def extract_fields(text: str) -> dict:
             p_kind = "relative"
         else:
             fails.append("reduce_period")
-    # 拟减持股东名(机构名 → 退个人/高管姓名)
-    m = (_RE_HOLDER_LABELED.search(text) or _RE_HOLDER_PLAN.search(text)
-         or _RE_HOLDER_PERSON.search(text))
-    holder = m.group(1).strip() if m else None
+    # 拟减持股东名:标注字段 → 机构实体名 → 个人姓名(由准到宽);逐锚过噪声过滤,首个干净即用。
+    holder = None
+    for rx in (_RE_HOLDER_LABELED, _RE_HOLDER_ENTITY, _RE_HOLDER_PERSON):
+        m = rx.search(text)
+        if m:
+            holder = _valid_holder(m.group(1))
+            if holder:
+                break
     if not holder:
-        fails.append("holder_name")
+        fails.append("holder_name")  # 精度优先:多主体/异构表述宁判失败也不出垃圾
     # 拟减持比例上限(%)
     m = _RE_RATIO.search(text) or _RE_RATIO_FALLBACK.search(text)
     ratio_pct = float(m.group(1)) if m else None
