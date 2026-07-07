@@ -4,7 +4,7 @@
 > 本文件 + 数据库实物 = 真身;会话记忆是草稿。**断链恢复第一动作 = 查库 + 读本文件。**
 > 改判纪律:口径/指针改判须在此**显式作废旧条目(内容+原因)**,不留新旧并存。
 
-最后更新:2026-07-07(切片2 全部完工:总验收包已落 slice2-acceptance-2026-07-07.md,十一条实物齐、两台同步;**只差人终签**)
+最后更新:2026-07-07(**切片3(#4 端到端·修正案三验收)开工**:Q3 已签收 `ea59367`、切片2 已终签 `b7e3b4b`;入口项 coverage>1.0 之 242 票归因**先报后跑**中——引擎第一次咬真实市场数据,慢比快好)
 
 ## 当前切片
 
@@ -35,7 +35,20 @@
 
 **L3(减持预披露 PDF 解析件)✅ 完工 + L4 ✅ 关闭(2026-07-07):** 件=`qbase/ingest/parse_holder_reduction.py`(已 push),依赖 pypdf(装入 qbase-ingest venv),证据档 `qbase/quality/l3-holder-reduction-parser-2026-07-07.md`。**L4 结论=巨潮 type/category 码不稳(同类公告 code 不一致,实证)→靠 title 判别减持预披露、不依赖 category/type。** L3 承 cninfo(只抓列表)下游:title 筛→pypdf 抽正文→抽 股东名/拟减持比例上限/减持期间(相对式期间存原文+kind)。**实采验证 27 份/全中 22/81%**(字段级 比例~96%/期间~93%/股东~81%);残余 5 全 holder-only 干净失败(特定股东/多主体异构),**精度优先·零错值**(噪声词过滤+角色剥离,曾出垃圾已消解为干净失败,守骗不了人)。本刀**不入库**(落库对接 #3 另定 schema)。**L3/L4 已交付,与 Q3 并行的这条腿收口。**
 
-## ⚠ Q3 进行中 + 阻塞点(2026-07-07,待人裁)
+## 当前切片:切片3(#4 端到端·修正案三验收)开工(人下发 2026-07-07)
+
+**开工令(原文即口径,六条 + 三约束):**
+- **① 入口项先清**:(a) `cleaning.py` 改按缺行+calendar 判停牌(§6 承接,非 flag);(b) **coverage>1.0 之 242 票归因——归因结论先报后跑**,它关系"缺行=停牌"语义的最后一块地基。
+- **② 事件源**:experiment 台账 `exp_id=5`(forecast_drift,frozen)之 pap_json,经 `explore_reader_events` 读取;**引擎拒绝 status≠frozen**。
+- **③ 数据路径**:全程只走 explore_reader 三视图(引擎 role 已焊死),真实数据第一次入引擎。
+- **④ 全链口径**:按冻结配置,**无任何运行时参数**;三法互证 + INSUFFICIENT 合法输出。
+- **⑤ 产出** = #4 体检报告(统计事实,**无建议口吻**):三法结果、N_eff、剔除率按年份、逐日 AR 分解、板块分层、偏差声明段。
+- **⑥ 报告完成即交,不做任何解读**——解读与密封卡开封对照是人的仪式,不是工地的活。
+- **三约束**:四类上报照旧;阶段完成写 STATE;慢比快好。
+- **密封**:已封存(见密封状态锚点),切片3 前置已闭合,不需再喊。
+- **当前动作**:入口项①(b) coverage>1.0 归因先报后跑——地基牢再改 cleaning.py→接事件源→跑引擎→出报告。
+
+## Q3 ✅ 已签收(ea59367,2026-07-07)+ 切片3 承接项〔存档〕
 
 **008 三视图 ✅ 建成验证 + 009 引擎角色 ✅ 焊死(commit 已 push):** `explore_reader_prices`(后复权close/board/is_st PIT[entity_alias名含ST闭区间]/limit_status[原始价分位取整,真抓涨跌停]/industry,holdout `<2024-07-01`焊WHERE,is_suspended=false真实bar) + `explore_reader_calendar`(trade_cal权威轴8187交易日) + `explore_reader_events`(forecast PIT原始披露去重105651唯一,type→附录C三层)。role `taosha_engine` 仅SELECT三视图、直查5底表全 permission denied、holdout三视图>=2024-07-01全返0——**越权/holdout 两件套 ✅ 过**。
 **⚠ is_st PIT 正确性缺陷(2026-07-07 实测发现,✅ 已裁+✅ 已修已验 2026-07-07):** 写 limit_status/is_st 规则文档前在重灌真数据实测 000004.SZ(多次ST↔摘帽)暴露 bug——视图 is_st 用 `EXISTS(任一含ST区间覆盖当日)` + `end_date IS NULL 当至今有效`;而 entity_alias 忠实存全了 namechange 源脏孪生行(同一改名事件常并存 end填 + end=NULL 两行),NULL-end 的含ST行把已结束的ST区间**永久拉成 true**,摘帽后仍恒ST。**范围量化(查 entity_alias 2万行):1102 只有 NULL-end 含ST行,其中 446 只后来真摘帽→摘帽后被误判恒 is_st=true**,会污染切片3 ST剔除/分层。**修法(明确)**=is_st 改为「当日 PIT 生效名=start_date<=trade_date 中最大 start_date 段的名是否含ST」,用下一段 start 划界、免疫 NULL end_date(已验:该逻辑对 000004.SZ 2024-01-02 正确给'国华网安'/非ST)。**另 2 组同日ST冲突需拍口径**:000995.SZ(2020-12-16 ST皇台|皇台酒业)、002417.SZ(2023-06-15 *ST深南|深南退,退市整理期"XX退"不含ST字但性质仍风险警示)。**STATE 旧"is_st PIT 已验"结论作废**(008验证时抽验未覆盖摘帽段,验证不充分)。
