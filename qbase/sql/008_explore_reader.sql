@@ -22,12 +22,26 @@ WHERE c.batch_id = (SELECT max(batch_id) FROM public.fact_batch WHERE source='tu
 -- 契约 PRICE_COLUMNS=(ts_code,trade_date,close,is_suspended,limit_status,board,is_st,industry)。
 -- close=**后复权**(原始 close×adj_factor,D3 收益口径);limit_status 用**原始** close/pre_close 判
 -- (涨跌停限于原始价,后复权会破坏绝对价);is_suspended=**false**(真实 bar 无停牌行,停牌=缺行,引擎按
--- calendar 断档判——见 008 验收〔契约核对发现〕);board=ts_code 前缀;is_st=PIT 名称含 ST;industry=entity_master。
+-- calendar 断档判——见 008 验收〔契约核对发现〕);board=ts_code 前缀;industry=entity_master。
+-- is_st=**PIT 当日生效名(latest-effective-name)**,裁①②见 base(2026-07-07 人裁 is_st 边缘)。
+--   ⚠ 旧逻辑 EXISTS(任一含ST区间)+end IS NULL 当至今有效,被 namechange 脏孪生行(end=NULL 含ST行)
+--   永久拉 true→446 票摘帽后误判恒ST(实测发现)。新逻辑用 name_seg 段(折叠孪生+LEAD划界)免疫。
 CREATE OR REPLACE VIEW public.explore_reader_prices AS
 WITH em AS (   -- 实体维(最新 stock_basic 批:industry + 上市/退市界)
   SELECT ts_code, industry, list_date, delist_date
   FROM public.entity_master
   WHERE batch_id = (SELECT max(batch_id) FROM public.entity_batch WHERE source='tushare:stock_basic')
+),
+name_seg AS (   -- namechange PIT 段:GROUP BY (票,start_date) 折叠脏孪生行(免疫 NULL end_date,修 446 票跨段污染);
+                --   段边界由 LEAD(start_date) 划(下一段起点),不再信任每行 end_date;段内 bool_or 合并同日多名(裁①)
+  SELECT ts_code, start_date,
+         bool_or(alias LIKE '%ST%') AS seg_has_st,        -- ① 段任一含 ST(含 *ST);'%ST%' 天然覆盖 '*ST'
+         bool_or(alias LIKE '%退')  AS seg_delist_clean,  -- ② 退市整理期 'XX退'(字面 is_st=false,制度=10%限幅)
+         LEAD(start_date) OVER (PARTITION BY ts_code ORDER BY start_date) AS next_start
+  FROM public.entity_alias
+  WHERE alias_type = 'name'
+    AND batch_id = (SELECT max(batch_id) FROM public.entity_batch WHERE source='tushare:namechange')
+  GROUP BY ts_code, start_date
 ),
 base AS (
   SELECT b.ts_code,
@@ -44,20 +58,24 @@ base AS (
            WHEN b.ts_code ~ '^(300|301)'       THEN 'chinext'
            ELSE 'main'
          END AS board,
-         -- is_st:PIT 名称含 ST(entity_alias 忠实存全的 namechange,闭区间 [start,end])
-         EXISTS (
-           SELECT 1 FROM public.entity_alias ea
-           WHERE ea.ts_code = b.ts_code
-             AND ea.alias_type = 'name'
-             AND ea.alias LIKE '%ST%'
-             AND ea.start_date <= b.trade_date
-             AND (ea.end_date IS NULL OR b.trade_date <= ea.end_date)
-         ) AS is_st
+         -- is_st:PIT 当日生效名(seg=当日段),裁①② (2026-07-07 人裁 is_st 边缘,原文即口径):
+         --   ② 段含 'XX退' 退市整理期→false(制度事实:整理期 10% 限幅非 5%,判ST会用5%算板价漏检真实10%触板)
+         --   ① 段任一含 ST(含 *ST)→true(同日双名保守,过渡日粒度宁多勿漏);② 优先于 ①(退市名覆盖)
+         --   seg 为 NULL(无 namechange 记录/早于首段)→ELSE false
+         CASE
+           WHEN seg.seg_delist_clean THEN false
+           WHEN seg.seg_has_st       THEN true
+           ELSE false
+         END AS is_st
   FROM public.bar_daily_snap b
   JOIN public.adj_factor_snap a
     ON a.ts_code = b.ts_code AND a.trade_date = b.trade_date
    AND a.batch_id = (SELECT max(batch_id) FROM public.fact_batch WHERE source='tushare:adj_factor')
   LEFT JOIN em ON em.ts_code = b.ts_code
+  LEFT JOIN name_seg seg          -- 当日生效段:start<=trade_date<next_start(段不重叠,至多命中一段,不膨胀行)
+    ON seg.ts_code = b.ts_code
+   AND seg.start_date <= b.trade_date
+   AND (seg.next_start IS NULL OR b.trade_date < seg.next_start)
   WHERE b.batch_id = (SELECT max(batch_id) FROM public.fact_batch WHERE source='tushare:daily')
     AND b.trade_date < DATE '2024-07-01'   -- holdout 焊死
 ),
