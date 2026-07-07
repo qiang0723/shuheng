@@ -35,6 +35,13 @@
 
 **L3(减持预披露 PDF 解析件)✅ 完工 + L4 ✅ 关闭(2026-07-07):** 件=`qbase/ingest/parse_holder_reduction.py`(已 push),依赖 pypdf(装入 qbase-ingest venv),证据档 `qbase/quality/l3-holder-reduction-parser-2026-07-07.md`。**L4 结论=巨潮 type/category 码不稳(同类公告 code 不一致,实证)→靠 title 判别减持预披露、不依赖 category/type。** L3 承 cninfo(只抓列表)下游:title 筛→pypdf 抽正文→抽 股东名/拟减持比例上限/减持期间(相对式期间存原文+kind)。**实采验证 27 份/全中 22/81%**(字段级 比例~96%/期间~93%/股东~81%);残余 5 全 holder-only 干净失败(特定股东/多主体异构),**精度优先·零错值**(噪声词过滤+角色剥离,曾出垃圾已消解为干净失败,守骗不了人)。本刀**不入库**(落库对接 #3 另定 schema)。**L3/L4 已交付,与 Q3 并行的这条腿收口。**
 
+## ⚠ Q3 进行中 + 阻塞点(2026-07-07,待人裁)
+
+**008 三视图 ✅ 建成验证 + 009 引擎角色 ✅ 焊死(commit 已 push):** `explore_reader_prices`(后复权close/board/is_st PIT[entity_alias名含ST闭区间]/limit_status[原始价分位取整,真抓涨跌停]/industry,holdout `<2024-07-01`焊WHERE,is_suspended=false真实bar) + `explore_reader_calendar`(trade_cal权威轴8187交易日) + `explore_reader_events`(forecast PIT原始披露去重105651唯一,type→附录C三层)。role `taosha_engine` 仅SELECT三视图、直查5底表全 permission denied、holdout三视图>=2024-07-01全返0——**越权/holdout 两件套 ✅ 过**。
+**契约核对发现(报切片3):** runner 日期轴=全宇宙bar并集(真实A股≈完整交易日轴),核心统计在"只吐真实bar"下成立;但 cleaning.py 92/104行直读 is_suspended/limit_status flag,真实数据停牌=缺行→**切片3引擎须改按缺行+trade_cal判停牌**(非flag)。Q3只交视图(含calendar轴),引擎适配属切片3。
+**🚨 阻塞:增补①完整性核对未过 = tushare `daily` 单票硬顶 6000 行截断。** 000001.SZ 仅6000行起于2001-02-16(非1991上市)、923只长历史票卡6000早年缺失。=采集缺行(#1858的daily版),非停牌。**"断档=停牌"不成立→Q3不能签。** 影响评估:切片3事件=forecast(tushare约2008起)、估计窗[T-250,T-91]约事件前1年,现代事件估计窗在2001后覆盖区内,实战大概率不受影响;但完整性铁律要求闭合。**待人裁:A 修seed_marketdata按日期窗分页重灌daily+adj_factor(全历史,~1-2h)/ B 接受截断+文档界定边界+证切片3事件全在覆盖区(post-2001)。我荐A(骗不了人/避免landmine)。** adj_factor 同受6000顶,一并修。其余完整性:null存续245(holdout后上市,正常)/coverage>1.0共242(list_date早于首bar,待核,次要)。
+**剩余Q3:** 完整性核对闭合(阻塞) + 两份规则文档(limit_status推导/is_st PIT源,增补②待人过目) + 验收包汇总。
+
 ## 密封状态(永久锚点 · 人 2026-07-07 纠正,不可再动)
 
 - **#4 密封预判已于 2026-07-07 完成封存**(载体=**architecture 仓**,我方**不可见**,内容与我无关、也不需知)。
