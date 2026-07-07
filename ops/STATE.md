@@ -40,6 +40,6 @@
 - **L1**:巨潮 secCode/orgId 填充验收(行数 + secCode↔orgId 对射抽查)——巨潮件采集时。
 - **L2**:alias 映射约束基数——反向唯一取 batch scoped 是有意容跨批复用还是应收紧全局?待 Q2 真数据核实基数后定死(现不焊)。
 - **L4**:`cninfo.py` `category=""` 是否稳定返回减持预披露公告——实采抽验。
-- **S2-DOC1(文档打架,待人裁,2026-07-07 发现)**:spec §切片2·引擎(行88)称"R estudy2**(含KP实现)**并行跑…对数一致",但 vendored **estudy2 0.10.0 无 KP/ADJ-BMP 实现**(只到 `boehmer`=BMP)。附录 D 仅取代该句"对数条款"、未处置"(含KP实现)"。**当前工作解**(待追认):BMP 段对台锚定 estudy2 boehmer;**ADJ-BMP(KP2010)段为我方扩展、对台以手算复核为准**(item 2/4 已隐含此路)。建议:doc-align 注记 estudy2 只覆盖至 BMP,ADJ-BMP 手算复核,与附录 D 同效力追加。
+- **~~S2-DOC1(待人裁)~~ 已裁(2026-07-07,附录 E 落地)**:裁定①认工作解——**estudy2 0.10.0 参照仅覆盖至 BMP(boehmer);spec 行88"(含KP实现)"作废**(归因:引包描述页未核源码,KP 在描述不在源码);核对单 item 2 改读"BMP 段锚 estudy2、ADJ-BMP 段手算+模拟复核";**不引替代 KP 参照**。**加验一道**:ADJ-BMP 零假设蒙特卡洛尺寸检验(无效应+截面相关聚集样本 → 朴素 BMP 拒绝率>α 复现假阳性、ADJ-BMP 拒绝率≈α),一次性模拟、与 item 2 聚集场景合并同一 fixture。落 `taosha/docs/taosha-spec-appendix-E.md`(同附录 D 效力)。
 - **C1**:tushare 对 2007 前退市不完备(T00018.SH),默认不捞、挂老机退役迁移单(≈2027 H1)。
 - **切片1 三裁已落地(2026-07-07,✅ 待终签)**:裁1 #3 source_type=literature+platform记note(已补登);裁2 closed编码批准+状态机注记入验收文档;裁3 创始四条元数据NULL、#2b=量价/高、此后新登记强制填(ledger焊)。仅剩人终签。
