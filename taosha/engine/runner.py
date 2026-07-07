@@ -17,7 +17,9 @@ from taosha.compute import frozen_config as fc
 from taosha.compute.abnormal_tests import (
     SecurityEvent, adj_bmp_by_tau, kp2010_factor, standardized_ar,
 )
+from taosha.compute.calendar_pf import CalEvent, calendar_time
 from taosha.compute.market_model import sim_fit
+from taosha.compute.rank_test import RankSecurity, corrado_rank
 from taosha.engine import benchmark as bench
 from taosha.engine.cleaning import CleanedEvent, clean_event, year_breakdown
 from taosha.experiment import gates
@@ -128,21 +130,28 @@ def run_study(reader, pap: dict, *, benchmark_mode: str = "market",
         se_meta = {"ts_code": ev.ts_code, "event_id": ev.event_id, "board": ce.board,
                    "regime_segment": ce.regime_segment, "industry": ce.industry,
                    "postponed": ce.postponed}
-        valid_events.append((se, se_meta))
+        # 秩检验输入:估计窗 AR(相对位置 -250..-91)+ 事件窗 AR;日历法输入:窗内日期+AR
+        est_ar_seq = [fit.abnormal[j] for j in range(est_lo, est_hi + 1)]
+        w_dates = [all_dates[j] for j in w_idx]
+        rank_sec = RankSecurity(est_ar_seq, se.event_abnormal)
+        cal_ev = CalEvent(w_dates, se.event_abnormal)
+        valid_events.append((se, se_meta, rank_sec, cal_ev))
         cleaned.append(ce)
 
     return _assemble(pap, cleaned, valid_events, benchmark_mode)
 
 
 def _assemble(pap, cleaned, valid_events, benchmark_mode) -> dict:
-    ses = [se for se, _ in valid_events]
+    ses = [v[0] for v in valid_events]
+    rank_secs = [v[2] for v in valid_events]
+    cal_evs = [v[3] for v in valid_events]
     n = len(ses)
     family_trial = int(pap.get("_family_trial", 1))
     alpha = gates.family_alpha(family_trial)
     sample_state = gates.sample_verdict(n)
 
-    # 逐日 AR 标准输出(item 8)+ 主/稳健窗 BMP/ADJ-BMP
-    per_tau, car = {}, {}
+    # 逐日 AR 标准输出(item 8)+ 主/稳健窗 BMP/ADJ-BMP + 三法(ADJ-BMP/秩/日历)
+    per_tau, car, robustness = {}, {}, {}
     if n >= 1:
         adj = adj_bmp_by_tau(ses)
         rho = adj["rho"]
@@ -157,10 +166,17 @@ def _assemble(pap, cleaned, valid_events, benchmark_mode) -> dict:
         car = {
             "main_window": {"taus": f"[0,+{fa.EVENT_WINDOW_MAIN[1]}]",
                             "caar": sum(a for a in aar[:MAIN_LEN] if a is not None),
+                            "naive_t": _naive_t([se.event_abnormal for se in ses], MAIN_LEN),
                             **_car_test(ses, MAIN_LEN, rho["rho_bar"])},
             "robust_window": {"taus": f"[0,+{fa.EVENT_WINDOW_ROBUST[1]}]",
                               "caar": sum(a for a in aar[:ROBUST_LEN] if a is not None),
+                              "naive_t": _naive_t([se.event_abnormal for se in ses], ROBUST_LEN),
                               **_car_test(ses, ROBUST_LEN, rho["rho_bar"])},
+        }
+        # 稳健性两道(spec §6):Corrado 秩 + 日历时间组合法
+        robustness = {
+            "corrado_rank": corrado_rank(rank_secs, MAIN_LEN, ROBUST_LEN),
+            "calendar_time": calendar_time(cal_evs, MAIN_LEN, ROBUST_LEN),
         }
 
     # 板块分层(item 8):有效事件按 board 计数 + 主窗 CAAR;ST 层为已剔除层
@@ -169,8 +185,8 @@ def _assemble(pap, cleaned, valid_events, benchmark_mode) -> dict:
     # 剔除率按年份(item 7)
     rej = year_breakdown(cleaned)
 
-    # verdict(切片2 主检验=ADJ-BMP;稳健性 秩/日历 待范围确认,robustness_pending)
-    verdict, verdict_note = _verdict(sample_state, car, alpha)
+    # verdict(spec §6 三法一致:ADJ-BMP 截面 + Corrado 秩 + 日历时间组合)
+    verdict, verdict_note = _verdict(sample_state, car, robustness, alpha)
 
     # 覆盖统计(item 6):有效事件估计窗有效交易日分布(分母 160,门槛 112)
     cov_days = [ce.coverage_valid_days for ce in cleaned
@@ -194,6 +210,7 @@ def _assemble(pap, cleaned, valid_events, benchmark_mode) -> dict:
         "rejections": rej,
         "n_eff": n,                          # N_eff = 有效事件数(与剔除率同报,item 11)
         "per_tau": per_tau, "car": car,
+        "robustness": robustness,            # 稳健性两道(Corrado 秩 + 日历时间组合,spec §6)
         "board_strata": strata,
         "verdict": verdict, "verdict_note": verdict_note,
         "snapshot_batch": pap.get("snapshot_batch_req", "SYNTH"),
@@ -214,7 +231,8 @@ def _board_strata(cleaned, valid_events) -> dict:
             s["valid"] += 1
     # 创业板 regime 边界(item 8):有效创业板事件按分段计数
     cx_seg: dict = {"pre_10pct": 0, "post_20pct": 0}
-    for se, m in valid_events:
+    for v in valid_events:
+        m = v[1]
         if m["board"] == "chinext":
             cx_seg[m["regime_segment"]] += 1
     strata["_chinext_regime"] = {"boundary": fa.CHINEXT_REGIME_DATE.isoformat(), **cx_seg}
@@ -222,15 +240,65 @@ def _board_strata(cleaned, valid_events) -> dict:
     return strata
 
 
-def _verdict(sample_state, car, alpha) -> tuple[str, str]:
+def _naive_t(abn_by_sec: list, win_len: int):
+    """朴素 t 检验(未校正截面相关):CAR_i=Σ_τ AR_iτ,t=mean/(sd/√N)。供聚集假阳性判据。"""
+    cars = []
+    for ar in abn_by_sec:
+        w = ar[:win_len]
+        if any(x is None for x in w):
+            continue
+        cars.append(sum(w))
+    n = len(cars)
+    if n < 2:
+        return None
+    m, s = sum(cars) / n, _sd(cars)
+    return (m / (s / n ** 0.5)) if s else None
+
+
+def _sig_dir(stat, z_crit):
+    """(显著?, 方向 sign)。stat=None → (False, 0)。"""
+    if stat is None:
+        return False, 0
+    return abs(stat) > z_crit, (1 if stat > 0 else (-1 if stat < 0 else 0))
+
+
+def _verdict(sample_state, car, robustness, alpha) -> tuple[str, str]:
+    """spec §6 三法一致裁决(写死):
+      · 三法(ADJ-BMP 截面 / Corrado 秩 / 日历时间组合)方向一致才确认效应;
+      · 朴素 t 显著而 ADJ-BMP 不显著 → 聚集假阳性,以 ADJ-BMP 为准(NOT_SIG);
+      · 日历时间法与截面法方向相反 → 事件密集期,verdict=AMBIGUOUS(报告应补事件加权,Loughran-Ritter);
+      · 三法方向不一致 → AMBIGUOUS,报告分歧,不许挑有利的。
+    显著性取自主检验 ADJ-BMP(双侧 α=family_alpha);终态 ∈ {SIG,NOT_SIG,INSUFFICIENT,AMBIGUOUS}。"""
     if sample_state == "INSUFFICIENT":
         return "INSUFFICIENT", f"有效事件 < {gates.SAMPLE_GATE}(样本量闸;合法终态,非报错)"
     if not car or car["main_window"].get("adj_bmp_car") is None:
         return "AMBIGUOUS", "主窗 ADJ-BMP 不可得(截面不足)"
-    z_crit = NormalDist().inv_cdf(1 - alpha / 2)
-    adj = car["main_window"]["adj_bmp_car"]
-    sig = abs(adj) > z_crit
-    note = (f"主窗 ADJ-BMP_CAR={adj:.3f} vs 双侧临界 ±{z_crit:.3f}(α={alpha});"
-            "⚠ 稳健性两道(Corrado 秩/日历时间组合)待范围确认,未纳入 verdict;"
-            "spec §6 三法一致规则在补齐后方生效(robustness_pending)。")
-    return ("SIG" if sig else "NOT_SIG"), note
+    z = NormalDist().inv_cdf(1 - alpha / 2)
+    mw = car["main_window"]
+    adj_sig, adj_dir = _sig_dir(mw.get("adj_bmp_car"), z)
+    naive_sig, _ = _sig_dir(mw.get("naive_t"), z)
+    rk = (robustness.get("corrado_rank") or {}).get("main") or {}
+    cal = (robustness.get("calendar_time") or {}).get("main") or {}
+    rank_sig, rank_dir = _sig_dir(rk.get("t_rank"), z)
+    cal_sig, cal_dir = _sig_dir(cal.get("t_cal"), z)
+    base = (f"主窗(双侧 α={alpha:.4f},临界±{z:.3f}):ADJ-BMP_CAR={_fnum(mw.get('adj_bmp_car'))}"
+            f"[{'显著' if adj_sig else '不显著'}] / 朴素t={_fnum(mw.get('naive_t'))} / "
+            f"Corrado秩t={_fnum(rk.get('t_rank'))}[dir{rank_dir}] / "
+            f"日历t={_fnum(cal.get('t_cal'))}[dir{cal_dir}]。")
+
+    # 聚集假阳性:朴素 t 显著而 ADJ-BMP 不显著 → 以 ADJ-BMP 为准
+    if naive_sig and not adj_sig:
+        return "NOT_SIG", base + "朴素 t 显著而 ADJ-BMP 不显著 → 聚集假阳性,以 ADJ-BMP 为准。"
+    # 日历时间法与截面法方向相反 → 事件密集期
+    if cal_dir != 0 and adj_dir != 0 and cal_dir != adj_dir:
+        return "AMBIGUOUS", base + "日历时间法与截面法方向相反 → 疑事件密集期;报告应补事件加权(Loughran-Ritter),不下确认。"
+    # 三法方向一致性(ADJ-BMP / 秩 / 日历)
+    dirs = [adj_dir, rank_dir, cal_dir]
+    if adj_dir != 0 and all(d == adj_dir for d in dirs):
+        return ("SIG" if adj_sig else "NOT_SIG"), base + (
+            "三法方向一致 → " + ("确认效应(ADJ-BMP 显著)。" if adj_sig else "方向一致但 ADJ-BMP 不显著,未达确认。"))
+    return "AMBIGUOUS", base + "三法方向不一致 → 报告分歧,不挑有利的(spec §6)。"
+
+
+def _fnum(x):
+    return "NA" if x is None else f"{x:.3f}"

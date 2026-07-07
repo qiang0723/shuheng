@@ -91,6 +91,19 @@ def render(result: dict) -> str:
         L.append(f"  注: {st['_st_note']}")
     L.append("")
 
+    # ④' 稳健性两道(spec §6 三法之二/三)
+    rb = result.get("robustness") or {}
+    if rb:
+        cr = (rb.get("corrado_rank") or {})
+        ct = (rb.get("calendar_time") or {})
+        L.append("【稳健性两道(spec §6;三法之秩/日历)】")
+        L.append(f"  Corrado 秩检验: 主窗 t_rank={_fmt((cr.get('main') or {}).get('t_rank'),3)} "
+                 f"稳健窗 t_rank={_fmt((cr.get('robust') or {}).get('t_rank'),3)}(非参,对非正态/事件方差稳健)")
+        cm, crob = (ct.get('main') or {}), (ct.get('robust') or {})
+        L.append(f"  日历时间组合法: 主窗 t_cal={_fmt(cm.get('t_cal'),3)}(日历日 {cm.get('n_cal_days')}) "
+                 f"稳健窗 t_cal={_fmt(crob.get('t_cal'),3)}(日历日 {crob.get('n_cal_days')})(聚集并单观测)")
+        L.append("")
+
     # ⑤ verdict(统计事实)
     L.append(f"【verdict(统计终态,非交易判断)】{result['verdict']}")
     L.append(f"  {result['verdict_note']}")
