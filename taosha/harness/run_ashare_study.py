@@ -17,7 +17,10 @@ def synth_pap() -> dict:
     """SYNTH 冒烟假设的 pap_json(合成验收用;字段转录自 §6 冻结通用件)。"""
     p = pap_mod.build_pap(
         event_def={"kind": "SYNTH_SMOKE", "anchor": "first_ann_date", "layer": "预喜"},
-        window={"tau0": "T+1(首个可交易日,S2-DEC3)", "main": [0, 2], "robust": [0, 5]},
+        # 检验窗从 pap 读(裁定 2026-07-07):合成回归桩喂**原短窗**文本"后3/6日"
+        # → parse_test_windows=(3,6)点 = 原 frozen [0,+2]/[0,+5] 的 MAIN_LEN/ROBUST_LEN(3/6)
+        # → 检验窗从 pap 读的重构对合成域结果**逐字节不变**(约束③);真实 #4 pap="后20/60日"。
+        window="T+1起,后3/6日",
         pool={"kind": "全市场等权(合成)"},
         cleaning={"est_window": [-250, -91], "coverage_min": "112/160(70%)",
                   "suspension": "事件落停牌期剔除", "st": "剔除", "one_word": "顺延"},

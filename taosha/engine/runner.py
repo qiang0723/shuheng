@@ -23,10 +23,14 @@ from taosha.compute.rank_test import RankSecurity, corrado_rank
 from taosha.engine import benchmark as bench
 from taosha.engine.cleaning import CleanedEvent, clean_event, year_breakdown
 from taosha.experiment import gates
+from taosha.experiment.pap import parse_test_windows
 
 Num = Optional[float]
-ROBUST_LEN = fa.EVENT_WINDOW_ROBUST[1] + 1     # τ=0..5 → 6 点
-MAIN_LEN = fa.EVENT_WINDOW_MAIN[1] + 1          # τ=0..2 → 3 点
+# 检验窗从 pap 读取(裁定 2026-07-07:事件窗属事件定义、台账为唯一事实源),运行时解析,
+# 不再取 frozen_ashare.EVENT_WINDOW(那两值已降格为删失诊断窗,见 frozen_ashare 注释)。
+# 删失诊断窗(frozen 诊断窗)点数——强制并行输出、与检验窗互不替代(R5 本义):
+DIAG_MAIN_LEN = fa.EVENT_WINDOW_MAIN[1] + 1      # 删失诊断窗 τ=0..2 → 3 点
+DIAG_ROBUST_LEN = fa.EVENT_WINDOW_ROBUST[1] + 1  # 删失诊断窗 τ=0..5 → 6 点
 
 
 def _mean(xs):
@@ -71,6 +75,10 @@ def run_study(reader, pap: dict, *, benchmark_mode: str = "market",
     benchmark_mode: 'market'(全市场等权)/'pool'(池内等权)——口径②冻结基准二选一。
     pool: benchmark_mode='pool' 时的池成员 ts_code 集合。
     """
+    # ── 检验窗从 pap 读(裁定 2026-07-07):main/robust = 首/末检验窗点数(#4=(20,60))──
+    test_win = parse_test_windows(pap)
+    main_len, robust_len = test_win[0], test_win[-1]
+
     # ── 拉数 + date 轴 ────────────────────────────────────────────────────────
     by_sec = reader.prices_by_security()
     all_dates = sorted({r.trade_date for rows in by_sec.values() for r in rows})
@@ -112,8 +120,8 @@ def run_study(reader, pap: dict, *, benchmark_mode: str = "market",
             ce.notes.append(f"估计窗有效交易日 {fit.delta} < {fc.COVERAGE_MIN_VALID}(70%×160)→ 剔除(item 6)")
             cleaned.append(ce)
             continue
-        # 事件窗 τ=0..ROBUST(τ=0=tau0_idx=T+1,含一字板顺延)
-        w_idx = [ce.tau0_idx + k for k in range(ROBUST_LEN)]
+        # 事件窗 τ=0..robust_len-1(检验窗,τ=0=tau0_idx=T+1,含一字板顺延)
+        w_idx = [ce.tau0_idx + k for k in range(robust_len)]
         if w_idx[-1] >= n_dates:
             ce.rejected, ce.reject_reason, ce.reject_year = True, "history", ce.first_ann_date.year
             ce.notes.append("事件窗右端越界(尾部数据不足)→ 剔除")
@@ -138,10 +146,10 @@ def run_study(reader, pap: dict, *, benchmark_mode: str = "market",
         valid_events.append((se, se_meta, rank_sec, cal_ev))
         cleaned.append(ce)
 
-    return _assemble(pap, cleaned, valid_events, benchmark_mode)
+    return _assemble(pap, cleaned, valid_events, benchmark_mode, main_len, robust_len)
 
 
-def _assemble(pap, cleaned, valid_events, benchmark_mode) -> dict:
+def _assemble(pap, cleaned, valid_events, benchmark_mode, main_len, robust_len) -> dict:
     ses = [v[0] for v in valid_events]
     rank_secs = [v[2] for v in valid_events]
     cal_evs = [v[3] for v in valid_events]
@@ -156,7 +164,7 @@ def _assemble(pap, cleaned, valid_events, benchmark_mode) -> dict:
         adj = adj_bmp_by_tau(ses)
         rho = adj["rho"]
         rows = adj["rows"]
-        aar = [_mean([se.event_abnormal[t] for se in ses]) for t in range(ROBUST_LEN)]
+        aar = [_mean([se.event_abnormal[t] for se in ses]) for t in range(robust_len)]
         per_tau = {
             "tau_axis": "τ=0:=T+1(首个可交易日,S2-DEC3)",
             "rho_bar": rho["rho_bar"], "rho_n_pairs": rho["n_pairs"], "rho_note": rho["note"],
@@ -164,19 +172,19 @@ def _assemble(pap, cleaned, valid_events, benchmark_mode) -> dict:
                         "bmp": r["bmp"], "adj_bmp": r["adj_bmp"]} for r in rows],
         }
         car = {
-            "main_window": {"taus": f"[0,+{fa.EVENT_WINDOW_MAIN[1]}]",
-                            "caar": sum(a for a in aar[:MAIN_LEN] if a is not None),
-                            "naive_t": _naive_t([se.event_abnormal for se in ses], MAIN_LEN),
-                            **_car_test(ses, MAIN_LEN, rho["rho_bar"])},
-            "robust_window": {"taus": f"[0,+{fa.EVENT_WINDOW_ROBUST[1]}]",
-                              "caar": sum(a for a in aar[:ROBUST_LEN] if a is not None),
-                              "naive_t": _naive_t([se.event_abnormal for se in ses], ROBUST_LEN),
-                              **_car_test(ses, ROBUST_LEN, rho["rho_bar"])},
+            "main_window": {"taus": f"[0,+{main_len-1}]",
+                            "caar": sum(a for a in aar[:main_len] if a is not None),
+                            "naive_t": _naive_t([se.event_abnormal for se in ses], main_len),
+                            **_car_test(ses, main_len, rho["rho_bar"])},
+            "robust_window": {"taus": f"[0,+{robust_len-1}]",
+                              "caar": sum(a for a in aar[:robust_len] if a is not None),
+                              "naive_t": _naive_t([se.event_abnormal for se in ses], robust_len),
+                              **_car_test(ses, robust_len, rho["rho_bar"])},
         }
         # 稳健性两道(spec §6):Corrado 秩 + 日历时间组合法
         robustness = {
-            "corrado_rank": corrado_rank(rank_secs, MAIN_LEN, ROBUST_LEN),
-            "calendar_time": calendar_time(cal_evs, MAIN_LEN, ROBUST_LEN),
+            "corrado_rank": corrado_rank(rank_secs, main_len, robust_len),
+            "calendar_time": calendar_time(cal_evs, main_len, robust_len),
         }
 
     # 板块分层(item 8):有效事件按 board 计数 + 主窗 CAAR;ST 层为已剔除层
