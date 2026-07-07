@@ -52,6 +52,6 @@
 - **L2**:alias 映射约束基数——反向唯一取 batch scoped 是有意容跨批复用还是应收紧全局?待 Q2 真数据核实基数后定死(现不焊)。
 - **L4**:`cninfo.py` `category=""` 是否稳定返回减持预披露公告——实采抽验。
 - **~~S2-DOC1(待人裁)~~ 已裁(2026-07-07,附录 E 落地)**:裁定①认工作解——**estudy2 0.10.0 参照仅覆盖至 BMP(boehmer);spec 行88"(含KP实现)"作废**(归因:引包描述页未核源码,KP 在描述不在源码);核对单 item 2 改读"BMP 段锚 estudy2、ADJ-BMP 段手算+模拟复核";**不引替代 KP 参照**。**加验一道**:ADJ-BMP 零假设蒙特卡洛尺寸检验(无效应+截面相关聚集样本 → 朴素 BMP 拒绝率>α 复现假阳性、ADJ-BMP 拒绝率≈α),一次性模拟、与 item 2 聚集场景合并同一 fixture。落 `taosha/docs/taosha-spec-appendix-E.md`(同附录 D 效力)。
-- **S2-Q(三法范围,待人裁,2026-07-07 提出)**:spec §6/§7 列切片2 检验为**三法**(主检验 ADJ-BMP + 稳健性两道:Corrado(1989) 秩检验 + 日历时间组合法),verdict 规则"三法方向一致才确认、不一致→AMBIGUOUS"须三法齐备;STATE 亦列"剩余...三法"。但**人的 item7-11 分段(骨架/item7-8/item9-11)未点名 秩/日历**,logbench(item1-6)只锚 BMP/ADJ-BMP。当前 engine verdict 仅 ADJ-BMP、标 `robustness_pending`。**待裁**:①现补建 Corrado 秩 + 日历组合两模块、verdict 走三法一致(spec §7 完整);还是 ②切片2 交 BMP/ADJ-BMP 版、秩/日历挪后续单。默认倾向①(spec 为权威),但涉额外两模块+verdict 逻辑,提请人拍。
+- **S2-Q(三法范围)已裁(人 2026-07-07)= ①现补建三法(spec §7 完整)**:补 Corrado(1989) 秩检验 + 日历时间组合法两 compute 模块,verdict 走 spec §6 三法一致规则(三法方向一致才确认;朴素 t 显著而 ADJ-BMP 不显著→聚集假阳性以 ADJ-BMP 为准;日历法与截面法反向→查事件密集期/补事件加权;三法不一致→AMBIGUOUS)。秩/日历无 estudy2 对台(item2 只锚 BMP),手算+模拟自活。robustness_pending 补齐后撤。
 - **C1**:tushare 对 2007 前退市不完备(T00018.SH),默认不捞、挂老机退役迁移单(≈2027 H1)。
 - **切片1 三裁已落地(2026-07-07,✅ 待终签)**:裁1 #3 source_type=literature+platform记note(已补登);裁2 closed编码批准+状态机注记入验收文档;裁3 创始四条元数据NULL、#2b=量价/高、此后新登记强制填(ledger焊)。仅剩人终签。
