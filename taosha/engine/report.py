@@ -91,6 +91,30 @@ def render(result: dict) -> str:
         L.append(f"  注: {st['_st_note']}")
     L.append("")
 
+    # ④'' 删失诊断窗(步3b,R5;报告项·不进 verdict)
+    cd = result.get("censor_diagnostic") or {}
+    if cd:
+        L.append(f"【删失诊断窗(R5;报告项·不进 verdict;{cd['window']})】")
+        allp = cd.get("all", {})
+        L.append("  ① 各 τ 逐日 AR(全体;反应时间形状/延迟价格发现):")
+        L.append("     τ   N     AAR        BMP     ADJ-BMP")
+        for r in allp.get("by_tau_ar", []):
+            L.append(f"    {r['tau']:>2} {str(r['n']):>4}  {_fmt(r['aar'],5):>9} "
+                     f"{_fmt(r['bmp'],3):>7} {_fmt(r['adj_bmp'],3):>7}")
+        L.append("  ② 各 τ 删失计数占比(全体;一字板/涨停/跌停/停牌):")
+        L.append("     τ   N   一字板  涨停  跌停  停牌   删失占比")
+        for r in allp.get("by_tau_censor", []):
+            L.append(f"    {r['tau']:>2} {r['n']:>3}   {r['one_word']:>4} {r['limit_up']:>5} "
+                     f"{r['limit_down']:>5} {r['suspend']:>5}   {_fmt(r['censored_pct'],3)}")
+        L.append("  ③ 板块四层分拆(main/chinext/star/ST;ST=已剔除层→有效0;τ=0 概况,全量见 result_json):")
+        for b, panel in cd.get("by_board", {}).items():
+            cens = panel.get("by_tau_censor", [])
+            c0 = cens[0] if cens else {}
+            L.append(f"    {b}: 有效{c0.get('n',0)}  "
+                     f"τ=0[一字{c0.get('one_word',0)}/涨停{c0.get('limit_up',0)}/"
+                     f"停牌{c0.get('suspend',0)}/删失占比{_fmt(c0.get('censored_pct'),3)}]")
+        L.append("")
+
     # ④' 稳健性两道(spec §6 三法之二/三)
     rb = result.get("robustness") or {}
     if rb:

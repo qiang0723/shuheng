@@ -135,9 +135,25 @@ def run_study(reader, pap: dict, *, benchmark_mode: str = "market",
             event_abnormal=[fit.abnormal[j] for j in w_idx],
             industry=ce.industry, est_ar_by_date=est_ar_by_date,
         )
+        # 删失诊断窗(步3b,R5):诊断窗 τ=0..DIAG_ROBUST_LEN-1 各日删失类型(不进 verdict,报告项)
+        ev_by_idx = {date_index[r.trade_date]: r for r in rows}
+
+        def _censor_at(idx, _bi=ev_by_idx):
+            if idx >= n_dates:
+                return "none"
+            row = _bi.get(idx)
+            if row is None or row.is_suspended:   # 缺行 OR flag = 停牌(约束②)
+                return "suspend"
+            if row.limit_status == "one_word":
+                return "one_word"
+            if row.limit_status in ("limit_up", "limit_down"):
+                return row.limit_status
+            return "none"
+
+        diag_censor = [_censor_at(ce.tau0_idx + k) for k in range(DIAG_ROBUST_LEN)]
         se_meta = {"ts_code": ev.ts_code, "event_id": ev.event_id, "board": ce.board,
                    "regime_segment": ce.regime_segment, "industry": ce.industry,
-                   "postponed": ce.postponed}
+                   "postponed": ce.postponed, "is_st": ce.is_st, "diag_censor": diag_censor}
         # 秩检验输入:估计窗 AR(相对位置 -250..-91)+ 事件窗 AR;日历法输入:窗内日期+AR
         est_ar_seq = [fit.abnormal[j] for j in range(est_lo, est_hi + 1)]
         w_dates = [all_dates[j] for j in w_idx]
@@ -190,6 +206,9 @@ def _assemble(pap, cleaned, valid_events, benchmark_mode, main_len, robust_len) 
     # 板块分层(item 8):有效事件按 board 计数 + 主窗 CAAR;ST 层为已剔除层
     strata = _board_strata(cleaned, valid_events)
 
+    # 删失诊断窗(步3b,R5;报告项不进 verdict)
+    censor_diag = _censor_diagnostic(valid_events) if n >= 1 else {}
+
     # 剔除率按年份(item 7)
     rej = year_breakdown(cleaned)
 
@@ -220,6 +239,7 @@ def _assemble(pap, cleaned, valid_events, benchmark_mode, main_len, robust_len) 
         "per_tau": per_tau, "car": car,
         "robustness": robustness,            # 稳健性两道(Corrado 秩 + 日历时间组合,spec §6)
         "board_strata": strata,
+        "censor_diagnostic": censor_diag,     # 步3b 删失诊断窗(R5;报告项、不进 verdict)
         "verdict": verdict, "verdict_note": verdict_note,
         "snapshot_batch": pap.get("snapshot_batch_req", "SYNTH"),
     }
@@ -246,6 +266,49 @@ def _board_strata(cleaned, valid_events) -> dict:
     strata["_chinext_regime"] = {"boundary": fa.CHINEXT_REGIME_DATE.isoformat(), **cx_seg}
     strata["_st_note"] = "ST 为已剔除层(spec §5 ST 剔除);不进池化检验,分层仅计数留痕(item 8 调和)"
     return strata
+
+
+def _censor_diagnostic(valid_events) -> dict:
+    """删失诊断窗(步3b,R5 本义;frozen 诊断窗 [0,+2]/[0,+5];**报告项、不进 verdict**)。三件套:
+      ① 各 τ 逐日 AR(截面 AAR + BMP/ADJ-BMP,看反应时间形状与延迟价格发现);
+      ② 各 τ 一字板/触板/停牌 计数占比;
+      ③ ①② 按板块四层(main/chinext/star/ST)分拆(强制;ST 为已剔除层→有效 0)。"""
+    ses = [v[0] for v in valid_events]
+    metas = [v[1] for v in valid_events]
+    dl = DIAG_ROBUST_LEN
+
+    def _panel(sub_ses, sub_metas):
+        ar_rows = []
+        if len(sub_ses) >= 1:
+            by = {r["tau"]: r for r in adj_bmp_by_tau(sub_ses)["rows"]}
+            aar = [_mean([se.event_abnormal[t] for se in sub_ses]) for t in range(dl)]
+            for tau in range(dl):
+                r = by.get(tau, {})
+                ar_rows.append({"tau": tau, "n": r.get("n"), "aar": aar[tau],
+                                "bmp": r.get("bmp"), "adj_bmp": r.get("adj_bmp")})
+        cen_rows = []
+        n = len(sub_metas)
+        for tau in range(dl):
+            cnt = {"one_word": 0, "limit_up": 0, "limit_down": 0, "suspend": 0, "none": 0}
+            for m in sub_metas:
+                c = m["diag_censor"][tau] if tau < len(m["diag_censor"]) else "none"
+                cnt[c] = cnt.get(c, 0) + 1
+            cen_rows.append({"tau": tau, "n": n, **cnt,
+                             "censored_pct": ((n - cnt["none"]) / n) if n else None})
+        return {"by_tau_ar": ar_rows, "by_tau_censor": cen_rows}
+
+    out = {
+        "window": f"删失诊断窗 主[0,+{DIAG_MAIN_LEN-1}]/稳健[0,+{DIAG_ROBUST_LEN-1}]"
+                  f"(frozen,R5;报告项不进 verdict;检验窗见 car)",
+        "diag_main_len": DIAG_MAIN_LEN, "diag_robust_len": DIAG_ROBUST_LEN,
+        "all": _panel(ses, metas), "by_board": {},
+    }
+    for board in ("main", "chinext", "star", "ST"):     # 板块四层分拆(强制;③)
+        idx = [i for i, m in enumerate(metas)
+               if (board == "ST" and m.get("is_st"))
+               or (board != "ST" and not m.get("is_st") and m["board"] == board)]
+        out["by_board"][board] = _panel([ses[i] for i in idx], [metas[i] for i in idx])
+    return out
 
 
 def _naive_t(abn_by_sec: list, win_len: int):
