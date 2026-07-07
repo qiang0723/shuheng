@@ -79,7 +79,7 @@
 3. **市场收益预计算落库**:全市场等权日收益表(≈8797行,batch 溯源,北交所排除口径),引擎读。放 taosha(L2 活,qbase 铁律7 不算统计指标);表设计+append-only+batch。
 4. **建 ViewReader**:事件票取数(非全宇宙)+ 读预计算市场收益表 + calendar 权威轴;role taosha_engine 只读三视图。
 5. **改 cleaning(约束②)**:停牌=缺行 OR flag(真实缺行/合成flag兼容)、一字板=有bar+limit_status='one_word'分离两判据、"一字板但缺行"杂交检测上报。
-6. **核 rank_test modified_rank**(报结果)。
+6. **核 rank_test modified_rank ✅(2026-07-07,无需改)**:`rank_test.py` 已实现 Corrado&Zivney1992 标准化秩=pap 的 modified_rank 口径:缺项(None)不入排名(`idx_valid` 过滤)+ T_i=有效观测数(缺项减少)+ K=rank/(T_i+1)-0.5 用各证券 T_i 标准化;自检4 覆盖"禁零填充—缺项不入排名T_i减少"。与约束②互补确证(缺行停牌→AR None→modified_rank 处理),python -m 自检全绿。
 7. **跑 #4 market 单跑 → 体检报告**(无建议口吻) + **合成回归硬项**(pap桩喂原短窗逐字节不变 + 切片2 logbench 对台不回归)。
 - **coverage>1.0 归因(先报后跑)结论**:242票=241北交所(现全排除)+1沪市并购史(600018上港集团,first_bar2000上港集箱期)。排除北交所后仅剩600018=沪市连续竞价,"缺行=停牌"地基零威胁、无例外。
 - **当前动作(待裁解锁)**:人裁排除口径→(A)改explore_reader三视图加 `!~'\.BJ$'`+完整性核对V项加北交所排除断言→改cleaning.py(缺行+calendar判停牌)→接事件源exp_id5→跑#4。
