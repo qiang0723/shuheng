@@ -26,6 +26,6 @@
 - `valid_time` = 该**具体披露行**的事件发生时刻(每次修正各自的 ann 时刻,UTC)。多修正 = 多行,各有各的 valid_time。
 - 二者不冲突、不合并:first_ann_date 锚"事件序列的起点"(跨行恒定),valid_time 记"每一次披露的时点"(逐行)。V5 的 600053.SH 4 行即实证——4 个 valid_time、1 个 first_ann_date。这正是 bitemporal + 事件研究该有的对齐。
 
-## 挂账(转 caveats-and-ledger.md)
+## 挂账(转 caveats-and-ledger.md C3)
 
-- **C-forecast-null**: forecast_snap 91 行(0.07%)first_ann_date 为 NULL(type='其他',多 2012–13 早期)。#4 锚定 fallback:锚 first_ann_date,为空回退 ann_date 并标注,**不静默**。默认=回退+标注,改动需人拍。
+- **C3(处置驳回重挂 2026-07-07)**: forecast_snap 91 行 first_ann_date 为 NULL。**#4 事件日锚 = first_ann_date,无 fallback 分支**(裁定原文禁用 ann_date fallback,前版"回退 ann_date"已撤销)。type 分布:其他 56(三层外候选)+ 35 行实层类型(预增18/预减6/首亏3/续亏2/略增2/略减2/扭亏2)。**处置待人先冻结 type→#4 三层(预喜/预亏/扭亏)映射(docs 未冻结,上报中)**:冻结后 56 行'其他'判层外=非#4事件零特例可关;35 行实层缺锚须单独处置(无锚即排除,不补 ann_date),不能一并关闭。
