@@ -4,7 +4,7 @@
 > 本文件 + 数据库实物 = 真身;会话记忆是草稿。**断链恢复第一动作 = 查库 + 读本文件。**
 > 改判纪律:口径/指针改判须在此**显式作废旧条目(内容+原因)**,不留新旧并存。
 
-最后更新:2026-07-07(切片2 段3 纪律收尾 item10/11 完成、commit d50c6ca、DB SMOKE 行 exp_id7 落库确认;剩总验收包→人终签)
+最后更新:2026-07-07(切片2 全部完工:总验收包已落 slice2-acceptance-2026-07-07.md,十一条实物齐、两台同步;**只差人终签**)
 
 ## 当前切片
 
@@ -20,7 +20,8 @@
   - **调和留痕(报总验收,待终审确认)**:①**ST**:spec §5"ST 剔除"↔ item8"ST 分层"→ 读为 ST 从池化检验剔除、板块分层作"ST 已剔除层"计数留痕(engine 已落此读法)。②**τ=0 一字板**:注入于 T+1 的极端收益因顺延被移出 τ=0(保守低估,偏差声明已述)。
   - **三法 ✅ 补齐(S2-Q 裁决,施工单)**:`compute/rank_test.py`(Corrado 1989 秩检验,平均秩+尺寸检验自检)、`compute/calendar_pf.py`(日历时间组合法,聚集并单观测)已建、python -m 自检全绿;runner verdict 改 **spec §6 三法一致规则**(三法方向一致才确认/朴素t显著而ADJ-BMP不显著→聚集假阳性以ADJ-BMP为准/日历与截面反向→事件密集期AMBIGUOUS/方向不一致→AMBIGUOUS);`robustness_pending` 已撤。合成跑:主窗 ADJ-BMP_CAR=3.66[显著]/Corrado秩t=3.27[+]/日历t=4.77[+]→三法一致→SIG。七 compute 模块自检全绿、引擎确定性两跑一致。
   - **〔段3 纪律收尾 ✅ 跑通(2026-07-07,HEAD `d50c6ca`,已 push + aliyun ff 同步)〕** item10(口径审计验收贴+冻结不可覆写实测)、item11(结果落库 S2-DEC2)全建、commit。**DB 实物确认(查库为准)**:`taosha.experiment` exp_id **7** = `synthetic_smoke/1` `[SMOKE] slice2合成落库验收`(source_type=llm、verdict_power=prescreen、status=**done**、result_json 已写、contamination_note="切片2合成fixture,非真实结论,勿用于判决",快照批次 SYNTH);六条创始行(exp_id1-6)result 槽完好未动(仅 #2 closed 有 result)。走 registered→frozen→running→done 全路径,append-only 触发器未拒。
-  - **剩 = 总验收包(切片2 十一条一次交验的汇总文档)→ 人终签**。commit=施工单(见 git log,与 d1919c4/8e5c477 留痕分单)。
+  - **总验收包 ✅ 已落(2026-07-07,`taosha/docs/slice2-acceptance-2026-07-07.md`,commit 已 push+两台同步)**:十一条逐项映射实物;对数段引 logbench-evidence(BMP 3.7e-14/MC 0.461→0.0475),A股段现场跑(确定性两跑逐字节一致:N_eff=35/剔除率按年份/双窗/板块分层含regime/偏差声明),item10 冻结不可覆写实测 PASS,item11 落库 exp_id7 SMOKE 库实物,四口径/改读/S2-DOC1/S2-Q/DEC2/DEC3 裁决留痕随包终审确认。
+  - **切片2 = 全部完工,只差人终签。** 终签后→切片3(真实数据+密封预判钩子)+ v1.5 增补 L3 减持 PDF 件动工。
 --- 切片1 存档 ---
 **切片1 台账(已终签):** DB `taosha`(属主postgres,role `taosha_app` 非属主→禁不掉触发器)。表 `experiment`(§4+data_class/crowding_prior)。焊死触发器全自测过+重建后复检仍拒。**三裁已落地**(裁1 #3=literature+platform记note;裁2 closed编码+状态机注记;裁3 创始四条元数据NULL、#2b=量价/高、此后新登记强制填)。**登记终态五条齐(exp_id1-6):** radar_heat/holder_sell#3/forecast_drift/rv_resonance frozen + drawdown_rebuy #2closed+#2b frozen(family_trial自增1→2);#2b元数据量价/高。**pap_json↔§6 逐字核对 diff归零(12/12字段MATCH,verify_pap_vs_spec.py)**。入备份链。验收文档 `taosha/docs/slice1-ledger-acceptance-2026-07-07.md`。commit `d381af6→(本次)`。**待人终签→切片2(开工令+十一条核对单)。**
 
