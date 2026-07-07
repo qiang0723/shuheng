@@ -29,8 +29,8 @@ def _founding():
             source_type="platform", verdict_power="full",
             contamination_note="platform 来源,沿雷达自产信号 A7 口径",
             pap=P.build_pap(
-                event_def="heat_signal 升温标记(沿雷达 A7 口径)",
-                window="A7 口径",
+                event_def="heat_signal 升温标记(沿雷达A7口径)",
+                window="A7口径",
                 pool={"universe": "雷达信号覆盖股池", "source_view": "v_signal_radar"},
                 cleaning=CLEANING_A,
                 snapshot_batch_req={"note": SNAP_REQ, "source": "v_signal_radar"}),
@@ -42,28 +42,28 @@ def _founding():
             _close="被 drawdown_rebuy trial 2(#2b)取代,未跑",
             pap=P.build_pap(
                 event_def=("雷达股池(PIT)内收盘自60日高点回撤≥10%后,站上10日线且连续3日不破=进场;"
-                           "破20日线=失效"),
-                window={"event": "20/60日", "strategy": "按离场规则"},
+                           "破20日线=失效。策略版离场:成本−20%强平或收盘破20日线,先到先出"),
+                window="事件版20/60日;策略版按离场",
                 pool={"universe": "雷达股池(PIT)", "source": "qbase行情+雷达股池"},
                 cleaning=CLEANING_A,
-                snapshot_batch_req={"note": SNAP_REQ, "source": "qbase行情+雷达股池"},
-                extra={"exit_rule": "策略版离场:成本−20%强平 或 收盘破20日线,先到先出"}),
+                snapshot_batch_req={"note": SNAP_REQ, "source": "qbase行情+雷达股池"}),
         ),
-        dict(  # #2b b1 全市场流动性池版(开工令已批参数)
+        dict(  # #2b b1 全市场流动性池版(开工令已批参数);裁3:元数据 量价/高(LLM 拟值·人批)
             family="drawdown_rebuy", title="回撤反抽·b1 全市场流动性池版",
             source_type="human", verdict_power="full",
+            data_class="量价", crowding_prior="高",
             contamination_note=("核心定义与 X=20% 来自人;池型与 N=120 为 LLM 建议、人批;"
                                 "未触样本收益数据;效力 full"),
             pap=P.build_pap(
-                event_def=("雷达股池(PIT)进出场原文继承 #2:收盘自60日高点回撤≥10%后,"
-                           "站上10日线且连续3日不破=进场;破20日线=失效"),
-                window={"event": "20/60日", "strategy": "按离场规则"},
+                # event_def/window 逐字继承 §6 #2 冻结原文(裁:事件定义/进出场继承);仅池不同
+                event_def=("雷达股池(PIT)内收盘自60日高点回撤≥10%后,站上10日线且连续3日不破=进场;"
+                           "破20日线=失效。策略版离场:成本−20%强平或收盘破20日线,先到先出"),
+                window="事件版20/60日;策略版按离场",
                 pool={"universe": "b1 全市场流动性池", "filter": "成交额前20%",
                       "listing_min": "上市满120交易日"},
                 cleaning=CLEANING_A,
                 snapshot_batch_req={"note": SNAP_REQ, "source": "qbase行情+全市场流动性池"},
-                extra={"exit_rule": "策略版离场:成本−20%强平 或 收盘破20日线,先到先出",
-                       "inherit_from": "drawdown_rebuy #2 事件定义/进出场冻结原文"}),
+                extra={"inherit_from": "drawdown_rebuy #2 事件定义/进出场逐字继承 §6,仅池改 b1"}),
         ),
         dict(  # #3 裁1(2026-07-07):source_type=literature,platform 成分记 contamination_note
             family="holder_sell", title="减持计划首次预披露漂移",
@@ -77,7 +77,7 @@ def _founding():
                            "减持比例≥总股本1%;2024新规前历史样本用当时口径首次公告日。"
                            "stk_holdertrade 仅作实施结果辅助表(按 ts_code+ann_date 聚合,"
                            "无公告ID局限入 pap_json)"),
-                window="后 5/20/60 日",
+                window="后5/20/60日",
                 pool={"universe": "全市场(减持预披露)",
                       "source": "巨潮预披露采集(Q2)+stk_holdertrade"},
                 cleaning=CLEANING_A,
@@ -88,9 +88,9 @@ def _founding():
             source_type="literature", verdict_power="full",
             contamination_note="§6:惯例参数由 LLM 按文献惯例拟定、人批、未接触样本数据",
             pap=P.build_pap(
-                event_def=("业绩预告,valid_time=first_ann_date(非 ann_date);"
+                event_def=("业绩预告,valid_time=first_ann_date(非ann_date);"
                            "修正公告(ann_date≠first_ann_date)不进本假设;分预喜/预亏/扭亏三层"),
-                window="T+1 起,后 20/60 日",
+                window="T+1起,后20/60日",
                 pool={"universe": "全市场(业绩预告)", "source": "qbase forecast_snap(Q2)"},
                 cleaning=CLEANING_A,
                 snapshot_batch_req={"note": SNAP_REQ, "source": "forecast_snap Q2 batch#1"},
@@ -103,7 +103,7 @@ def _founding():
                                 "§6 注:池为确定性函数,预期大概率 INSUFFICIENT(验证样本量闸)"),
             pap=P.build_pap(
                 event_def="观象节点日度 resonance 进全池当日分布前10%",
-                window="卡面 horizon_days",
+                window="卡面horizon_days",
                 pool={"universe": "观象全池", "source_view": "v_judgment_rv"},
                 cleaning=CLEANING_A,
                 snapshot_batch_req={"note": SNAP_REQ, "source": "v_judgment_rv"}),
@@ -118,7 +118,8 @@ def _register_item(item, conn):
         family=item["family"], title=item["title"],
         source_type=item["source_type"], verdict_power=item["verdict_power"],
         pap=item["pap"], contamination_note=item["contamination_note"],
-        allow_meta_null=True, conn=conn)      # 创始=存量转录,元数据留 NULL(裁3)
+        data_class=item.get("data_class"), crowding_prior=item.get("crowding_prior"),
+        allow_meta_null=True, conn=conn)      # 创始=存量转录,元数据默认 NULL(裁3);#2b 带值
     ledger.freeze(exp_id, conn=conn)
     if close_reason:
         ledger.close(exp_id, close_reason, conn=conn)
