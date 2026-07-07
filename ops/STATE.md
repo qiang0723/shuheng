@@ -39,8 +39,10 @@
 
 **008 三视图 ✅ 建成验证 + 009 引擎角色 ✅ 焊死(commit 已 push):** `explore_reader_prices`(后复权close/board/is_st PIT[entity_alias名含ST闭区间]/limit_status[原始价分位取整,真抓涨跌停]/industry,holdout `<2024-07-01`焊WHERE,is_suspended=false真实bar) + `explore_reader_calendar`(trade_cal权威轴8187交易日) + `explore_reader_events`(forecast PIT原始披露去重105651唯一,type→附录C三层)。role `taosha_engine` 仅SELECT三视图、直查5底表全 permission denied、holdout三视图>=2024-07-01全返0——**越权/holdout 两件套 ✅ 过**。
 **契约核对发现(报切片3):** runner 日期轴=全宇宙bar并集(真实A股≈完整交易日轴),核心统计在"只吐真实bar"下成立;但 cleaning.py 92/104行直读 is_suspended/limit_status flag,真实数据停牌=缺行→**切片3引擎须改按缺行+trade_cal判停牌**(非flag)。Q3只交视图(含calendar轴),引擎适配属切片3。
-**🚨 阻塞:增补①完整性核对未过 = tushare `daily` 单票硬顶 6000 行截断。** 000001.SZ 仅6000行起于2001-02-16(非1991上市)、923只长历史票卡6000早年缺失。=采集缺行(#1858的daily版),非停牌。**"断档=停牌"不成立→Q3不能签。** 影响评估:切片3事件=forecast(tushare约2008起)、估计窗[T-250,T-91]约事件前1年,现代事件估计窗在2001后覆盖区内,实战大概率不受影响;但完整性铁律要求闭合。**待人裁:A 修seed_marketdata按日期窗分页重灌daily+adj_factor(全历史,~1-2h)/ B 接受截断+文档界定边界+证切片3事件全在覆盖区(post-2001)。我荐A(骗不了人/避免landmine)。** adj_factor 同受6000顶,一并修。其余完整性:null存续245(holdout后上市,正常)/coverage>1.0共242(list_date早于首bar,待核,次要)。
-**剩余Q3:** 完整性核对闭合(阻塞) + 两份规则文档(limit_status推导/is_st PIT源,增补②待人过目) + 验收包汇总。
+**阻塞根因(增补①完整性核对发现):tushare `daily`/`adj_factor` 单票硬顶 6000 行截断。** 000001.SZ 仅6000行起2001-02-16(非1991)、923只长史票卡6000早年缺=采集缺行(非停牌),"断档=停牌"不成立。**人裁 A(分页全票重灌,理由:B转永久技术债否/C行数识别不可靠且路由常设复杂度否)。三条执行:①旧batch3/4标废不删(废弃原因写新batch note+文档,因fact_batch append-only改不了旧note)、视图取max batch路由新批;②重灌后完整性核对全量重跑、923只逐票闭合、复验分页拼接不重不漏(dedup重验);③adj_factor一并重灌同验。** 重灌**执行中**(见运行中任务 PID52479)。
+**契约核对发现 → 切片3 待办(已登记):** cleaning.py 92/104行直读 is_suspended/limit_status flag;真实数据停牌=缺行→**切片3引擎须改按缺行+trade_cal判停牌(非flag)**;日期轴改用 explore_reader_calendar 权威轴(比全宇宙bar并集更稳)。属切片3引擎适配,Q3已交calendar视图。
+**其余完整性(次要,重灌后一并复核):** null存续245(holdout后上市,正常)/coverage>1.0共242(list_date晚于首bar,待归因)。
+**剩余Q3(重灌完成后):** 完整性核对全量重跑闭合(923逐票) + 两份规则文档(limit_status推导含分位取整/is_st PIT源=entity_alias,增补②待人过目) + Q3完整验收包(四件套+两文档)交人审→过则切片3开工令。008三视图/009角色已建验证(越权/holdout过)。
 
 ## 密封状态(永久锚点 · 人 2026-07-07 纠正,不可再动)
 
@@ -70,7 +72,8 @@
 
 ## 运行中后台任务
 
-- **无运行中任务**。**Q3-B 行情回填 ✅ 完成(2026-07-07)**:daily=17,138,664(batch3)/adj_factor=17,680,484(batch4)/trade_cal=13,162(batch5),去双发均 0,日志「行情采集完成核行数一致」。V1–V5 全过(留档 `qbase/quality/q3b-marketdata-backfill-2026-07-07.md`);唯一缺口=T600018.SH(上港集箱退,2006-10-20)属 C1 预期内不补。
+- **⚠ Q3 daily+adj_factor 重灌在跑(2026-07-07,aliyun PID 52479,setsid nohup)**:分页版 `seed_marketdata.py`(commit eb401a9)修 6000 硬顶,游标向后分页拉全史。**先 `--only daily` 再 `--only adj_factor`,完成打印 `REBACKFILL_ALL_DONE`**。log=`/tmp/q3b-rebackfill.log`(非 git)。**每源单事务源跑完才 COMMIT**(新 batch,预计 daily>17M/adj>17M,含老票早年补回)。trade_cal 未截断不重灌。**规矩:在跑勿重跑。** dry 已验:2 长史票 6000→16769 行/分页 2/000001.SZ 回全史。预计 ~2-3h(分页调用更多)。查=`ssh aliyun-new 'tail /tmp/q3b-rebackfill.log; pgrep -f seed_marketdata'`。
+- **旧截断批保留(append-only 不删)**:daily=batch3(17,138,664 截断)/adj_factor=batch4(17,680,484 截断)。重灌新批 note 记废弃原因;视图取 max batch 自动路由新批。
 - `seed_facts.py` Q2 回填已完成并 COMMIT;守望 `b097j3l62` 已触发结束。
 - **root cron(aliyun-new)**:哨兵 08:30 / 备份 03:00 / 到期提醒 09:00。查验 = `ssh aliyun-new 'crontab -l'` + 各日志;飞书秘钥 `/etc/shuheng/sentinel.env`。
 
