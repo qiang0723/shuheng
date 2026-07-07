@@ -24,7 +24,12 @@ import os
 import sys
 import time
 import argparse
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
+
+# tushare 单票 daily/adj_factor 单次调用**硬顶 6000 行**(2026-07-07 完整性核对发现:长历史票早年被截断)。
+# → 游标式向后分页:每页 end_date 回溯到上页最早日前一天,拼全史;<6000 即到底。整行去重兜拼接重叠。
+TS_PAGE_CAP = 6000
+MAX_PAGES = 12   # 安全上限(12×6000=7.2万行/票,远超任何 A 股票史,防死循环)
 
 
 # ── .env 读取(不引 dotenv;只取需要的键,绝不回显值)──────────────────────────
@@ -134,20 +139,45 @@ def _call_retry(api, sleep_s, **kw):
     return None
 
 
-def iter_shards(pro, spec, universe, y_range, sleep_s):
-    """分片生成器,逐片 yield (code_for_row, 显示标签, df)。
-    ts_code 片:code_for_row=code;year 片(trade_cal):code_for_row=None(cal_row 不用 code)。
-    流式:调用方逐片消费即刻落库,内存只留单片,规避全量攒内存 OOM(1800万日线)。"""
+def _fetch_code_full(api, spec, code, sleep_s, pull_time):
+    """单票全史:游标式向后分页规避 6000 硬顶。返回该票全部页拼接的**已解析行 list**(spec['row'] 元组)。
+    每页 daily(ts_code,end_date=cursor) 取 ≤6000 最近行;<6000 到底;否则 cursor=本页最早日−1 再取更早。
+    拼接重叠由调用方整行去重兜(#1858 标准:分页场景 dedup 重验)。返回 (rows, pages)。"""
+    import pandas as pd  # tushare 依赖,venv 内有;仅此处用于取 trade_date 最小值
+    rows, end, pages = [], None, 0
+    while pages < MAX_PAGES:
+        kw = {"ts_code": code, "fields": spec["fields"]}
+        if end:
+            kw["end_date"] = end
+        df = _call_retry(api, sleep_s, **kw)
+        pages += 1
+        n = 0 if df is None else len(df)
+        if n:
+            for _, r in df.iterrows():
+                rows.append(spec["row"](code, r, pull_time))
+        if n < TS_PAGE_CAP:            # 未触顶=已到该票最早,收工
+            break
+        earliest = pd.to_datetime(df["trade_date"].astype(str)).min().date()  # 本页最早日
+        end = (earliest - timedelta(days=1)).strftime("%Y%m%d")               # 下页取更早
+        time.sleep(sleep_s)
+    return rows, pages
+
+
+def iter_shards(pro, spec, universe, y_range, sleep_s, pull_time):
+    """分片生成器,逐片 yield (显示标签, **已解析行 list**, 页数)。两支统一产出行 list(消费端一致)。
+    ts_code 片=单票全史(游标分页拼全);year 片(trade_cal)=按年。流式:调用方逐片即刻落库,内存只留单片。"""
     api = getattr(pro, spec["api"])
     if spec["sharded"] == "ts_code":
         for code in universe:
-            yield code, code, _call_retry(api, sleep_s, ts_code=code, fields=spec["fields"])
+            rows, pages = _fetch_code_full(api, spec, code, sleep_s, pull_time)
+            yield code, rows, pages
             time.sleep(sleep_s)
     else:  # year(trade_cal)
         for y in range(y_range[0], y_range[1] + 1):
             df = _call_retry(api, sleep_s, exchange="SSE",
                              start_date=f"{y}0101", end_date=f"{y}1231", fields=spec["fields"])
-            yield None, str(y), df
+            rows = [spec["row"](None, r, pull_time) for _, r in df.iterrows()] if df is not None else []
+            yield str(y), rows, 1
             time.sleep(sleep_s)
 
 
@@ -162,22 +192,22 @@ def stream_write(conn, spec, shards, n_shards, pull_time, asof, note, log_every=
             (spec["source"], asof, pull_time, note),
         )
         bid = cur.fetchone()[0]
-    raw_n = written = done = 0
+    raw_n = written = done = max_pages = 0
     with conn.cursor() as cur:
         with cur.copy(f"COPY {spec['table']}({spec['cols']}) FROM STDIN") as cp:
-            for code_for_row, label, df in shards:
-                per = [spec["row"](code_for_row, r, pull_time) for _, r in df.iterrows()]
+            for label, per, pages in shards:
+                max_pages = max(max_pages, pages)
                 raw_n += len(per)
-                per = list(dict.fromkeys(per))  # 按片整行去重:只去逐字节双投递,保序(片间键不撞)
+                per = list(dict.fromkeys(per))  # 按片整行去重:去逐字节双投递+分页拼接重叠(#1858 标准)
                 for row in per:
                     cp.write_row((bid, *row, pull_time))  # +observed_time
                     written += 1
                 done += 1
                 if done % log_every == 0:
-                    print(f"  {spec['api']} 分片 {done}/{n_shards} … 落库 {written} 行(源拉 {raw_n})",
-                          flush=True)
+                    print(f"  {spec['api']} 分片 {done}/{n_shards} … 落库 {written} 行"
+                          f"(源拉 {raw_n},最大分页 {max_pages})", flush=True)
     conn.commit()
-    return bid, raw_n, written
+    return bid, raw_n, written, max_pages
 
 
 def load_universe(cur):
@@ -240,12 +270,12 @@ def main():
             for key in which:
                 spec = SOURCES[key]
                 yr = (pull_time.year - 1, pull_time.year)
-                raw, rows = 0, []
-                for code_for_row, _label, df in iter_shards(pro, spec, sample, yr, args.sleep):
-                    per = [spec["row"](code_for_row, r, pull_time) for _, r in df.iterrows()]
+                raw, rows, mp = 0, [], 0
+                for _label, per, pages in iter_shards(pro, spec, sample, yr, args.sleep, pull_time):
+                    mp = max(mp, pages)
                     raw += len(per)
                     rows.extend(dict.fromkeys(per))
-                print(f"  [{key}] 源拉 {raw} 行 / 整行去重后 {len(rows)}", flush=True)
+                print(f"  [{key}] 源拉 {raw} 行 / 整行去重后 {len(rows)}(最大分页 {mp})", flush=True)
                 if rows:
                     print(f"    首行样例(字段就位验证):{rows[0]}", flush=True)
             print("--dry 完成:字段/连通/去重逻辑通过。", flush=True)
@@ -255,17 +285,24 @@ def main():
             spec = SOURCES[key]
             n_shards, y_range, scope = _shard_plan(spec, universe, pull_time)
             print(f"── [{key}] 全量流式拉取+落库(源={spec['source']};{scope})──", flush=True)
+            supersede = ""
+            if spec["sharded"] == "ts_code":
+                supersede = ("【重灌·游标分页全史】规避 tushare daily/adj_factor 单票 6000 行硬顶"
+                             "(2026-07-07 完整性核对发现长历史票早年截断);本批 supersedes 旧截断批"
+                             "(daily=batch3/adj_factor=batch4,append-only 不删、视图取 max batch 路由新批,"
+                             "旧批废弃原因即本注)。分页拼接重叠由整行去重兜。")
             note = (f"{spec['source']} {scope};锚 entity_master batch={ubatch}。"
-                    f"流式 COPY(逐片整行去重去源双发);忠实存全,同键 distinct 行照落。"
-                    f"源拉/落库计数见采集日志 + count(*) by batch_id。分片规避 #1858 截断。")
-            shards = iter_shards(pro, spec, universe, y_range, args.sleep)
-            bid, raw_n, written = stream_write(conn, spec, shards, n_shards, pull_time, asof, note)
+                    f"流式 COPY(逐片整行去重去源双发/分页重叠);忠实存全,同键 distinct 行照落。"
+                    f"源拉/落库计数见采集日志 + count(*) by batch_id。{supersede}")
+            shards = iter_shards(pro, spec, universe, y_range, args.sleep, pull_time)
+            bid, raw_n, written, max_pages = stream_write(conn, spec, shards, n_shards,
+                                                          pull_time, asof, note)
             # 落库核验:回读 count 与流式写入计数一致
             with conn.cursor() as cur:
                 cur.execute(f"SELECT count(*) FROM {spec['table']} WHERE batch_id=%s", (bid,))
                 n = cur.fetchone()[0]
             print(f"  [{key}] 落库 batch={bid} 行数={n}(流式写 {written},源拉 {raw_n},"
-                  f"去双发 {raw_n - written})", flush=True)
+                  f"去双发/重叠 {raw_n - written},最大分页 {max_pages})", flush=True)
             assert n == written, f"[{key}] 核行数不符!{n}!={written}"
 
     print("✅ Q3-B 行情采集完成,核行数一致。", flush=True)
