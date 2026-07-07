@@ -68,9 +68,19 @@
 **〔切片3 施工进度 + ⚠ 阻断发现(读 exp_id5 pap,2026-07-07)〕**
 - **②契约扩 calendar ✅**:`reader/contract.py` 加 `CalendarRow`(trade_date/pretrade_date)+`CALENDAR_COLUMNS`+`enforce_holdout_calendar`;`SyntheticReader.calendar()` ✅=合成域权威轴(全证券 trade_date 并集,停牌用flag有行故并集=完整轴→runner改用calendar轴后合成域零变化、约束③回归不破)。语法自检过。
 - **①ViewReader 暂缓**:规模(prices视图15M行不可全load)+ 事件窗打架未裁,待裁后建。
-- **⚠ 阻断1(四类④+①,待人裁):事件窗打架**——exp_id5 pap `window="T+1起,后20/60日"` ↔ 引擎 `frozen_ashare.EVENT_WINDOW_MAIN=(0,2)/ROBUST=(0,5)` 即[0,+2]/[0,+5],**差一个数量级**。两冻结物矛盾:PEAD业绩预告漂移本质中期漂移(20/60符文献)、切片2短窗是合成验收占位。**#4 真实跑用哪窗待人裁**(用20/60需改frozen_ashare冻结配置=人拍;用2/5与forecast_drift中期漂移语义不符)。**未裁不跑#4。**
-- **⚠ 阻断2/待核:停牌口径**——pap cleaning "停牌缺失按 **modified_rank** 口径" ↔ 约束②"缺行=停牌(calendar断档)"。初判**互补非打架**(缺行=识别停牌、modified_rank=停牌日AR在Corrado秩检验里的处理[Corrado&Zivney1992]);待核 `compute/rank_test.py` 是否实现 modified_rank 还是简单跳过。
-- **pap 其他关键**:pool.universe=**全市场(业绩预告)**→真实域样本=有 forecast 事件的票(非全宇宙,ViewReader 按事件票取数、避 15M 全load);benchmark 两假设(pool=雷达股池等权/market=全市场等权)→run_study benchmark_mode 二选一,**跑哪个/都跑待明**(全市场等权需全宇宙收益算基准=又一规模点);event_def=valid_time=first_ann_date、修正公告不进本假设;sample_gate=30;snapshot_batch=forecast_snap Q2 batch#1;可交易时点T+1开盘/CAR起点T+1(合S2-DEC3)。
+- **✅ 事件窗已裁(人 2026-07-07,原文即口径)**:**#4 检验窗=pap 之 20/60**(T+1 起算,S2-DEC3 的 τ=0:=T+1 锚对所有窗继续有效,即后20日=T+1..T+20)。**实现机制**:检验窗**从 pap_json 读取**(事件窗属事件定义,台账为唯一事实源),**不在 frozen_ashare 为 family 复制窗口参数**。**frozen_ashare [0,+2]/[0,+5] 保留但改语义标签=强制报告的删失诊断分解窗(R5 本义)**,对全部假设通用,与检验窗**并行输出、互不替代**。**打架归因**:核对单 item 8"主窗/稳健窗"措辞=架构窗口错误,S2-DEC3 据此锚定无过;**item 8 改读"[0,+2]/[0,+5]=删失诊断报告窗",留痕**。**合成回归复验须覆盖此改动**:检验窗改从 pap 读后,切片2 合成用例给 **pap 桩喂原短窗**,结果应**逐字节不变**。
+- **✅ benchmark 已裁**:**#4 跑 market(全市场等权),单跑不双跑**。依据:#4 为全市场族,冻结基准规则(池内假设=雷达股池等权/全市场假设=全市场等权)早定,pap 的 pool/market 二项是**按假设归属选、非自由度**;双跑=多看一眼,不做。**15M 规模点解法**:**全市场等权日收益预计算落库**(≈8797行小表,带 batch 溯源,含**北交所排除后**的宇宙口径),引擎**读表不现算**。
+- **停牌 modified_rank**:初判方向对(缺行=识别、modified_rank=Corrado 秩处理,互补非打架),**自核 `rank_test.py` 后报结果**即可(不阻断)。
+- **ViewReader 按事件票取数照准**。pool.universe=全市场(业绩预告)→样本=有 forecast 事件的票;event_def=valid_time=first_ann_date、修正公告不进本假设;sample_gate=30;snapshot=forecast_snap Q2 batch#1;可交易 T+1 开盘/CAR 起点 T+1(合 S2-DEC3)。
+
+**〔切片3 裁定后施工清单(2026-07-07,慢比快好每步验证)〕**
+1. **检验窗从 pap 读**:cleaning/runner 事件窗参数改由 pap_json 提供(非 frozen_ashare.EVENT_WINDOW);τ=0:=T+1 锚不变。
+2. **frozen_ashare 改语义标签**:EVENT_WINDOW_MAIN/ROBUST → 删失诊断分解窗(R5),注释改;报告并行输出检验窗结果 + 删失诊断窗分解。**item 8 改读留痕**(核对单/相关文档,S2-DEC3 锚定无过)。
+3. **市场收益预计算落库**:全市场等权日收益表(≈8797行,batch 溯源,北交所排除口径),引擎读。放 taosha(L2 活,qbase 铁律7 不算统计指标);表设计+append-only+batch。
+4. **建 ViewReader**:事件票取数(非全宇宙)+ 读预计算市场收益表 + calendar 权威轴;role taosha_engine 只读三视图。
+5. **改 cleaning(约束②)**:停牌=缺行 OR flag(真实缺行/合成flag兼容)、一字板=有bar+limit_status='one_word'分离两判据、"一字板但缺行"杂交检测上报。
+6. **核 rank_test modified_rank**(报结果)。
+7. **跑 #4 market 单跑 → 体检报告**(无建议口吻) + **合成回归硬项**(pap桩喂原短窗逐字节不变 + 切片2 logbench 对台不回归)。
 - **coverage>1.0 归因(先报后跑)结论**:242票=241北交所(现全排除)+1沪市并购史(600018上港集团,first_bar2000上港集箱期)。排除北交所后仅剩600018=沪市连续竞价,"缺行=停牌"地基零威胁、无例外。
 - **当前动作(待裁解锁)**:人裁排除口径→(A)改explore_reader三视图加 `!~'\.BJ$'`+完整性核对V项加北交所排除断言→改cleaning.py(缺行+calendar判停牌)→接事件源exp_id5→跑#4。
 
