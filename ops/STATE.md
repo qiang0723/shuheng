@@ -33,7 +33,7 @@
 
 **⚠ Q3 卡点(查库 2026-07-07,待人拍):** qbase **无任何行情底表**(仅 entity_master/alias/batch + forecast_snap/holdertrade_snap/fact_batch + audit)。契约 `PRICE_COLUMNS`=(ts_code,trade_date,close,is_suspended,limit_status,board,is_st,industry) 的价格半边(close/is_suspended/limit_status)**无底料**;event 半边(first_ann_date 等)qbase facts 可建。设计意图(ROADMAP〈Q3换源约束〉+施工清单v0.3)= explore_reader 经 **FDW/dblink 只读老库 `md` schema**(bar_daily_raw 1782万/adj_factor/trade_calendar,收益口径=后复权收盘 D3)。**两条红线待拍**:(a) 我方记忆〈ops-access〉记老机"数据不借阅"↔施工清单v0.3 provisions"老库只读账号 marketdata SELECT only" = **类④文档打架**,需人确认 marketdata(行情=梯队4公共事实)可借阅、区别于 radar/research_view/crucible 判断数据不借阅;(b) 建 FDW/开老机PG内网监听/建隧道 = **类③对老平台操作**必须先请示;且老机 PG 只绑 localhost(内网 5432 未开),FDW 需先解决连通。价格源三选项(A FDW只读老库/B 回填 marketdata 进 qbase 违换源约束但去跨机依赖/C 混合物化窗口缓存)已报人。**另注**:industry 口径 D5(申万一级)↔切片2 口径④(entity_master tushare industry,ρ̄ 冻结)潜在张力,待 Q3 拍价格源后一并核。
 
-**L3(减持预披露 PDF 解析件,已批范围钉死,与 Q3 互不阻塞):** 仅减持预披露公告、仅抽 股东名/拟减持比例上限/减持期间 三字段、失败行如实标注、不做通用框架;顺带 L4(cninfo `category=""` 稳定性实采抽验)。采集件=`qbase/ingest/cninfo.py`(本刀只抓列表元数据、不解析正文,PDF 正文解析为本单新建)。
+**L3(减持预披露 PDF 解析件)✅ 完工 + L4 ✅ 关闭(2026-07-07):** 件=`qbase/ingest/parse_holder_reduction.py`(已 push),依赖 pypdf(装入 qbase-ingest venv),证据档 `qbase/quality/l3-holder-reduction-parser-2026-07-07.md`。**L4 结论=巨潮 type/category 码不稳(同类公告 code 不一致,实证)→靠 title 判别减持预披露、不依赖 category/type。** L3 承 cninfo(只抓列表)下游:title 筛→pypdf 抽正文→抽 股东名/拟减持比例上限/减持期间(相对式期间存原文+kind)。**实采验证 27 份/全中 22/81%**(字段级 比例~96%/期间~93%/股东~81%);残余 5 全 holder-only 干净失败(特定股东/多主体异构),**精度优先·零错值**(噪声词过滤+角色剥离,曾出垃圾已消解为干净失败,守骗不了人)。本刀**不入库**(落库对接 #3 另定 schema)。**L3/L4 已交付,与 Q3 并行的这条腿收口。**
 
 ## 密封状态(永久锚点 · 人 2026-07-07 纠正,不可再动)
 
