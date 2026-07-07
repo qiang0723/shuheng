@@ -64,6 +64,13 @@
 - **约束② 一字板语义钉死**:**一字板 = 有 bar + 触板(limit_status='one_word' 判)**;**停牌 = 缺行(calendar 断档判)**;两者判据**物理不同**(一字板必有 bar、停牌必无 bar)。遇"一字板但缺行"杂交样本(如 limit_status=one_word 却 close=None/缺行)**如实上报、不自行归类**。→ cleaning 一字板顺延须分离两判据 + 杂交检测上报。
 - **约束③ 合成回归升格为验收硬项**:cleaning/runner 改动后**重跑切片2 对台全套(logbench)**,与真实 #4 跑通**并列交付**(双跑一致 + BMP 3.7e-14 级对齐不回归)。
 - 通则:四类上报照旧;每步验证;不赶工。
+
+**〔切片3 施工进度 + ⚠ 阻断发现(读 exp_id5 pap,2026-07-07)〕**
+- **②契约扩 calendar ✅**:`reader/contract.py` 加 `CalendarRow`(trade_date/pretrade_date)+`CALENDAR_COLUMNS`+`enforce_holdout_calendar`;`SyntheticReader.calendar()` ✅=合成域权威轴(全证券 trade_date 并集,停牌用flag有行故并集=完整轴→runner改用calendar轴后合成域零变化、约束③回归不破)。语法自检过。
+- **①ViewReader 暂缓**:规模(prices视图15M行不可全load)+ 事件窗打架未裁,待裁后建。
+- **⚠ 阻断1(四类④+①,待人裁):事件窗打架**——exp_id5 pap `window="T+1起,后20/60日"` ↔ 引擎 `frozen_ashare.EVENT_WINDOW_MAIN=(0,2)/ROBUST=(0,5)` 即[0,+2]/[0,+5],**差一个数量级**。两冻结物矛盾:PEAD业绩预告漂移本质中期漂移(20/60符文献)、切片2短窗是合成验收占位。**#4 真实跑用哪窗待人裁**(用20/60需改frozen_ashare冻结配置=人拍;用2/5与forecast_drift中期漂移语义不符)。**未裁不跑#4。**
+- **⚠ 阻断2/待核:停牌口径**——pap cleaning "停牌缺失按 **modified_rank** 口径" ↔ 约束②"缺行=停牌(calendar断档)"。初判**互补非打架**(缺行=识别停牌、modified_rank=停牌日AR在Corrado秩检验里的处理[Corrado&Zivney1992]);待核 `compute/rank_test.py` 是否实现 modified_rank 还是简单跳过。
+- **pap 其他关键**:pool.universe=**全市场(业绩预告)**→真实域样本=有 forecast 事件的票(非全宇宙,ViewReader 按事件票取数、避 15M 全load);benchmark 两假设(pool=雷达股池等权/market=全市场等权)→run_study benchmark_mode 二选一,**跑哪个/都跑待明**(全市场等权需全宇宙收益算基准=又一规模点);event_def=valid_time=first_ann_date、修正公告不进本假设;sample_gate=30;snapshot_batch=forecast_snap Q2 batch#1;可交易时点T+1开盘/CAR起点T+1(合S2-DEC3)。
 - **coverage>1.0 归因(先报后跑)结论**:242票=241北交所(现全排除)+1沪市并购史(600018上港集团,first_bar2000上港集箱期)。排除北交所后仅剩600018=沪市连续竞价,"缺行=停牌"地基零威胁、无例外。
 - **当前动作(待裁解锁)**:人裁排除口径→(A)改explore_reader三视图加 `!~'\.BJ$'`+完整性核对V项加北交所排除断言→改cleaning.py(缺行+calendar判停牌)→接事件源exp_id5→跑#4。
 

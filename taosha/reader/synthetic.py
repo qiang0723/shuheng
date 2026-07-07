@@ -13,7 +13,8 @@ import datetime as dt
 from typing import Iterator
 
 from .contract import (
-    EventRow, PriceRow, enforce_holdout_event, enforce_holdout_price,
+    CalendarRow, EventRow, PriceRow,
+    enforce_holdout_calendar, enforce_holdout_event, enforce_holdout_price,
 )
 
 
@@ -61,6 +62,18 @@ class SyntheticReader:
     def events(self) -> Iterator[EventRow]:
         """逐 [证券×事件] 事件锚(holdout 焊死:first_ann_date < 2024-07-01)。"""
         return enforce_holdout_event(self._raw_events())
+
+    def calendar(self) -> Iterator[CalendarRow]:
+        """合成域权威交易日轴 = 全证券 trade_date 并集(升序);pretrade_date=轴上前一日。
+        合成 fixture 停牌用 is_suspended flag(有行),故并集=完整轴——runner 改用 calendar 轴后
+        合成域 all_dates 与旧值逐一致(约束③ 回归不破);真实域由 ViewReader.calendar()=视图权威轴。"""
+        dates = sorted({r.trade_date for rows in self.prices_by_security().values() for r in rows})
+        prev: dt.date | None = None
+        rows = []
+        for d in dates:
+            rows.append(CalendarRow(trade_date=d, pretrade_date=prev))
+            prev = d
+        return enforce_holdout_calendar(rows)
 
     # ── 便利:按证券索引价格(engine 组估计窗/事件窗用)──────────────────────
     def prices_by_security(self) -> dict[str, list[PriceRow]]:

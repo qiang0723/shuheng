@@ -22,6 +22,10 @@ PRICE_COLUMNS = (
 EVENT_COLUMNS = (
     "ts_code", "event_id", "first_ann_date", "event_type_layer", "snapshot_batch",
 )
+# 日历轴列(Q3 explore_reader_calendar;切片3 新增,供"缺行=停牌"的权威交易日轴)
+CALENDAR_COLUMNS = (
+    "trade_date", "pretrade_date",
+)
 
 # limit_status / board 值域(契约 §1)
 LIMIT_STATUS = ("none", "limit_up", "limit_down", "one_word")
@@ -59,6 +63,15 @@ class EventRow:
     snapshot_batch: str
 
 
+@dataclass(frozen=True)
+class CalendarRow:
+    """explore_reader_calendar 一行(契约 §3,切片3 新增)。
+    权威交易日轴(SSE is_open=1);引擎按此轴断档判停牌(缺行=停牌,约束② 2026-07-07)。
+    pretrade_date=前一交易日(供顺延/邻接查证)。holdout 焊死(< HOLDOUT_START)。"""
+    trade_date: dt.date
+    pretrade_date: Optional[dt.date]
+
+
 def enforce_holdout_price(rows):
     """结构性 holdout 过滤:只放行 trade_date < HOLDOUT_START。
     这是"探索代码结构上拿不到 holdout"的落地——真视图在 WHERE 焊,reader 侧再挡一道。"""
@@ -71,4 +84,11 @@ def enforce_holdout_event(rows):
     """事件锚落 holdout 区的事件结构上取不到。"""
     for r in rows:
         if r.first_ann_date < HOLDOUT_START:
+            yield r
+
+
+def enforce_holdout_calendar(rows):
+    """日历轴 holdout 焊死:只放行 trade_date < HOLDOUT_START(与视图 WHERE 对称,再挡一道)。"""
+    for r in rows:
+        if r.trade_date < HOLDOUT_START:
             yield r
