@@ -8,8 +8,8 @@
 
 ## 当前切片
 
-**Q2 行情主线 ✅ 全部收口**(回填 + V1–V5 + C3 关闭 + #4 映射冻结)。v1.5 A–G 全批生效。
-**切片 2 开工令已下(2026-07-07),但开工受阻·已上报待人拍,代码零动工:** 查实(库+仓)——①《切片2验收核对单》十一条**不在仓内**(architecture仓/知识库不在本机),无法"逐项备证据";②**切片1台账未建**(无 taosha DB、无 experiment/ledger/pap 表、taosha/ 无代码),而切片2引擎(spec §5)结构上须从台账读 frozen exp_id/pap_json,spec §7+CLAUDE.md§4=三切片串行每片验收后才动下一片;③explore_reader 视图=Q3交付物(未建),切片2合成验收 reader 对什么跑待确认。待人:给核对单 + 裁串行门(先补切片1?)。
+**Q2 行情主线 ✅ 全部收口**。v1.5 A–G 全批生效。三题拍板(2026-07-07):走A先补切片1→验收→切片2;切片2用合成fixture不建mock视图、reader按explore_reader契约写死Q3零改造接入;十一条核对单于切片1验收后随切片2开工令给出、入 taosha/docs/。
+**切片1 台账 = 建设完成·待人验收(2026-07-07):** DB `taosha`(属主postgres,role `taosha_app` 仅SEL/INS/UPD、非属主→禁不掉触发器)。表 `experiment`(spec §4 + v1.5 data_class/crowding_prior)。焊死触发器全自测通过(append-only/pap冻结不可改/status单向/result一次性/family_trial自增/llm→prescreen)。**登记实物:** 4族5行——radar_heat/drawdown_rebuy#2b/forecast_drift/rv_resonance 冻结,drawdown_rebuy#2 closed(被#2b取代),family_trial自增1→2实证。台账入每日备份链(backup.sh [1b])。**⚠ 待人裁3项(见下"待答点"),裁后可 DROP 重建台账修正(greenfield):** #3 holder_sell 挂起未登记。commit `d381af6→9ef1e77`。
 
 ## 已裁决口径与指针
 
@@ -35,3 +35,6 @@
 - **L2**:alias 映射约束基数——反向唯一取 batch scoped 是有意容跨批复用还是应收紧全局?待 Q2 真数据核实基数后定死(现不焊)。
 - **L4**:`cninfo.py` `category=""` 是否稳定返回减持预披露公告——实采抽验。
 - **C1**:tushare 对 2007 前退市不完备(T00018.SH),默认不捞、挂老机退役迁移单(≈2027 H1)。
+- **切片1-Q1(④文档打架)**:#3 holder_sell `source_type` —— §4 CHECK 单值 vs §6 "literature+platform" 复合。#3 已挂起未登记,待裁(建议取 literature + platform 记 contamination_note)。
+- **切片1-Q2**:#2 "已关闭"编码 —— 现用 status='closed' + result_json 记关闭原因,待确认。
+- **切片1-Q3**:`data_class`/`crowding_prior` 值 —— §6/开工令未给,现留 NULL(该二列非冻结、可后填、不作筛选依据),待人给值。

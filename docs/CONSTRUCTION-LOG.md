@@ -209,3 +209,25 @@ Q1 ✅ 收口。Q2 🔒 待人封存密封预判通知后开跑。台账 `qualit
 
 ### 状态
 v1.5 我侧三件 ✅ 落地。**下一步 = 切片 2 开工令(人单独下达),此前不动工。**
+
+---
+
+## 节点 2026-07-07 · 淘沙切片1 台账(建设完成·待验收)
+
+> 切片2 开工令下达后,查实(库+仓):切片1 台账未建、十一条核对单不在仓、explore_reader 是 Q3 物 → 上报。人三题拍板:走 A 先补切片1(串行);切片2 用合成 fixture、reader 按 explore_reader 契约写死 Q3 零改造;核对单于切片1 验收后随切片2 开工令给出。→ 建切片1。
+
+### 建成实物
+- **DB**:`taosha`(属主 postgres);role `taosha_app` 仅 SELECT/INSERT/UPDATE、非属主 → **禁不掉触发器**(真焊死,仿 qbase 防拆)。DSN 只住 `.env`(TAOSHA_APP_DSN)。
+- **表** `experiment`(`sql/001_experiment_ledger.sql`):spec §4 契约 + v1.5 `data_class`/`crowding_prior` 元数据列。
+- **焊死触发器**(§2 铁律,全用触发器非 CHECK):append-only(禁 DELETE/TRUNCATE)、pap_json 冻结后不可改(铁律④)、status 单向推进白名单、frozen_at/result_json/done_at 一次性写入、family_trial 触发器自增、source_type=llm 强制 verdict_power=prescreen(铁律①)、不可变列锁。**rollback 自测 10 项全通过、0 污染;真实冻结行(exp_id=3)提交态非法 UPDATE 实测被拒。**
+- **模块**:`experiment/{pap,ledger,gates}.py`(pap 逐字承载 §6 冻结常量+校验;ledger 台账接口;gates 样本量闸30/族内α=0.05·n/holdout人批门)。
+- **登记**(seed_founding.py,pap_json 逐字转录 §6):4 族 5 行——`radar_heat`/`drawdown_rebuy#2b`/`forecast_drift`/`rv_resonance` **冻结**;`drawdown_rebuy#2` 原始版 **closed**(被 #2b 取代、未跑);**family_trial 自增 1→2 实证**(#2 trial1 closed + #2b trial2 frozen)。#2b 用开工令已批参数(b1 全市场流动性池·成交额前20%·上市满120交易日、继承#2事件定义、污染标注在案)。
+- **备份**:台账入每日备份链(`backup.sh` 步骤[1b],pg_dump taosha,自产数据密文出境允许),pg_dump 实测 OK。
+
+### ⚠ 待人裁 3 项(裁后可 DROP 重建台账修正,greenfield)
+- **① #3 source_type 文档打架**(④):§4 单值 CHECK vs §6 "literature+platform"。**#3 holder_sell 已挂起未登记**,待裁(建议 literature + platform 记 contamination_note)。
+- **② #2 "已关闭"编码**:现用 status='closed' + result_json 记关闭原因,待确认。
+- **③ data_class/crowding_prior 值**:§6/开工令未给,现留 NULL(非冻结列、可后填、不作筛选依据),待人给值。
+
+### 状态
+切片1 台账 ✅ 建设完成、**待人验收**(五条登记之四族已冻结、焊死实测、备份入链)。#3 挂起 + 3 待裁项。验收(含核对单)后 → 切片2。
