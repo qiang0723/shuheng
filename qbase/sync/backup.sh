@@ -30,6 +30,10 @@ notify(){ python3 "$HERE/feishu_notify.py" "$1" >/dev/null 2>&1 || true; }
   if sudo -u postgres pg_dump -Fc qbase > "$BDIR/qbase-$DAY.dump"; then
     echo "[1] pg_dump qbase   OK  $(du -h "$BDIR/qbase-$DAY.dump"|cut -f1)"
   else echo "[1] ❌ pg_dump qbase FAILED"; FAIL=1; fi
+  # 1b. taosha 台账(自产真身·append-only,spec §2:第一天纳入备份链)
+  if sudo -u postgres pg_dump -Fc taosha > "$BDIR/taosha-$DAY.dump"; then
+    echo "[1b] pg_dump taosha OK  $(du -h "$BDIR/taosha-$DAY.dump"|cut -f1)"
+  else echo "[1b] ❌ pg_dump taosha FAILED"; FAIL=1; fi
   # 2. 全局角色(qbase_app 等,per-db dump 不含)
   if sudo -u postgres pg_dumpall --globals-only > "$BDIR/globals-$DAY.sql"; then
     echo "[2] pg_dumpall globals OK"
@@ -40,14 +44,14 @@ notify(){ python3 "$HERE/feishu_notify.py" "$1" >/dev/null 2>&1 || true; }
   else echo "[3] ❌ 观澜拉取 FAILED"; FAIL=1; fi
   # 4. 打包 + GPG 加密(离境只带密文)
   BUNDLE="$BDIR/shuheng-$DAY.tar.gz"
-  tar -czf "$BUNDLE" -C "$BDIR" "qbase-$DAY.dump" "globals-$DAY.sql" -C "$GDIR" "guanlan-$DAY.db"
+  tar -czf "$BUNDLE" -C "$BDIR" "qbase-$DAY.dump" "taosha-$DAY.dump" "globals-$DAY.sql" -C "$GDIR" "guanlan-$DAY.db"
   if gpg --batch --yes --symmetric --cipher-algo AES256 --passphrase-file "$PASS" -o "$BUNDLE.gpg" "$BUNDLE"; then
     rm -f "$BUNDLE"; echo "[4] GPG-AES256    OK  $(du -h "$BUNDLE.gpg"|cut -f1)"
   else echo "[4] ❌ 加密 FAILED"; FAIL=1; fi
   # 5. 校验和(basename,供 AWS 侧 -c 校验)
   ( cd "$BDIR" && sha256sum "shuheng-$DAY.tar.gz.gpg" > "shuheng-$DAY.sha256" && echo "[5] sha256: $(cut -d' ' -f1 "shuheng-$DAY.sha256")" )
   # 6. 本地留存 14 份
-  for pat in "shuheng-*.tar.gz.gpg" "qbase-*.dump" "globals-*.sql"; do
+  for pat in "shuheng-*.tar.gz.gpg" "qbase-*.dump" "taosha-*.dump" "globals-*.sql"; do
     ls -1t $BDIR/$pat 2>/dev/null | tail -n +15 | xargs -r rm -f; done
   ls -1t "$GDIR"/guanlan-*.db 2>/dev/null | tail -n +15 | xargs -r rm -f
   echo "=== 结果: $([ $FAIL -eq 0 ] && echo ✅成功 || echo ❌有失败) ==="
