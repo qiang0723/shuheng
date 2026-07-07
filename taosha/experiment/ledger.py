@@ -105,6 +105,46 @@ def close(exp_id: int, reason: str, *, conn=None) -> None:
             conn.close()
 
 
+def start_running(exp_id: int, *, conn=None) -> None:
+    """引擎启动:frozen→running(既有状态机路径,触发器放行)。不另建通路(item 11)。"""
+    own = conn is None
+    conn = conn or connect()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                """UPDATE experiment SET status='running'
+                   WHERE exp_id=%s AND status='frozen'""", (exp_id,))
+            if cur.rowcount != 1:
+                raise RuntimeError(f"exp {exp_id} 启动失败(非 frozen 态或不存在)")
+        if own:
+            conn.commit()
+    finally:
+        if own:
+            conn.close()
+
+
+def finish(exp_id: int, result: dict, *, conn=None) -> None:
+    """收尾:running→done,result_json 一次性写入 + done_at(触发器强制 done 须同置二者)。
+
+    append-only:result 一次性、不可覆写(切片1 触发器焊死)。结果落库对接 Experiment(item 11)。"""
+    own = conn is None
+    conn = conn or connect()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                """UPDATE experiment
+                     SET status='done', result_json=%s, done_at=now()
+                   WHERE exp_id=%s AND status='running'""",
+                (Json(result), exp_id))
+            if cur.rowcount != 1:
+                raise RuntimeError(f"exp {exp_id} 收尾失败(非 running 态或不存在)")
+        if own:
+            conn.commit()
+    finally:
+        if own:
+            conn.close()
+
+
 def set_meta(exp_id: int, *, data_class, crowding_prior, conn=None) -> None:
     """填/改元数据列 data_class/crowding_prior(非冻结列,不作筛选依据;裁3:#2b 等)。"""
     own = conn is None
