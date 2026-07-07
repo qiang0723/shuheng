@@ -25,6 +25,16 @@
 --- 切片1 存档 ---
 **切片1 台账(已终签):** DB `taosha`(属主postgres,role `taosha_app` 非属主→禁不掉触发器)。表 `experiment`(§4+data_class/crowding_prior)。焊死触发器全自测过+重建后复检仍拒。**三裁已落地**(裁1 #3=literature+platform记note;裁2 closed编码+状态机注记;裁3 创始四条元数据NULL、#2b=量价/高、此后新登记强制填)。**登记终态五条齐(exp_id1-6):** radar_heat/holder_sell#3/forecast_drift/rv_resonance frozen + drawdown_rebuy #2closed+#2b frozen(family_trial自增1→2);#2b元数据量价/高。**pap_json↔§6 逐字核对 diff归零(12/12字段MATCH,verify_pap_vs_spec.py)**。入备份链。验收文档 `taosha/docs/slice1-ledger-acceptance-2026-07-07.md`。commit `d381af6→(本次)`。**待人终签→切片2(开工令+十一条核对单)。**
 
+## 下一单:Q3(explore_reader 视图,切片3 硬前置)+ L3 并行(2026-07-07 开单)
+
+**切片2 已终签(b7e3b4b)。** 下一单 = Q3 与 L3 并行;切片3 开工令待 Q3 验收后发。SMOKE family=synthetic_smoke(exp_id7)已确认为专用冒烟行(见密封状态下方)。
+
+**Q3 要件(人下发 2026-07-07):** ①视图 DDL 焊死 holdout `WHERE trade_date < '2024-07-01'`(非应用层);②权限物理隔离=引擎 role 仅 SELECT 该视图、对底表(forecast_snap/holdertrade_snap/**marketdata 源**)零权限(仿台账焊死);③视图 schema 与切片2 `reader/contract.py` 逐字段核对零改造;④验收三件套=视图 DDL + 引擎 role 越权查底表被拒实测 + holdout 泄漏测试(经视图查 ≥2024-07-01 返空)。
+
+**⚠ Q3 卡点(查库 2026-07-07,待人拍):** qbase **无任何行情底表**(仅 entity_master/alias/batch + forecast_snap/holdertrade_snap/fact_batch + audit)。契约 `PRICE_COLUMNS`=(ts_code,trade_date,close,is_suspended,limit_status,board,is_st,industry) 的价格半边(close/is_suspended/limit_status)**无底料**;event 半边(first_ann_date 等)qbase facts 可建。设计意图(ROADMAP〈Q3换源约束〉+施工清单v0.3)= explore_reader 经 **FDW/dblink 只读老库 `md` schema**(bar_daily_raw 1782万/adj_factor/trade_calendar,收益口径=后复权收盘 D3)。**两条红线待拍**:(a) 我方记忆〈ops-access〉记老机"数据不借阅"↔施工清单v0.3 provisions"老库只读账号 marketdata SELECT only" = **类④文档打架**,需人确认 marketdata(行情=梯队4公共事实)可借阅、区别于 radar/research_view/crucible 判断数据不借阅;(b) 建 FDW/开老机PG内网监听/建隧道 = **类③对老平台操作**必须先请示;且老机 PG 只绑 localhost(内网 5432 未开),FDW 需先解决连通。价格源三选项(A FDW只读老库/B 回填 marketdata 进 qbase 违换源约束但去跨机依赖/C 混合物化窗口缓存)已报人。**另注**:industry 口径 D5(申万一级)↔切片2 口径④(entity_master tushare industry,ρ̄ 冻结)潜在张力,待 Q3 拍价格源后一并核。
+
+**L3(减持预披露 PDF 解析件,已批范围钉死,与 Q3 互不阻塞):** 仅减持预披露公告、仅抽 股东名/拟减持比例上限/减持期间 三字段、失败行如实标注、不做通用框架;顺带 L4(cninfo `category=""` 稳定性实采抽验)。采集件=`qbase/ingest/cninfo.py`(本刀只抓列表元数据、不解析正文,PDF 正文解析为本单新建)。
+
 ## 密封状态(永久锚点 · 人 2026-07-07 纠正,不可再动)
 
 - **#4 密封预判已于 2026-07-07 完成封存**(载体=**architecture 仓**,我方**不可见**,内容与我无关、也不需知)。
