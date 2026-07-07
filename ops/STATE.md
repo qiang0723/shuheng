@@ -45,7 +45,7 @@
 ## 已裁决口径与指针
 
 - **Q2 范围** = `forecast` + `stk_holdertrade` 两张(tushare 源);~~"行情四件套"~~ **作废**(文档打架已裁 2026-07-07)。
-- **库指针(aliyun-new qbase,实物为准)**:`forecast_snap`=138458(batch#1)/ `holdertrade_snap`=179843(batch#2)/ `entity_master`=5861(含退市 D=334)/ `entity_alias`=20005(忠实存全)。锚 entity_master batch=6。
+- **库指针(aliyun-new qbase,实物为准)**:`forecast_snap`=138458(batch#1)/ `holdertrade_snap`=179843(batch#2)/ `entity_master`=5861(含退市 D=334)/ `entity_alias`=20005(忠实存全)。锚 entity_master batch=6。**行情(Q3-B,2026-07-07)**:`bar_daily_snap`=17,138,664(batch3,未复权 OHLCV)/ `adj_factor_snap`=17,680,484(batch4)/ `trade_cal_snap`=13,162(batch5,SSE 1990-12-19→2026-12-31,8797 交易日)。归一列(后复权/停牌/涨跌停/board/is_st/industry)留 008 视图算,facts 只存原始。
 - **#4 事件日锚** = `first_ann_date`,**无 fallback 分支**(~~回退 ann_date~~ 已撤销/严禁,2026-07-07 驳回)。
 - **#4 type→三层映射(冻结)** = `taosha/docs/taosha-spec-appendix-C.md`:预喜{预增,略增,续盈}/预亏{预减,略减,首亏,续亏}/扭亏独立/层外{不确定,其他}。污染标注:LLM拟定·人批冻结·未触样本收益数据。
 - **C3 关闭**:91 行 null-first_ann = 56 行'其他'(层外非#4)+ 35 行实层**排除**(缺锚不可定位,按年份分解入附录C)。
@@ -63,7 +63,7 @@
 
 ## 运行中后台任务
 
-- **⚠ Q3-B 行情回填在跑(2026-07-07 起,aliyun PID 44835,nohup)**:`seed_marketdata.py` 全量(daily+adj_factor+trade_cal),源=tushare,流式 COPY。log=`/tmp/q3b-marketdata.log`(aliyun,非 git)。**每源单事务、源跑完才 COMMIT**,故 daily 跑完前 `bar_daily_snap` 恒 0 属正常(同 Q2 范式)。表=007 建的 bar_daily_snap/adj_factor_snap/trade_cal_snap。预计 1–3h。**规矩:在跑→绝不再跑 seed(撞事务);等三源 COMMIT 后接验收(仿 Q2 的 V1–V5:源口径/去重/退市宇宙/PIT)。** 查进度=`ssh aliyun-new 'tail /tmp/q3b-marketdata.log; pgrep -af seed_marketdata'`。宇宙锚 entity_master batch=6(5861含退市)。规模预估≈1800万日线。**源=tushare(非老库迁移),人问过原因已答(clean-room独立重拉/不碰老平台/全库同源自洽/可复算;代价=2007前退市不全已挂 C1)。**
+- **无运行中任务**。**Q3-B 行情回填 ✅ 完成(2026-07-07)**:daily=17,138,664(batch3)/adj_factor=17,680,484(batch4)/trade_cal=13,162(batch5),去双发均 0,日志「行情采集完成核行数一致」。V1–V5 全过(留档 `qbase/quality/q3b-marketdata-backfill-2026-07-07.md`);唯一缺口=T600018.SH(上港集箱退,2006-10-20)属 C1 预期内不补。
 - `seed_facts.py` Q2 回填已完成并 COMMIT;守望 `b097j3l62` 已触发结束。
 - **root cron(aliyun-new)**:哨兵 08:30 / 备份 03:00 / 到期提醒 09:00。查验 = `ssh aliyun-new 'crontab -l'` + 各日志;飞书秘钥 `/etc/shuheng/sentinel.env`。
 
