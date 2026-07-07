@@ -49,6 +49,15 @@
 - **⚠ 体系原则新增(人裁 2026-07-07):北交所全体系不做**——排除北交所标的(样本池/事件宇宙/检验/交易)。板块分层维持四层(主板/创业板/科创板/ST)无北交所层。
 - **即刻核查已做(库实物)**:北交所**存在**——entity_master 宇宙 5861=SH2455+SZ3078+**BJ328**;各 snap distinct .BJ = em/alias/bar/adj 各328、forecast187、holdertrade220。**识别口径=`ts_code ~ '\.BJ$'`(唯一零漏网);人给数字段「8开头及43/83/87」只命中6只、漏920段325只(920=北交所2024新段、9字头),勿用数字段。** 证据档 `qbase/quality/q3-coverage-gt1-attribution-2026-07-07.md` §7-8。
 - **✅ 排除口径已裁 A(人 2026-07-07,原文即口径):视图层 WHERE `ts_code !~ '\.BJ$'`**,识别口径采纳核查结论 .BJ 后缀(**920段实证在案,数字段口径「8开头及43/83/87」作废——错误归因:架构窗口过时知识**)。**五条执行**:① explore_reader 三视图加排除条件、与 holdout **同一焊法(DDL层非应用层)**;② 底表不动、328 忠实存全;③ 完整性核对加**负面断言:三视图 .BJ 计数=0**,并留档排除量(prices 328票/forecast 187/holdertrade 220 票的行数),体检报告口径注记"事件宇宙=沪深,北交所按体系原则排除";④ **泄漏测试扩展**:经视图查 .BJ 返空,与 holdout 泄漏测试并列;⑤ 600018 归因结论入档、**coverage>1.0 项关闭**。**✅ 五条全成(886c708)**:三视图 prices/events 加 `!~'\.BJ$'`(calendar无ts_code不适用)、git版本apply后 prices/events .BJ=0 复核过、排除量留档(prices 252票/196807行=board bse行数闭环、forecast 53票、holdertrade 220票)入 `q3-rebackfill-integrity §7`、600018 结项入 `q3-coverage-gt1-attribution §9`。排除后视图沪深 prices5363票/events105584事件,板块四层无北交所。**→ 转原开工令续:改cleaning→接exp_id5→跑#4。**
+
+**〔切片3 引擎适配路线(cleaning/runner 数据流分析 2026-07-07,下一专注单元)〕** 接 exp_id=5 完整工作面(比单改 cleaning 大,慢比快好):
+1. **建真实 ViewReader(核心新件)**:切片2 只有 SyntheticReader(读csv);切片3 需 `reader/view.py` 读 explore_reader 三视图、用 role `taosha_engine`(只读物理隔离,DSN 待配 aliyun `.env`);接口同签名 prices_by_security()/events()/**calendar()**,engine 零改造(契约§SyntheticReader 已预留"Q3 ViewReader 同签名")。
+2. **扩 calendar 契约**:`reader/contract.py` 现只有 PRICE/EVENT 契约、无 calendar;需加 CalendarRow + reader.calendar() 签名(explore_reader_calendar 权威轴,供缺行判停牌)。
+3. **改 cleaning.py(停牌语义)**:现 line92 `t_row.is_suspended`/line104 `row.is_suspended` 依赖 flag;真实数据 is_suspended 恒 false、停牌=缺行(by_idx.get(idx) is None)。改为**停牌 = 缺行 OR flag**(真实靠缺行、合成 fixture flag 仍兼容→不回归切片2);一字板顺延(line100-108)区分**越界(tau0>=n_dates→break)vs 停牌缺行(row None 且在轴内→blocked 续顺延)**。
+4. **改 runner.py(date 轴)**:现 `all_dates=全宇宙bar并集`(line ~run_study 头);改用 reader.calendar() 权威轴,缺行判停牌才严格(契约核对发现:并集≈完整轴但calendar更稳)。
+5. **台账读 frozen pap**:从 experiment 台账读 exp_id=5(forecast_drift) pap_json,校验 status=frozen(拒非frozen,铁律③);benchmark_mode/pool 按 pap。
+6. **跑 run_study→#4 体检报告**(report.py,无建议口吻):三法/N_eff/剔除率按年份/逐日AR/板块分层/偏差声明。
+7. **验证**:合成回归不破(切片2 fixture 双跑一致)+ 真实数据跑通+报告。**报告完成即交,不解读(开工令⑥)。**
 - **coverage>1.0 归因(先报后跑)结论**:242票=241北交所(现全排除)+1沪市并购史(600018上港集团,first_bar2000上港集箱期)。排除北交所后仅剩600018=沪市连续竞价,"缺行=停牌"地基零威胁、无例外。
 - **当前动作(待裁解锁)**:人裁排除口径→(A)改explore_reader三视图加 `!~'\.BJ$'`+完整性核对V项加北交所排除断言→改cleaning.py(缺行+calendar判停牌)→接事件源exp_id5→跑#4。
 
