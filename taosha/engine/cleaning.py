@@ -79,6 +79,18 @@ def clean_event(rows: list[PriceRow], event, date_index: dict) -> CleanedEvent:
         return ce
 
     by_idx = {date_index[r.trade_date]: r for r in rows}
+    n_dates = len(date_index)
+
+    # 停牌判据(约束② 2026-07-07,原文即口径):停牌 = 轴内缺行(calendar 断档,真实数据)
+    #   OR is_suspended flag(合成 fixture 兼容);与一字板(有 bar + limit_status='one_word')
+    #   **物理判据不同**(一字板必有 bar、停牌必无 bar 或 flag)。轴外(idx<0 或 >=n)非停牌(数据边界)。
+    def _suspended(idx: int) -> bool:
+        if idx < 0 or idx >= n_dates:
+            return False
+        row = by_idx.get(idx)
+        if row is None:
+            return True                # 缺行 = 停牌(calendar 断档;真实数据)
+        return row.is_suspended        # flag(合成 fixture 停牌行)
 
     # ST 剔除(spec §5);板块分层里作"ST 已剔除层"留痕(item 8 调和)
     if ce.is_st:
@@ -87,21 +99,28 @@ def clean_event(rows: list[PriceRow], event, date_index: dict) -> CleanedEvent:
         return ce
 
     # 事件落停牌期(item 7):事件日 T 或首个拟交易日 T+1 停牌 → 剔除
-    t_row = by_idx.get(t_idx)
-    t1_row = by_idx.get(t_idx + 1)
-    if (t_row and t_row.is_suspended) or (t1_row and t1_row.is_suspended):
+    if _suspended(t_idx) or _suspended(t_idx + 1):
         ce.rejected, ce.reject_reason, ce.reject_year = True, "suspension", yr
-        ce.notes.append("事件落停牌期(T 或 T+1 停牌)→ 剔除(item 7)")
+        ce.notes.append("事件落停牌期(T 或 T+1 停牌;缺行或 flag)→ 剔除(item 7)")
         return ce
 
-    # 一字板顺延(item 8):τ=0 = 首个 T+1 起可成交(非一字板、非停牌)日
+    # 一字板顺延(item 8):τ=0 = 首个 T+1 起可成交(非一字板、非停牌)日。
+    #   停牌(缺行/flag)与一字板(有 bar + one_word)判据**分离**(约束②);两者皆不可成交 → 顺延。
     tau0 = t_idx + 1
     postpone = 0
     while True:
-        row = by_idx.get(tau0)
-        if row is None:                          # 越出交易轴末端
+        if tau0 >= n_dates:                      # 越出交易轴末端(数据边界,非停牌)
             break
-        blocked = row.is_suspended or row.limit_status == "one_word"
+        row = by_idx.get(tau0)
+        suspended = _suspended(tau0)             # 缺行 OR flag
+        one_word = (row is not None and row.limit_status == "one_word")  # 有 bar + 触板
+        # 杂交检测(约束②):同位置既含停牌信号又是一字板 → 如实上报、不自行归类(保守仍视不可成交)
+        if row is not None and one_word and (row.is_suspended or row.close is None):
+            ce.notes.append(
+                f"⚠ 一字板×停牌信号杂交(idx={tau0}:limit_status='one_word' 且 "
+                f"is_suspended={row.is_suspended}/close={'None' if row.close is None else '有'})"
+                f"→ 如实标注、不自行归类,保守视为不可成交顺延")
+        blocked = suspended or one_word
         if not blocked:
             break
         tau0 += 1
@@ -138,3 +157,35 @@ def year_breakdown(cleaned: list[CleanedEvent]) -> dict:
         "alert": (rej / total) > fa.SUSPENSION_ALERT_RATIO if total else False,
         "alert_threshold": fa.SUSPENSION_ALERT_RATIO,
     }
+
+
+if __name__ == "__main__":
+    # 约束②(2026-07-07)自检:停牌=缺行 OR flag、一字板=有bar+触板、判据分离、杂交上报。
+    def _mk(d, one_word=False, susp=False):
+        return PriceRow("A", d, (None if susp else 10.0), susp,
+                        ("one_word" if one_word else "none"), "main", False, "I")
+
+    class _Ev:
+        ts_code = "A"; event_id = "A:e"
+        def __init__(self, d): self.first_ann_date = d
+
+    _b = dt.date(2020, 1, 1)
+    _ds = [_b + dt.timedelta(days=i) for i in range(320)]
+    _di = {d: i for i, d in enumerate(_ds)}
+    _t = 260
+    _ev = _Ev(_ds[_t])
+    # 1) 缺行 T+1 → 停牌剔除(真实路径:轴内缺行=停牌)
+    _c = clean_event([_mk(_ds[i]) for i in range(320) if i != _t + 1], _ev, _di)
+    assert _c.rejected and _c.reject_reason == "suspension", "缺行停牌"
+    # 2) flag 停牌 T+1 → 剔除(合成兼容)
+    _c = clean_event([_mk(_ds[i], susp=(i == _t + 1)) for i in range(320)], _ev, _di)
+    assert _c.rejected and _c.reject_reason == "suspension", "flag 停牌"
+    # 3) 一字板(T+1)+缺行停牌(T+2)顺延 → τ0=T+3、postpone=2(判据分离,缺行也顺延)
+    _c = clean_event([_mk(_ds[i], one_word=(i == _t + 1)) for i in range(320) if i != _t + 2], _ev, _di)
+    assert not _c.rejected and _c.tau0_idx == _t + 3 and _c.postponed == 2, "顺延跨缺行"
+    # 4) 杂交(one_word 且 is_suspended)→ 如实标注、不归类
+    _r = [_mk(_ds[i], one_word=(i == _t + 1)) for i in range(320)]
+    _r[_t + 2] = PriceRow("A", _ds[_t + 2], None, True, "one_word", "main", False, "I")
+    _c = clean_event(_r, _ev, _di)
+    assert any("杂交" in n for n in _c.notes), "杂交检测"
+    print("cleaning.py 自检 OK:缺行=停牌 / flag兼容 / 判据分离顺延跨缺行 / 杂交上报(约束②)")
