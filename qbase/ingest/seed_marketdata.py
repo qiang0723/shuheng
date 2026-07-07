@@ -134,37 +134,50 @@ def _call_retry(api, sleep_s, **kw):
     return None
 
 
-def fetch_sharded_code(pro, spec, ts_codes, pull_time, sleep_s, log_every=500):
-    """daily/adj_factor:逐 ts_code 分片全史。"""
-    rows, done = [], 0
+def iter_shards(pro, spec, universe, y_range, sleep_s):
+    """分片生成器,逐片 yield (code_for_row, 显示标签, df)。
+    ts_code 片:code_for_row=code;year 片(trade_cal):code_for_row=None(cal_row 不用 code)。
+    流式:调用方逐片消费即刻落库,内存只留单片,规避全量攒内存 OOM(1800万日线)。"""
     api = getattr(pro, spec["api"])
-    for code in ts_codes:
-        df = _call_retry(api, sleep_s, ts_code=code, fields=spec["fields"])
-        for _, r in df.iterrows():
-            rows.append(spec["row"](code, r, pull_time))
-        done += 1
-        if done % log_every == 0:
-            print(f"  {spec['api']} 分片 {done}/{len(ts_codes)} … 累计 {len(rows)} 行(含源双发)",
-                  flush=True)
-        time.sleep(sleep_s)
-    raw_n = len(rows)
-    rows = list(dict.fromkeys(rows))  # 整行去重:只去逐字节相同双投递,保序
-    return rows, raw_n
+    if spec["sharded"] == "ts_code":
+        for code in universe:
+            yield code, code, _call_retry(api, sleep_s, ts_code=code, fields=spec["fields"])
+            time.sleep(sleep_s)
+    else:  # year(trade_cal)
+        for y in range(y_range[0], y_range[1] + 1):
+            df = _call_retry(api, sleep_s, exchange="SSE",
+                             start_date=f"{y}0101", end_date=f"{y}1231", fields=spec["fields"])
+            yield None, str(y), df
+            time.sleep(sleep_s)
 
 
-def fetch_sharded_year(pro, spec, y0, y1, pull_time, sleep_s):
-    """trade_cal:按年分片(全历史 >1万日,逐年拉规避 10000 截断)。SSE 全市场同历。"""
-    rows = []
-    api = getattr(pro, spec["api"])
-    for y in range(y0, y1 + 1):
-        df = _call_retry(api, sleep_s, exchange="SSE",
-                         start_date=f"{y}0101", end_date=f"{y}1231", fields=spec["fields"])
-        for _, r in df.iterrows():
-            rows.append(spec["row"](None, r, pull_time))
-        time.sleep(sleep_s)
-    raw_n = len(rows)
-    rows = list(dict.fromkeys(rows))
-    return rows, raw_n
+def stream_write(conn, spec, shards, n_shards, pull_time, asof, note, log_every=500):
+    """一个 fact_batch;逐片取数→按片整行去重→即刻 COPY(内存只留单片)→末尾 commit。
+    append-only 语义不变(同一 batch_id 增量灌;fact_batch.note 不可事后改,故 note 只述范围与方法,
+    源双发去重量/落库行数走 stdout 日志 + count(*) by batch_id 核验)。返回 (bid, raw_n, written)。"""
+    with conn.cursor() as cur:
+        cur.execute(
+            "INSERT INTO public.fact_batch(source,asof_date,pull_time,note) "
+            "VALUES (%s,%s,%s,%s) RETURNING batch_id",
+            (spec["source"], asof, pull_time, note),
+        )
+        bid = cur.fetchone()[0]
+    raw_n = written = done = 0
+    with conn.cursor() as cur:
+        with cur.copy(f"COPY {spec['table']}({spec['cols']}) FROM STDIN") as cp:
+            for code_for_row, label, df in shards:
+                per = [spec["row"](code_for_row, r, pull_time) for _, r in df.iterrows()]
+                raw_n += len(per)
+                per = list(dict.fromkeys(per))  # 按片整行去重:只去逐字节双投递,保序(片间键不撞)
+                for row in per:
+                    cp.write_row((bid, *row, pull_time))  # +observed_time
+                    written += 1
+                done += 1
+                if done % log_every == 0:
+                    print(f"  {spec['api']} 分片 {done}/{n_shards} … 落库 {written} 行(源拉 {raw_n})",
+                          flush=True)
+    conn.commit()
+    return bid, raw_n, written
 
 
 def load_universe(cur):
@@ -180,35 +193,12 @@ def load_universe(cur):
     return [r[0] for r in cur.fetchall()], b
 
 
-def write_batch(conn, spec, rows, asof, pull_time, note):
-    """一个 fact_batch + COPY 落 snap 表;回读核行数。返回 (batch_id, 落库行数)。"""
-    with conn.cursor() as cur:
-        cur.execute(
-            "INSERT INTO public.fact_batch(source,asof_date,pull_time,note) "
-            "VALUES (%s,%s,%s,%s) RETURNING batch_id",
-            (spec["source"], asof, pull_time, note),
-        )
-        bid = cur.fetchone()[0]
-        with cur.copy(f"COPY {spec['table']}({spec['cols']}) FROM STDIN") as cp:
-            for row in rows:
-                cp.write_row((bid, *row, pull_time))  # +observed_time
-    conn.commit()
-    with conn.cursor() as cur:
-        cur.execute(f"SELECT count(*) FROM {spec['table']} WHERE batch_id=%s", (bid,))
-        n = cur.fetchone()[0]
-    return bid, n
-
-
-def run_source(pro, spec, universe, ubatch, pull_time, sleep_s):
-    """按分片类型取数 → 返回 (rows, raw_n, note_prefix)。"""
+def _shard_plan(spec, universe, pull_time):
+    """返回 (n_shards, y_range, scope 文字)。"""
     if spec["sharded"] == "ts_code":
-        rows, raw_n = fetch_sharded_code(pro, spec, universe, pull_time, sleep_s)
-        scope = f"分 ts_code 分片全史(锚 entity_master batch={ubatch},宇宙 {len(universe)}含退市)"
-    else:  # year(trade_cal)
-        y0, y1 = 1990, pull_time.year
-        rows, raw_n = fetch_sharded_year(pro, spec, y0, y1, pull_time, sleep_s)
-        scope = f"按年分片 {y0}..{y1}(SSE 全市场同历)"
-    return rows, raw_n, scope
+        return len(universe), None, f"分 ts_code 分片全史(宇宙 {len(universe)}含退市)"
+    y0, y1 = 1990, pull_time.year
+    return (y1 - y0 + 1), (y0, y1), f"按年分片 {y0}..{y1}(SSE 全市场同历)"
 
 
 def main():
@@ -249,13 +239,13 @@ def main():
             print(f"--dry:抽样 {len(sample)} 票(trade_cal 只拉近 2 年)验字段/连通,不落库。", flush=True)
             for key in which:
                 spec = SOURCES[key]
-                if spec["sharded"] == "ts_code":
-                    rows, raw_n = fetch_sharded_code(pro, spec, sample, pull_time, args.sleep,
-                                                     log_every=9999)
-                else:
-                    rows, raw_n = fetch_sharded_year(pro, spec, pull_time.year - 1, pull_time.year,
-                                                     pull_time, args.sleep)
-                print(f"  [{key}] 源拉 {raw_n} 行 / 整行去重后 {len(rows)}", flush=True)
+                yr = (pull_time.year - 1, pull_time.year)
+                raw, rows = 0, []
+                for code_for_row, _label, df in iter_shards(pro, spec, sample, yr, args.sleep):
+                    per = [spec["row"](code_for_row, r, pull_time) for _, r in df.iterrows()]
+                    raw += len(per)
+                    rows.extend(dict.fromkeys(per))
+                print(f"  [{key}] 源拉 {raw} 行 / 整行去重后 {len(rows)}", flush=True)
                 if rows:
                     print(f"    首行样例(字段就位验证):{rows[0]}", flush=True)
             print("--dry 完成:字段/连通/去重逻辑通过。", flush=True)
@@ -263,14 +253,20 @@ def main():
 
         for key in which:
             spec = SOURCES[key]
-            print(f"── [{key}] 全量拉取(源={spec['source']})──", flush=True)
-            rows, raw_n, scope = run_source(pro, spec, universe, ubatch, pull_time, args.sleep)
-            dedup = len(rows)
-            note = (f"{spec['source']} {scope};源拉 {raw_n} → 整行去重后 {dedup}"
-                    f"(去纯双投递 {raw_n - dedup});忠实存全,同键 distinct 行照落。")
-            bid, n = write_batch(conn, spec, rows, asof, pull_time, note)
-            print(f"  [{key}] 落库 batch={bid} 行数={n}(应={dedup})", flush=True)
-            assert n == dedup, f"[{key}] 核行数不符!{n}!={dedup}"
+            n_shards, y_range, scope = _shard_plan(spec, universe, pull_time)
+            print(f"── [{key}] 全量流式拉取+落库(源={spec['source']};{scope})──", flush=True)
+            note = (f"{spec['source']} {scope};锚 entity_master batch={ubatch}。"
+                    f"流式 COPY(逐片整行去重去源双发);忠实存全,同键 distinct 行照落。"
+                    f"源拉/落库计数见采集日志 + count(*) by batch_id。分片规避 #1858 截断。")
+            shards = iter_shards(pro, spec, universe, y_range, args.sleep)
+            bid, raw_n, written = stream_write(conn, spec, shards, n_shards, pull_time, asof, note)
+            # 落库核验:回读 count 与流式写入计数一致
+            with conn.cursor() as cur:
+                cur.execute(f"SELECT count(*) FROM {spec['table']} WHERE batch_id=%s", (bid,))
+                n = cur.fetchone()[0]
+            print(f"  [{key}] 落库 batch={bid} 行数={n}(流式写 {written},源拉 {raw_n},"
+                  f"去双发 {raw_n - written})", flush=True)
+            assert n == written, f"[{key}] 核行数不符!{n}!={written}"
 
     print("✅ Q3-B 行情采集完成,核行数一致。", flush=True)
 
