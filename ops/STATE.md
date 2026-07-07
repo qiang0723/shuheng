@@ -25,6 +25,13 @@
 --- 切片1 存档 ---
 **切片1 台账(已终签):** DB `taosha`(属主postgres,role `taosha_app` 非属主→禁不掉触发器)。表 `experiment`(§4+data_class/crowding_prior)。焊死触发器全自测过+重建后复检仍拒。**三裁已落地**(裁1 #3=literature+platform记note;裁2 closed编码+状态机注记;裁3 创始四条元数据NULL、#2b=量价/高、此后新登记强制填)。**登记终态五条齐(exp_id1-6):** radar_heat/holder_sell#3/forecast_drift/rv_resonance frozen + drawdown_rebuy #2closed+#2b frozen(family_trial自增1→2);#2b元数据量价/高。**pap_json↔§6 逐字核对 diff归零(12/12字段MATCH,verify_pap_vs_spec.py)**。入备份链。验收文档 `taosha/docs/slice1-ledger-acceptance-2026-07-07.md`。commit `d381af6→(本次)`。**待人终签→切片2(开工令+十一条核对单)。**
 
+## 密封状态(永久锚点 · 人 2026-07-07 纠正,不可再动)
+
+- **#4 密封预判已于 2026-07-07 完成封存**(载体=**architecture 仓**,我方**不可见**,内容与我无关、也不需知)。
+- **切片3 的密封前置 = 已闭合。** 切片3 开跑前**不需要、也不得**再发起任何"喊人封存密封预判"动作。此前记忆/工作方式里"碰真实市场数据前先喊人封存"钩子**对切片3 已消解**(封存已完成),不得据旧钩子重启请求。
+- **任何会话对密封状态存疑时,答案固定 = "已封存,问架构窗口确认"**;**不得请求重封、不得代为封存、不得追问内容**。
+- 归因:早前会话把"密封预判钩子"当作切片3 的未决前置(未核架构仓封存实况),属旧认知;此锚点为准,旧钩子对切片3 作废。
+
 ## 已裁决口径与指针
 
 - **Q2 范围** = `forecast` + `stk_holdertrade` 两张(tushare 源);~~"行情四件套"~~ **作废**(文档打架已裁 2026-07-07)。
