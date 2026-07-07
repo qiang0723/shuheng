@@ -3,8 +3,10 @@
 -- 同 004 范式(004 注释已预告 forecast_snap/holdertrade_snap 同范式):双时戳 + 冻结触发器焊死。
 -- 铁律(qbase CLAUDE.md):只读上游永不回写 / 双时戳(valid=事件时,observed=批次拉取时刻,不冒充实时)
 --   / append-only 只增不改不删(修数=新 batch)/ 含退市 / lineage 必填 / 忠实存全(不打质量分、不过滤)。
--- 忠实存全教训(承 005):不加会拒合法历史行的唯一约束;整行去重在采集侧做,DB 侧仅
---   UNIQUE NULLS NOT DISTINCT 全业务键元组做**批内**纯双投递防重,同键 distinct 行照落。
+-- 忠实存全教训(承 005):不加会拒合法历史行的唯一约束。事件快照表**无批内唯一不变量**
+--   (同票同报告期可有原始+多次修正多行),故 snap 表**不设 UNIQUE**;纯双投递防重由采集侧
+--   整行去重承担(见 seed_facts.py)。DB 只忠实存、不拒行。(初版曾把长文本 summary 纳入 UNIQUE,
+--   撞 btree 单条目上限 ~2704B 致 COPY 崩,已改为无 UNIQUE——更正确:这类表本无唯一键。)
 -- 回改侦测:跨 batch 按业务键 diff(forecast 锚 first_ann_date;holdertrade 锚 ann_date+holder+窗口),
 --   本 DDL 只建承载表与查询索引;侦测逻辑(三层核对协议之③)另件,首批无可 diff。
 -- 幂等:可重复 apply(IF NOT EXISTS / OR REPLACE)。apply 身份 = qbase_app。
@@ -37,12 +39,11 @@ CREATE TABLE IF NOT EXISTS public.forecast_snap (
   summary         text,                        -- 业绩预告摘要
   change_reason   text,                        -- 业绩变动原因
   valid_time      timestamptz NOT NULL,        -- 事件时:ann_date;缺则 first_ann_date;再缺 batch as-of
-  observed_time   timestamptz NOT NULL DEFAULT now(),
-  -- 批内纯双投递防重(NULLS NOT DISTINCT:NULL 视为相等,故同键 NULL 双发也拦);
-  -- 同键但字段有别的 distinct 行(如同期多次修正预告)不撞约束,照落——忠实存全。
-  UNIQUE NULLS NOT DISTINCT
-    (batch_id, ts_code, ann_date, end_date, type, p_change_min, p_change_max,
-     net_profit_min, net_profit_max, last_parent_net, first_ann_date, summary, change_reason)
+  observed_time   timestamptz NOT NULL DEFAULT now()
+  -- 无批内 UNIQUE 约束:①事件快照表无"批内唯一"不变量(同票同报告期可有原始+多次修正多行);
+  -- ②纯双投递防重已由采集侧整行去重(dict.fromkeys)承担,DB 层 UNIQUE 冗余;
+  -- ③summary/change_reason 为长文本,纳入 UNIQUE 会撞 btree 单条目上限(~2704B/页1/3)而崩 COPY。
+  -- 故 DB 只忠实存、不拒行;去重 scope = 采集层整次拉取内(见 seed_facts.py)。
 );
 CREATE INDEX IF NOT EXISTS ix_forecast_snap_ts    ON public.forecast_snap(ts_code);
 CREATE INDEX IF NOT EXISTS ix_forecast_snap_batch ON public.forecast_snap(batch_id);
@@ -68,10 +69,8 @@ CREATE TABLE IF NOT EXISTS public.holdertrade_snap (
   begin_date    date,                          -- 增减持开始日
   close_date    date,                          -- 增减持结束日
   valid_time    timestamptz NOT NULL,          -- 事件时:ann_date;缺则 batch as-of
-  observed_time timestamptz NOT NULL DEFAULT now(),
-  UNIQUE NULLS NOT DISTINCT
-    (batch_id, ts_code, ann_date, holder_name, holder_type, in_de, change_vol,
-     change_ratio, after_share, after_ratio, avg_price, total_share, begin_date, close_date)
+  observed_time timestamptz NOT NULL DEFAULT now()
+  -- 无批内 UNIQUE:同上(事件快照无批内唯一不变量;去重在采集层;与 forecast_snap 同philosophy)。
 );
 CREATE INDEX IF NOT EXISTS ix_holdertrade_snap_ts    ON public.holdertrade_snap(ts_code);
 CREATE INDEX IF NOT EXISTS ix_holdertrade_snap_batch ON public.holdertrade_snap(batch_id);
