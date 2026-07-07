@@ -75,7 +75,7 @@
 
 **〔切片3 裁定后施工清单(2026-07-07,慢比快好每步验证)〕**
 1. **检验窗从 pap 读**:cleaning/runner 事件窗参数改由 pap_json 提供(非 frozen_ashare.EVENT_WINDOW);τ=0:=T+1 锚不变。
-2. **frozen_ashare 改语义标签** ⚠**撞 digest 冲突(四类①,待人裁 2026-07-07)**:`audit_digest()` 基于 `FROZEN` dict **值**算(不含源码注释);`FROZEN["event_windows"]` 的 key `main`/`robust`+`tau_axis`字符串"主窗T+1..T+3/稳健窗T+1..T+6"=检验窗语义、**计入 digest**(=切片2终签 `c795b21e`,item10 冻结不可覆写实证)。改语义标签若动 FROZEN→digest 变→切片2 冻结实证失效。**方案**:A=只改源码注释、不动 FROZEN(digest 不变、切片2 实证不破;语义变在 runner 层:runner 不再用 FROZEN.event_windows 驱动主检验、检验窗从 pap 读、FROZEN.event_windows 原值作删失诊断窗由 runner 标注;弱点=FROZEN 字符串仍历史措辞,靠 item8 改读注记);B=改 FROZEN(digest 变更、走"参数变更审计留痕"、更新切片2 c795b21e 引用;动切片2终签物);C=FROZEN 加独立 censor_diag_window(digest 变)。**建议 A**(不破切片2 digest、检验窗从 pap 读落地、诊断窗用 frozen 值)。**报告并行输出检验窗+删失诊断窗;item 8 改读留痕(S2-DEC3 锚定无过)。未裁不动 frozen_ashare。**
+2. **frozen_ashare 改语义标签 ✅ 已裁 A(人 2026-07-07):只改源码注释、不动 FROZEN**。digest 保持 `c795b21e` 不变、切片2 item10 冻结实证不破。语义变落 runner 层:runner **不再用 FROZEN.event_windows 驱动主检验**(检验窗从 pap 读),FROZEN.event_windows 原值 [0,+2]/[0,+5] 降格作**删失诊断窗**、由 runner 标注。FROZEN 字符串仍历史措辞"主窗/稳健窗",靠 **item8 改读留痕**注记"[0,+2]/[0,+5] 现读作删失诊断窗、S2-DEC3 锚定无过"。报告并行输出检验窗(pap 20/60)+删失诊断窗(frozen 2/5)。改 frozen_ashare 注释后**须跑 audit_digest 验证 == c795b21e 不变**。
 3. **市场收益预计算落库**:全市场等权日收益表(≈8797行,batch 溯源,北交所排除口径),引擎读。放 taosha(L2 活,qbase 铁律7 不算统计指标);表设计+append-only+batch。
 4. **建 ViewReader**:事件票取数(非全宇宙)+ 读预计算市场收益表 + calendar 权威轴;role taosha_engine 只读三视图。
 5. **改 cleaning(约束②)**:停牌=缺行 OR flag(真实缺行/合成flag兼容)、一字板=有bar+limit_status='one_word'分离两判据、"一字板但缺行"杂交检测上报。
