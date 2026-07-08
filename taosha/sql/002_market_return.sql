@@ -14,6 +14,8 @@
 --             (estudy2 rates.cpp 复刻)的跨缺口收益:恢复日拿 catch-up 收益、落恢复日。
 --   n_stocks(诊断列)= 分母 = 当日【有 present bar 且有前序 present bar】的票数;
 --           停牌缺行不进分母;IPO 首个 bar 无前序价故不进;早年薄截面照算不修(此列作诊断)。
+--   轴=explore_reader_calendar(SSE 交易日,约束②):源=explore_reader_prices ∩ explore_reader_calendar,
+--     早年非交易日 bar(周日,trade_cal is_open=0,如 1992-10-04/1993-01-03)结构性排除、收益跨到前一日历交易日。
 --   宇宙=沪深(北交所 .BJ 已在 qbase 视图层排除);holdout=trade_date < 2024-07-01(视图 WHERE 焊死,本表继承)。
 -- apply 身份 = postgres(属主;taosha_app 无 schema CREATE 权)。幂等(IF NOT EXISTS / OR REPLACE)。
 
@@ -48,7 +50,8 @@ CREATE INDEX IF NOT EXISTS ix_market_eqw_return_date ON public.market_eqw_return
 COMMENT ON TABLE public.market_eqw_return IS
   '全市场等权连续(对数)日收益预计算(切片3步3)。ret_eqw=当日有present bar且有前序present bar的票 '
   'log(后复权close_d/close_前序present)的等权平均;分母(n_stocks)=当日有present bar且有前序present bar的票'
-  '(停牌缺行不进分母);宇宙=沪深(北交所视图层已排);holdout<2024-07-01;append-only(修数=新batch),'
+  '(停牌缺行不进分母);轴=explore_reader_calendar SSE交易日(约束②,早年非交易日bar已排除);'
+  '宇宙=沪深(北交所视图层已排);holdout<2024-07-01;append-only(修数=新batch),'
   '引擎路由max batch(见 market_return_current 视图)读表不现算。';
 COMMENT ON COLUMN public.market_eqw_return.ret_eqw IS
   '等权连续(对数)日收益。收益核=compute/returns.py(estudy2 rates.cpp复刻)multi_day在无null视图序列上的'

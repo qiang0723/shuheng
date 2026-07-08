@@ -9,6 +9,9 @@
   ret_eqw[d] = 当日【有 present bar 且有前序 present bar】的票 log(close_d/close_前序present) 的等权平均。
   n_stocks[d] = 分母 = 上述票数(停牌缺行不进分母;IPO 首个 bar 无前序价不进;早年薄截面照算)。
   视图无 null 价行(停牌=缺行),故 per 票"相邻 present 行比值"恒等于 returns.multi_day 跨缺口收益。
+  轴=日历(约束②):源 = explore_reader_prices JOIN explore_reader_calendar,基准定义在 SSE 交易日轴
+    (=引擎消费轴);早年 tushare 非交易日 bar(周日,官方 trade_cal is_open=0)结构性排除,
+    收益自然跨到前一日历交易日(returns.py 跨缺口)。
 
 双算闸(骗不了人):Python(冻结 returns.py)=落库权威;SQL 窗口 avg(ln(close/lag)) 独立复算;
   逐日 |Δret|<1e-9 且 n_stocks 整数全等,否则**中止不落库**。
@@ -102,33 +105,40 @@ def compute_market_eqw(rows: Iterable[tuple]) -> list[tuple[dt.date, float, int]
     return [(d, acc[d] / cnt[d], cnt[d]) for d in sorted(acc)]
 
 
-# ── qbase 视图流式(server-side cursor,按 ts_code,trade_date 升序)────────────
+# 源=prices ∩ calendar 交易日轴(约束②):剔除早年非交易日 bar,基准落 SSE 交易日轴。
+SRC = (f"SELECT p.ts_code, p.trade_date, p.close FROM {VIEW} p "
+       "JOIN explore_reader_calendar c USING (trade_date)")
+
+
+# ── qbase 视图流式(server-side cursor,按 ts_code,trade_date 升序;日历轴限制)──
 def stream_prices(qconn) -> Iterator[tuple]:
     with qconn.cursor(name="mkt_prices_stream") as cur:
         cur.itersize = 100_000
-        cur.execute(
-            f"SELECT ts_code, trade_date, close FROM {VIEW} "
-            "ORDER BY ts_code, trade_date")
+        cur.execute(f"SELECT ts_code, trade_date, close FROM ({SRC}) f "
+                    "ORDER BY ts_code, trade_date")
         for row in cur:
             yield row
 
 
-def view_scan_stats(qconn) -> tuple[int, dt.date, dt.date]:
+def view_scan_stats(qconn) -> tuple[int, int, dt.date, dt.date]:
+    """返回 (raw_view_rows, input_rows[日历轴限制后], min_date, max_date[input])。"""
     with qconn.cursor() as cur:
-        cur.execute(f"SELECT count(*), min(trade_date), max(trade_date) FROM {VIEW}")
-        n, mn, mx = cur.fetchone()
-    return int(n), mn, mx
+        cur.execute(f"SELECT count(*) FROM {VIEW}")
+        raw = int(cur.fetchone()[0])
+        cur.execute(f"SELECT count(*), min(trade_date), max(trade_date) FROM ({SRC}) f")
+        inp, mn, mx = cur.fetchone()
+    return raw, int(inp), mn, mx
 
 
 def sql_crosscheck(qconn) -> dict[dt.date, tuple[float, int]]:
-    """SQL 独立复算:窗口 lag(present 行)=跨缺口起点,ln(close/lag)=跨缺口对数收益;
-    等权 avg + count 每交易日。返回 {trade_date: (ret, n)}。"""
+    """SQL 独立复算(镜像同一日历轴限制):窗口 lag(日历轴 present 行)=跨缺口起点,
+    ln(close/lag)=跨缺口对数收益;等权 avg + count 每交易日。返回 {trade_date: (ret, n)}。"""
     with qconn.cursor() as cur:
         cur.execute(
             "SELECT trade_date, avg(ret), count(ret) FROM ("
             "  SELECT trade_date, ln(close / lag(close) OVER "
             "         (PARTITION BY ts_code ORDER BY trade_date)) AS ret "
-            f"  FROM {VIEW}) s "
+            f"  FROM ({SRC}) f) s "
             "WHERE ret IS NOT NULL GROUP BY trade_date ORDER BY trade_date")
         return {d: (float(r), int(n)) for d, r, n in cur.fetchall()}
 
@@ -188,8 +198,10 @@ def run(dry: bool):
     holdout = HOLDOUT_START            # date(2024,7,1)
 
     with psycopg.connect(qdsn) as qconn:
-        view_rows, v_min, v_max = view_scan_stats(qconn)
-        print(f"视图 {VIEW}: rows={view_rows} range={v_min}..{v_max}", flush=True)
+        raw_rows, input_rows, v_min, v_max = view_scan_stats(qconn)
+        off_cal = raw_rows - input_rows
+        print(f"视图 {VIEW}: raw={raw_rows} 日历轴input={input_rows}"
+              f"(off-calendar剔除={off_cal}) range={v_min}..{v_max}", flush=True)
         print("Python(冻结 returns.py)逐票聚合中…", flush=True)
         py_rows = compute_market_eqw(stream_prices(qconn))
         print(f"  → 收益日 {len(py_rows)} 天", flush=True)
@@ -215,10 +227,11 @@ def run(dry: bool):
     if out_rows >= FULL_CALENDAR_TRADING_DAYS:
         sys.exit(f"✗ holdout 泄漏疑似: out_rows={out_rows} 触及全日历 {FULL_CALENDAR_TRADING_DAYS}:中止")
 
-    note = (f"全市场等权对数日收益;收益核=冻结 returns.py(multi_day/Close);"
+    note = (f"全市场等权对数日收益;收益核=冻结 returns.py(multi_day/Close);轴=日历(约束②:"
+            f"prices∩calendar,off-calendar剔除={off_cal}行=早年非交易日周日bar);"
             f"分母=当日有present bar且有前序present bar的票(停牌缺行不进);"
             f"双算闸 max|Δret|={max_dret:.2e}/n_stocks全等;"
-            f"view_rows={view_rows};n_stocks∈[{n_stocks_min},{n_stocks_max}]")
+            f"raw_view={raw_rows}/日历轴input={input_rows};n_stocks∈[{n_stocks_min},{n_stocks_max}]")
 
     if dry:
         print("--dry:双算闸+硬闸均过,不落库。", flush=True)
@@ -226,8 +239,8 @@ def run(dry: bool):
 
     with psycopg.connect(tdsn) as tconn:
         bid, landed = land(
-            tconn, py_rows, source=f"qbase:{VIEW}", hypothesis="market",
-            frozen_digest=digest, holdout=holdout, view_rows=view_rows,
+            tconn, py_rows, source=f"qbase:{VIEW}∩explore_reader_calendar", hypothesis="market",
+            frozen_digest=digest, holdout=holdout, view_rows=raw_rows,
             min_date=min_date, max_date=max_date, pull_time=pull_time, note=note)
     if landed != out_rows:
         sys.exit(f"✗ 回读行数 {landed} ≠ 预算 {out_rows}")
