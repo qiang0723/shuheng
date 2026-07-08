@@ -28,17 +28,33 @@ import urllib.request
 import cninfo  # 同目录采集件(借入,只抓不入库)
 
 # ── title 判别(L4:靠 title 不靠 type 码)────────────────────────────────────
-# 预披露 = 减持"计划"的事前披露;排除事后/进展/届满/增持。
-_RE_REDUCE_PRE = re.compile(r"减持")
-_RE_PREDISCLOSE = re.compile(r"预披露")
-_RE_EXCLUDE = re.compile(r"期限届满|实施情况|实施进展|进展公告|减持结果|完成情况|届满暨|增持")
+# 减持预披露 = 减持"计划"的事前披露;排除事后/进展/届满/增持/不减持。
+# ⚠ 判据放宽(2026-07-08 人批·#3 pilot 修正,定性=修实现达已批范围非改范围):原判据要求 title 含
+#   "预披露",但 A股绝大多数减持预披露标题为「(关于)股东减持股份计划的公告」——"计划"而非"预披露"
+#   → 原判据真召回≈40%(pilot 证:漏抓 6/10 真阳性)。放宽为「减持 + (计划|预披露) + 非排除词」。
+#   排除词加"不减持/实施/回购/要约"(pilot 2 条误报:"实施完毕"事后 / "承诺不减持")。
+_RE_REDUCE = re.compile(r"减持")
+_RE_KIND = re.compile(r"计划|预披露")
+_RE_EXCLUDE = re.compile(r"期限届满|实施|进展|减持结果|完成|届满|增持|不减持|回购|要约")
+
+
+def classify_title(title: str) -> tuple[bool, str]:
+    """减持预披露判别 + **理由**(人裁③:排除词命中逐条留痕、不静默)。
+    返回 (是否减持预披露, reason)。reason ∈ {'pass','无减持','无计划/预披露','排除:<词>'}。"""
+    t = title or ""
+    if not _RE_REDUCE.search(t):
+        return False, "无减持"
+    if not _RE_KIND.search(t):
+        return False, "无计划/预披露"
+    m = _RE_EXCLUDE.search(t)
+    if m:
+        return False, f"排除:{m.group(0)}"
+    return True, "pass"
 
 
 def is_reduction_predisclosure(title: str) -> bool:
-    """减持预披露公告判别:title 含 减持+预披露 且不含 事后/进展/增持 词。"""
-    t = title or ""
-    return bool(_RE_REDUCE_PRE.search(t) and _RE_PREDISCLOSE.search(t)
-                and not _RE_EXCLUDE.search(t))
+    """减持预披露公告判别(薄封装,兼容旧调用);理由/留痕用 classify_title。"""
+    return classify_title(title)[0]
 
 
 # ── PDF 正文抽取 ─────────────────────────────────────────────────────────────
@@ -174,14 +190,59 @@ def parse_code(code: str, start: dt.date, end: dt.date) -> list[dict]:
     return out
 
 
+# ── #3 pilot 标注集回归(2026-07-08 人裁①硬项:新判据须 10 真阳性 10/10、2 排除维持)──────
+# 标注来源=#3 pilot(24 票×2022-2023)人核:6 真漏抓(原严筛因缺"预披露"漏)+4 原严筛命中=10 真阳性;
+# 2 宽网误报(实施完毕=事后 / 承诺不减持)应排除。放宽判据须对此集零回退。
+_PILOT_LABELED = [
+    # (title, 期望是否减持预披露);occurrence 计数对齐 pilot(10 真阳性 + 2 排除)
+    ("关于大股东计划减持公司股份的预披露公告", True),                       # 002230 原严筛 #1
+    ("关于大股东计划减持公司股份的预披露公告", True),                       # 002230 原严筛 #2(同名)
+    ("关于高级管理人员减持股份的预披露公告", True),                         # 300308 原严筛
+    ("关于股东股份减持计划的预披露公告", True),                             # 300760 原严筛
+    ("金山办公高级管理人员集中竞价减持股份计划公告", True),                 # 688111 原漏抓(无"预披露")
+    ("金山办公关于控股股东及5%以上股东减持股份计划公告", True),            # 688111 原漏抓
+    ("股东减持股份计划公告", True),                                         # 603259 原漏抓 #1
+    ("股东减持股份计划公告", True),                                         # 603259 原漏抓 #2
+    ("股东减持股份计划公告", True),                                         # 603259 原漏抓 #3
+    ("股东减持股份计划公告", True),                                         # 603259 原漏抓 #4
+    ("东方财富信息股份有限公司关于公司高级管理人员股份减持计划实施完毕的公告", False),  # 事后=排除:实施
+    ("关于公司控股股东、特定股东、员工持股平台及2022年员工持股计划自愿承诺不减持公司股份的公告", False),  # 排除:不减持
+]
+
+
+def pilot_regression() -> bool:
+    """对 #3 pilot 人核标注集跑新判据 classify_title,逐条留痕(人裁②不静默)+断言(人裁①)。"""
+    tp = fp = 0
+    print("═══ #3 title 判据 pilot 标注集回归 ═══")
+    for title, expect in _PILOT_LABELED:
+        got, reason = classify_title(title)
+        mark = "✅" if got == expect else "❌错判"
+        print(f"  {mark} 期望={'预披露' if expect else '排除':<4} 得={'预披露' if got else '排除':<4} "
+              f"[{reason}] {title[:36]}")
+        if expect and got:
+            tp += 1
+        if (not expect) and (not got):
+            fp += 1
+        assert got == expect, f"回归失败:{title!r} 期望 {expect} 得 {got}({reason})"
+    n_tp = sum(1 for _, e in _PILOT_LABELED if e)
+    n_fp = sum(1 for _, e in _PILOT_LABELED if not e)
+    print(f"真阳性 {tp}/{n_tp} 全中、排除维持 {fp}/{n_fp} → 回归 PASS(人裁① 硬项)")
+    return True
+
+
 def main():
     ap = argparse.ArgumentParser()
+    ap.add_argument("--regress", action="store_true", help="#3 pilot 标注集回归(人裁① 硬项)")
     ap.add_argument("--code")
     ap.add_argument("--start", default="2023-01-01")
     ap.add_argument("--end", default="2023-12-31")
     ap.add_argument("--sample", action="store_true",
                     help="抽验固定几只票(验 title 筛 + 三字段抽取 + 失败标注)")
     args = ap.parse_args()
+
+    if args.regress:
+        pilot_regression()
+        return
 
     codes = ["002230", "002415", "300308"] if args.sample else [args.code]
     if not args.sample and not args.code:
