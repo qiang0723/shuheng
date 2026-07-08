@@ -89,17 +89,23 @@ def run_study(reader, pap: dict, *, benchmark_mode: str = "market",
     n_dates = len(all_dates)
 
     # ── 收益 + 等权基准(口径②)──────────────────────────────────────────────
-    sec_returns = {ts: bench.returns_by_date(rows, all_dates) for ts, rows in by_sec.items()}
+    # sec_returns=每票在 all_dates 上稠密展开。pool/合成域需全量(算等权基准);真实 market 域
+    # 基准读预计算表(不需全量 sec_returns)→ 惰性化(事件循环内按票现算)避 5356×8187 稠密全物化
+    # OOM(实测全量 anon-rss 6.9G/2c7.2G 机 OOM)。合成/pool 走本 if/else 全物化分支不变→约束③零回归。
     if benchmark_mode == "pool":
+        sec_returns = {ts: bench.returns_by_date(rows, all_dates) for ts, rows in by_sec.items()}
         mkt = bench.pool_equal_weight_market(sec_returns, pool or set(by_sec), n_dates)
     elif hasattr(reader, "market_return"):
         mkt = reader.market_return(all_dates)          # 真实域:读步3预计算全市场等权(引擎读表不现算)
+        sec_returns = None                             # 真实域:sec_returns 事件循环内按票现算(内存优化)
     else:
+        sec_returns = {ts: bench.returns_by_date(rows, all_dates) for ts, rows in by_sec.items()}
         mkt = bench.equal_weight_market(sec_returns, n_dates)   # 合成域:现算(路径不变,约束③零回归)
 
     # ── 逐事件清洗 + compute ──────────────────────────────────────────────────
     cleaned: list[CleanedEvent] = []
     valid_events: list[SecurityEvent] = []
+    _ret_cache: dict = {}   # 真实域惰性收益单键缓存(events 按 ts_code 有序→免同票重算、内存 O(1票))
     for ev in reader.events():
         rows = by_sec.get(ev.ts_code, [])
         ce = clean_event(rows, ev, date_index)
@@ -110,7 +116,13 @@ def run_study(reader, pap: dict, *, benchmark_mode: str = "market",
         est_lo = ce.t_idx + fc.EST_WINDOW_OFFSET_START
         est_hi = ce.t_idx + fc.EST_WINDOW_OFFSET_END
         est_mask = [est_lo <= j <= est_hi for j in range(n_dates)]
-        sret = sec_returns[ev.ts_code]
+        if sec_returns is not None:
+            sret = sec_returns[ev.ts_code]           # pool/合成域:全量预物化
+        else:                                        # 真实 market 域:按票现算(单键缓存,与预物化等价)
+            if ev.ts_code not in _ret_cache:
+                _ret_cache.clear()
+                _ret_cache[ev.ts_code] = bench.returns_by_date(rows, all_dates)
+            sret = _ret_cache[ev.ts_code]
         try:
             fit = sim_fit(sret, mkt, est_mask)
         except ValueError:
