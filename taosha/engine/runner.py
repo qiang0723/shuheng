@@ -68,6 +68,88 @@ def _car_test(events: list[SecurityEvent], window_len: int, rho_bar: float) -> d
             "kp_factor": kp, "adj_bmp_car": (bmp_car * kp) if bmp_car is not None else None}
 
 
+def _n_eff_rho(n: int, rho_bar: Num) -> Optional[dict]:
+    """相关性折算有效样本量(存活 N 与相关性下的等效独立观测数)。标签订正 2026-07-08:
+    result 顶层 n_valid=存活事件数(非相关折算);此处按现成 ρ̄(口径④行业内)两式并报——
+      · Kish  N_eff = N/(1+(N-1)ρ̄)               (等相关近似,经典 Kish 有效样本)
+      · KP    N_eff = N(1-ρ̄)/(1+(N-1)ρ̄)         (Kolari-Pynnönen 2010 方差膨胀一致)
+    等相关假设(全体等 ρ̄)对相关性取上界 → 对 N_eff 取下界(保守)。ADJ-BMP 检验已内嵌此坍缩
+    (kp_factor=√((1-ρ̄)/(1+(N-1)ρ̄)))——即 BMP_CAR 除以 √(1+(N-1)ρ̄) 得 ADJ-BMP_CAR。"""
+    if not n or rho_bar is None:
+        return None
+    denom = 1.0 + (n - 1) * rho_bar
+    if denom <= 0:
+        return None
+    return {"n_valid": n, "rho_bar": rho_bar,
+            "kish": n / denom, "kp": n * (1.0 - rho_bar) / denom,
+            "note": "相关性折算有效N:Kish=N/(1+(N-1)ρ̄);KP=N(1-ρ̄)/(1+(N-1)ρ̄);ρ̄=行业内(口径④)。"
+                    "等相关假设→N_eff 下界;ADJ-BMP 已内嵌此坍缩。"}
+
+
+# 三层标签(explore_reader_events 出英文 good/bad/turnaround;合成 fixture 出中文预喜/预亏)
+_LAYER_LABEL = {"good": "预喜", "bad": "预亏", "turnaround": "扭亏"}
+_LAYER_ORDER = {"good": 0, "预喜": 0, "bad": 1, "预亏": 1, "turnaround": 2, "扭亏": 2}
+
+
+def _stats_for_subset(sub: list, main_len: int, robust_len: int, alpha: float) -> dict:
+    """对一子集(某层)跑与 combined 同一流水线(per_tau/主稳健窗 CAR/三法/verdict/n_eff_rho)。
+    复用 combined 同一 compute 原语、同一顺序 → 层内结果与"若单独喂该层"一致。纯读取,不改 pap。"""
+    ses = [v[0] for v in sub]
+    rank_secs = [v[2] for v in sub]
+    cal_evs = [v[3] for v in sub]
+    n = len(ses)
+    sample_state = gates.sample_verdict(n)
+    per_tau, car, robustness, n_eff_rho = {}, {}, {}, None
+    if n >= 1:
+        adj = adj_bmp_by_tau(ses)
+        rho = adj["rho"]
+        rows = adj["rows"]
+        aar = [_mean([se.event_abnormal[t] for se in ses]) for t in range(robust_len)]
+        per_tau = {
+            "tau_axis": "τ=0:=T+1(首个可交易日,S2-DEC3)",
+            "rho_bar": rho["rho_bar"], "rho_n_pairs": rho["n_pairs"], "rho_note": rho["note"],
+            "by_tau": [{"tau": r["tau"], "n": r["n"], "aar": aar[r["tau"]],
+                        "bmp": r["bmp"], "adj_bmp": r["adj_bmp"]} for r in rows],
+        }
+        car = {
+            "main_window": {"taus": f"[0,+{main_len-1}]",
+                            "caar": sum(a for a in aar[:main_len] if a is not None),
+                            "naive_t": _naive_t([se.event_abnormal for se in ses], main_len),
+                            **_car_test(ses, main_len, rho["rho_bar"])},
+            "robust_window": {"taus": f"[0,+{robust_len-1}]",
+                              "caar": sum(a for a in aar[:robust_len] if a is not None),
+                              "naive_t": _naive_t([se.event_abnormal for se in ses], robust_len),
+                              **_car_test(ses, robust_len, rho["rho_bar"])},
+        }
+        robustness = {
+            "corrado_rank": corrado_rank(rank_secs, main_len, robust_len),
+            "calendar_time": calendar_time(cal_evs, main_len, robust_len),
+        }
+        n_eff_rho = _n_eff_rho(n, rho["rho_bar"])
+    verdict, verdict_note = _verdict(sample_state, car, robustness, alpha)
+    return {"n_valid": n, "sample_state": sample_state, "n_eff_rho": n_eff_rho,
+            "per_tau": per_tau, "car": car, "robustness": robustness,
+            "verdict": verdict, "verdict_note": verdict_note}
+
+
+def _type_strata(valid_events: list, main_len: int, robust_len: int, alpha: float) -> dict:
+    """三层分解(预喜/预亏/扭亏;pap layers/event_def 冻结定义)。预喜(期望+漂移)与预亏(期望-漂移)
+    方向相反,合并池化可相互抵消→合并 verdict 不可读作各层均无漂移;分层是冻结定义核心。
+    层外(不确定/其他)已在 explore_reader_events 视图排除;若仍现意外层,如实上报不静默。"""
+    groups: dict = {}
+    for v in valid_events:
+        groups.setdefault(v[1].get("event_type_layer", "unknown"), []).append(v)
+    out = {"note": "预喜/预亏/扭亏三层各独立跑同一流水线(层外〔不确定/其他〕已在视图排除);"
+                   "预喜+漂移 vs 预亏-漂移方向相反,合并结果可抵消,不可读作各层均无漂移。",
+           "n_valid_sum": sum(len(g) for g in groups.values()), "layers": {}}
+    for lay in sorted(groups, key=lambda k: (_LAYER_ORDER.get(k, 9), k)):
+        blk = _stats_for_subset(groups[lay], main_len, robust_len, alpha)
+        blk["layer_key"] = lay
+        blk["layer_label"] = _LAYER_LABEL.get(lay, lay)
+        out["layers"][lay] = blk
+    return out
+
+
 def run_study(reader, pap: dict, *, benchmark_mode: str = "market",
               pool: Optional[set] = None) -> dict:
     """跑一条已冻结假设的事件研究,返回 result 字典(供 report + 落库)。
@@ -170,7 +252,8 @@ def run_study(reader, pap: dict, *, benchmark_mode: str = "market",
         diag_censor = [_censor_at(ce.tau0_idx + k) for k in range(DIAG_ROBUST_LEN)]
         se_meta = {"ts_code": ev.ts_code, "event_id": ev.event_id, "board": ce.board,
                    "regime_segment": ce.regime_segment, "industry": ce.industry,
-                   "postponed": ce.postponed, "is_st": ce.is_st, "diag_censor": diag_censor}
+                   "postponed": ce.postponed, "is_st": ce.is_st, "diag_censor": diag_censor,
+                   "event_type_layer": ev.event_type_layer}   # 三层分解(pap layers/event_def)
         # 秩检验输入:估计窗 AR(相对位置 -250..-91)+ 事件窗 AR;日历法输入:窗内日期+AR
         est_ar_seq = [fit.abnormal[j] for j in range(est_lo, est_hi + 1)]
         w_dates = [all_dates[j] for j in w_idx]
@@ -219,6 +302,11 @@ def _assemble(pap, cleaned, valid_events, benchmark_mode, main_len, robust_len) 
             "corrado_rank": corrado_rank(rank_secs, main_len, robust_len),
             "calendar_time": calendar_time(cal_evs, main_len, robust_len),
         }
+    rho_bar_combined = per_tau.get("rho_bar") if per_tau else None
+
+    # 三层分解(预喜/预亏/扭亏;pap layers/event_def 冻结定义;层外已在视图排除)——纯增量,
+    # 各层独立跑同一流水线(不碰上面 combined 计算路径 → combined 既有键逐字节不变,约束③)。
+    type_strata = _type_strata(valid_events, main_len, robust_len, alpha) if n >= 1 else {}
 
     # 板块分层(item 8):有效事件按 board 计数 + 主窗 CAAR;ST 层为已剔除层
     strata = _board_strata(cleaned, valid_events)
@@ -255,9 +343,11 @@ def _assemble(pap, cleaned, valid_events, benchmark_mode, main_len, robust_len) 
         "sample_gate": {"gate": gates.SAMPLE_GATE, "state": sample_state},
         "coverage": coverage,
         "rejections": rej,
-        "n_eff": n,                          # N_eff = 有效事件数(与剔除率同报,item 11)
+        "n_valid": n,                        # 存活事件数(标签订正 2026-07-08:~~n_eff~~ 系存活数非相关折算有效N)
+        "n_eff_rho": _n_eff_rho(n, rho_bar_combined),  # 相关性折算有效 N(Kish/KP 两式;ρ̄ 现成,口径④)
         "per_tau": per_tau, "car": car,
         "robustness": robustness,            # 稳健性两道(Corrado 秩 + 日历时间组合,spec §6)
+        "type_strata": type_strata,          # 三层分解(预喜/预亏/扭亏;pap 冻结 layers/event_def)
         "board_strata": strata,
         "industry_coverage": industry_cov,    # 口径④携带:'unknown' 残余组占比(报告项;>5% 升级)
         "censor_diagnostic": censor_diag,     # 步3b 删失诊断窗(R5;报告项、不进 verdict)

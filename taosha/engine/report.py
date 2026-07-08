@@ -41,10 +41,15 @@ def render(result: dict) -> str:
 
     # ② N_eff + 剔除率同报(item 11)
     rej = result["rejections"]
-    L.append(f"【样本与剔除(N_eff 与剔除率同报,item 11)】")
-    L.append(f"  事件总数={rej['total']}  有效 N_eff={result['n_eff']}  "
+    L.append(f"【样本与剔除(存活数与剔除率同报,item 11)】")
+    L.append(f"  事件总数={rej['total']}  有效存活 N_valid={result['n_valid']}  "
              f"剔除={rej['rejected']}  剔除率={_fmt(rej['reject_ratio'], 4)}"
              + ("  ⚠告警(>5%)" if rej["alert"] else ""))
+    ner = result.get("n_eff_rho")
+    if ner:
+        L.append(f"  相关性折算有效 N(ρ̄={_fmt(ner['rho_bar'],4)},口径④): "
+                 f"Kish={_fmt(ner['kish'],1)}  KP={_fmt(ner['kp'],1)}  "
+                 f"(N_valid={ner['n_valid']} 为存活事件数;ADJ-BMP 已内嵌此坍缩)")
     L.append(f"  样本量闸={result['sample_gate']['gate']} → {result['sample_gate']['state']}")
     cov = result["coverage"]
     L.append(f"  估计窗覆盖: 分母={cov['denominator']} 门槛={cov['min_valid']}(70%) "
@@ -131,6 +136,29 @@ def render(result: dict) -> str:
         cm, crob = (ct.get('main') or {}), (ct.get('robust') or {})
         L.append(f"  日历时间组合法: 主窗 t_cal={_fmt(cm.get('t_cal'),3)}(日历日 {cm.get('n_cal_days')}) "
                  f"稳健窗 t_cal={_fmt(crob.get('t_cal'),3)}(日历日 {crob.get('n_cal_days')})(聚集并单观测)")
+        L.append("")
+
+    # ④''' 三层分解(预喜/预亏/扭亏;pap layers/event_def 冻结定义)
+    ts = result.get("type_strata") or {}
+    layers = ts.get("layers") or {}
+    if layers:
+        L.append("【三层分解(预喜/预亏/扭亏;pap 冻结 layers/event_def;各层独立同一流水线)】")
+        L.append(f"  注: {ts.get('note','')}")
+        L.append("  层(key)         N_valid  主窗[0,+M] CAAR      ADJ-BMP_CAR  朴素t      verdict")
+        for key, blk in layers.items():
+            mw = (blk.get("car") or {}).get("main_window") or {}
+            adj = mw.get("adj_bmp_car")
+            lab = f"{blk.get('layer_label','')}({key})"
+            L.append(f"  {lab:<14} {blk.get('n_valid',0):>7}  "
+                     f"{_fmt(mw.get('caar'),5):>16}  {_fmt(adj,3):>10}  "
+                     f"{_fmt(mw.get('naive_t'),3):>8}   {blk.get('verdict','')}")
+        # 各层 verdict_note 全文(不省;分歧不许挑有利的)
+        for key, blk in layers.items():
+            L.append(f"    · {blk.get('layer_label','')}({key}): {blk.get('verdict_note','')}")
+        nvs = ts.get("n_valid_sum")
+        if nvs is not None:
+            L.append(f"  三层存活合计={nvs}(应=合并 N_valid={result.get('n_valid')};层外已在视图排除)")
+        L.append("  ⚠ 合并口径 verdict 混合正负漂移可抵消,判读须以本三层分解为准(见上 note)。")
         L.append("")
 
     # ⑤ verdict(统计事实)
