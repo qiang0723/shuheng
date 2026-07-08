@@ -292,11 +292,17 @@ good **9.09%** / bad **7.98%** / turnaround **8.01%**;但**年份偏斜的层结
 (层×年份停牌全表在 `result_json.rejections_by_layer[layer].by_year`;合计 suspension 3431+4847+741=9019
 对上合并;三层 total 42991+53346+9247=105584 对上事件总。)
 
-### 10.8 台账与交付
-- **台账 `exp_id=5` result 槽仍未写**(`has_result=False`/status=frozen)→ 可交易口径落地后,**统计判决
-  + 可交易口径一并**写终态(触发器一次性写入,走 persist 状态机;报告验收后另跑,不在驱动抢跑)。
+### 10.8 台账与交付 —— ✅ #4 闭卷(2026-07-08 20:02:50)
+- **✅ 开卡毕(人 2026-07-08)**:锚2 开封完成;两处算术读法(成本乘式净额 / 窗尾字面收盘出)
+  **人确认即封存所对口径**(10.1)。
+- **✅ 台账 `exp_id=5` result 槽已写终态**(走 persist 状态机 `frozen→running→done`,单事务原子、
+  触发器一次性写入):`status=done` / `done_at=2026-07-08 20:02:50+08` / `has_result=True`。
+  写入内容 = `opt2_result.json` 全量(三层统计判决 + 可交易口径 + 剔除分解 + 审计摘要)。
+  库回执:`verdict=NOT_SIG` / `n_valid=67760` / `n_events_total=105584` / 三层
+  `{good:NOT_SIG, bad:AMBIGUOUS, turnaround:NOT_SIG}` / `tradeable.available=True`(合并稳健净均
+  +0.03053) / `rejections_by_layer` 三层 / `audit`(frozen_config `b88a43ef…` / frozen_ashare `c795b21e…`)。
 - 产物 `/tmp/s3step7/opt2_result.json`(142KB)+ `opt2_report.txt`(不覆盖 strata/s4 基线),本地 scratchpad 备份。
-- **carry-item**:`report.py:36` 标题硬编码"切片2合成验收"仍未改(本轮未授权动它)。
+- **carry-item(闭卷不阻)**:`report.py:36` 标题硬编码"切片2合成验收"仍未改(未授权动它)。
 
-**→ 可交易口径齐、约束③ 受控 diff 通过(判决不变)、焊接纪律全套重验绿、停牌回炉层维度数据补齐。
-连同 §9 三层结果 + §7 审计,交人开卡(报告完成即交,不解读——开工令⑥)。**
+**→ #4(业绩预告漂移 exp_id=5)就此闭卷:统计判决 NOT_SIG(三层分层无一显著、合并非掩盖显著层)+
+可交易口径两封数对照已开卡 + 剔除分解层维度在案 + 台账终态一次性落库。切片3(#4 端到端)完结。**
