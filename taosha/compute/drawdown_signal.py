@@ -54,6 +54,15 @@ class Entry:
     d3_broke_ma20_before_entry: bool  # D3:episode 起进场前曾 close<ma20(rev0会锁死集)
 
 
+def _is_station(c: float, ma10: float, ma20: float) -> bool:
+    """站上判据(F-rev1 第2/3条)。**语义固定(人核 2026-07-08)**:ma20 的角色 = 「`close<ma20`
+    → 清零重计(reset 触发)」,**非**「`close≥ma20` 作计数合取前置」。两读法在本实现行为等价
+    (该日 consec 归零),但读法以 reset 为准:**分歧场景 `ma10<close<ma20` 的计数日 → 非站上 → 清零**
+    (防错读为「站上=close>ma10 单条件、ma20 不参与重置」而误增计数)。等号:`close>ma10`(等号归破)、
+    `close≥ma20`(=ma20 不算破)。该日若 `close<ma20` 亦触发 D3(broke_ma20)记账。"""
+    return (c > ma10) and (c >= ma20)
+
+
 def _sma(closes, i: int, w: int) -> Optional[float]:
     if i < w - 1:
         return None
@@ -106,7 +115,7 @@ def generate_entries(closes: list) -> list:
         if need_escape:                       # #7:进场后未脱离 → 不累计、不进场
             consec = 0
             continue
-        station = (c > ma10) and (c >= ma20)  # 站上 ma10 且 未破 ma20
+        station = _is_station(c, ma10, ma20)  # 站上(close>ma10 且 close<ma20 清零重计,见 _is_station)
         if station:
             consec += 1
             if consec >= CONSEC:              # 连续 3 日 → 进场
@@ -157,8 +166,25 @@ if __name__ == "__main__":
     #   R1 的低位横盘中天然含 close<ma20 阶段(缓跌尾);D3 应能标记曾破 ma20 的进场。
     assert isinstance(e1[0].d3_broke_ma20_before_entry, bool)
 
+    # R5 ma20 语义固定自检(人核 2026-07-08:两读法分歧场景 ma10<close<ma20 = 清零重计,非合取前置/非跳过)
+    #   ① 判据层直接焊死:分歧计数日 ma10<close<ma20 → 非站上(→清零);close≥ma20 → 站上;破ma10 → 非站上。
+    assert _is_station(85.0, 84.0, 90.0) is False, "R5:ma10<close<ma20 计数日须非站上(清零重计)"
+    assert _is_station(90.0, 84.0, 90.0) is True, "R5:close=ma20 未破 → 站上(close≥ma20)"
+    assert _is_station(91.0, 84.0, 90.0) is True, "R5:close>ma20 → 站上"
+    assert _is_station(84.0, 84.0, 90.0) is False, "R5:close=ma10 破ma10(等号归破)→ 非站上"
+    #   ② 序列层:consec 中插入一破ma20日须清零重计(非跳过),用打桩序列直验(closes 使某日 close<ma20)。
+    #      构造:回撤区内 [站,站,破ma20回踩,站,站,站];reset→第6日进场,skip→第4日进场。
+    _seq = ([100.0] * 60 + [100 - k for k in range(1, 21)]   # 平台+缓跌到 80
+            + [80.0] * 30                                      # 横盘让 ma20 落到 80
+            + [81.0, 82.0, 79.0, 82.0, 83.0, 84.0])           # 站,站,破ma20(79<ma20≈80),站×3
+    _ev5 = generate_entries(_seq)
+    # 破ma20 日清零 → 需其后连续 3 日站上;进场落在最后一日附近(reset 语义),且 D3=True(曾破ma20)
+    assert len(_ev5) >= 1 and _ev5[-1].d3_broke_ma20_before_entry is True, "R5:破ma20清零重计+D3记账"
+    _reset_idx = len(_seq) - 1        # skip 读法会在更早(第4日)进场;reset 读法须到末日
+    assert _ev5[-1].entry_idx == _reset_idx, f"R5:清零重计→末日进场(reset),得 {_ev5[-1].entry_idx} 期望 {_reset_idx}"
+
     # 满窗前不评估
     assert generate_entries([100.0] * 30) == [], "H60 满窗前不评估"
     print("drawdown_signal.py(F-rev1)自检 OK:R1死锁序列进场 / R2链式防护(仅1) / "
-          "R3脱离后再进场 / R4失效不锁区+D3 / PIT满窗")
+          "R3脱离后再进场 / R4失效不锁区+D3 / R5 ma20清零重计语义(判据+序列) / PIT满窗")
     print("audit_digest =", audit_digest())
