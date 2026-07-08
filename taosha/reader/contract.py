@@ -32,7 +32,7 @@ LIMIT_STATUS = ("none", "limit_up", "limit_down", "one_word")
 BOARDS = ("main", "chinext", "star", "bse")
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class PriceRow:
     """explore_reader_prices 一行(契约 §1)。close=None ⇔ 停牌/无交易(禁零填充)。"""
     ts_code: str
@@ -53,7 +53,7 @@ class PriceRow:
             raise ValueError(f"{self.ts_code}@{self.trade_date}: 停牌日 close 必须 None(禁零填充)")
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class EventRow:
     """explore_reader_events 一行(契约 §2)。first_ann_date=事件日锚,无 fallback。"""
     ts_code: str
@@ -63,7 +63,7 @@ class EventRow:
     snapshot_batch: str
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class CalendarRow:
     """explore_reader_calendar 一行(契约 §3,切片3 新增)。
     权威交易日轴(SSE is_open=1);引擎按此轴断档判停牌(缺行=停牌,约束② 2026-07-07)。
