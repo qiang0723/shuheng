@@ -214,6 +214,9 @@ def _assemble(pap, cleaned, valid_events, benchmark_mode, main_len, robust_len) 
     # 删失诊断窗(步3b,R5;报告项不进 verdict)
     censor_diag = _censor_diagnostic(valid_events) if n >= 1 else {}
 
+    # 行业覆盖(口径④携带,人批 2026-07-08):'unknown' 残余组占比;>5% 升级上报(报告项)
+    industry_cov = _industry_coverage(valid_events)
+
     # 剔除率按年份(item 7)
     rej = year_breakdown(cleaned)
 
@@ -244,6 +247,7 @@ def _assemble(pap, cleaned, valid_events, benchmark_mode, main_len, robust_len) 
         "per_tau": per_tau, "car": car,
         "robustness": robustness,            # 稳健性两道(Corrado 秩 + 日历时间组合,spec §6)
         "board_strata": strata,
+        "industry_coverage": industry_cov,    # 口径④携带:'unknown' 残余组占比(报告项;>5% 升级)
         "censor_diagnostic": censor_diag,     # 步3b 删失诊断窗(R5;报告项、不进 verdict)
         "verdict": verdict, "verdict_note": verdict_note,
         "snapshot_batch": pap.get("snapshot_batch_req", "SYNTH"),
@@ -271,6 +275,17 @@ def _board_strata(cleaned, valid_events) -> dict:
     strata["_chinext_regime"] = {"boundary": fa.CHINEXT_REGIME_DATE.isoformat(), **cx_seg}
     strata["_st_note"] = "ST 为已剔除层(spec §5 ST 剔除);不进池化检验,分层仅计数留痕(item 8 调和)"
     return strata
+
+
+def _industry_coverage(valid_events) -> dict:
+    """行业覆盖(口径④携带,人批 2026-07-08):有效事件中 industry='unknown' 残余组占比。
+    'unknown' = industry 缺失(cleaning._norm_industry 归一;不猜不补);>5% 升级上报(escalate)。"""
+    inds = [v[0].industry for v in valid_events]
+    n = len(inds)
+    unk = sum(1 for x in inds if x == "unknown")
+    pct = (unk / n) if n else 0.0
+    return {"n_valid": n, "unknown_n": unk, "unknown_pct": pct, "escalate": pct > 0.05,
+            "note": "industry 缺失归 'unknown' 残余组(口径④;不猜不补);占比>5% 升级上报(人批 2026-07-08)"}
 
 
 def _censor_diagnostic(valid_events) -> dict:

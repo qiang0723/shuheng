@@ -24,6 +24,15 @@ from taosha.reader.contract import PriceRow
 MAX_POSTPONE = 5
 
 
+def _norm_industry(x):
+    """industry 缺失(None/''/'nan'/'none'/'null')→ 显式 'unknown' 残余组(人批 2026-07-08:
+    不猜不补)。ρ̄ 口径④按此分组、'unknown' 单独成组;报告附占比、>5% 事件升级上报(见 runner/report)。"""
+    if x is None:
+        return "unknown"
+    s = str(x).strip()
+    return "unknown" if s.lower() in ("", "nan", "none", "null") else s
+
+
 @dataclass
 class CleanedEvent:
     """单事件清洗结果(几何 + 合格性;compute 前)。"""
@@ -55,15 +64,27 @@ def clean_event(rows: list[PriceRow], event, date_index: dict) -> CleanedEvent:
 
     rows: 该证券按 trade_date 升序的全期 PriceRow;event: EventRow;date_index: {date: idx}。
     """
+    yr = event.first_ann_date.year
+
+    # 无价行前置剔除(人批 2026-07-08):事件票在价视图无 bar(真实域可能:退市/无holdout前史)。
+    #   数据残缺样本 → 剔除 no_price(计入年份剔除报告 + 偏差声明保守方向),不以残缺样本充数。
+    if not rows:
+        ce = CleanedEvent(
+            ts_code=event.ts_code, event_id=event.event_id,
+            first_ann_date=event.first_ann_date, board="unknown", is_st=False,
+            industry="unknown", regime_segment=fa.regime_segment(event.first_ann_date), t_idx=-1)
+        ce.rejected, ce.reject_reason, ce.reject_year = True, "no_price", yr
+        ce.notes.append("无价行(事件票在价视图无 bar)→ 剔除(no_price;数据残缺,保守偏差)")
+        return ce
+
     t_idx = date_index.get(event.first_ann_date)
     r0 = rows[0]
     ce = CleanedEvent(
         ts_code=event.ts_code, event_id=event.event_id,
         first_ann_date=event.first_ann_date, board=r0.board, is_st=r0.is_st,
-        industry=r0.industry, regime_segment=fa.regime_segment(event.first_ann_date),
+        industry=_norm_industry(r0.industry), regime_segment=fa.regime_segment(event.first_ann_date),
         t_idx=t_idx if t_idx is not None else -1,
     )
-    yr = event.first_ann_date.year
 
     # 事件日不在交易轴(不应发生于合成域)→ 剔除
     if t_idx is None:
@@ -188,4 +209,13 @@ if __name__ == "__main__":
     _r[_t + 2] = PriceRow("A", _ds[_t + 2], None, True, "one_word", "main", False, "I")
     _c = clean_event(_r, _ev, _di)
     assert any("杂交" in n for n in _c.notes), "杂交检测"
-    print("cleaning.py 自检 OK:缺行=停牌 / flag兼容 / 判据分离顺延跨缺行 / 杂交上报(约束②)")
+    # 5) 无价行 → no_price 剔除(人批 2026-07-08;board/industry=unknown,入年份剔除报告)
+    _c = clean_event([], _ev, _di)
+    assert _c.rejected and _c.reject_reason == "no_price" and _c.industry == "unknown", "无价行剔除"
+    assert year_breakdown([_c])["by_year"][_c.first_ann_date.year]["by_reason"].get("no_price") == 1
+    # 6) industry 归一:缺失变体 → 'unknown' 残余组;正常值保留(人批 2026-07-08)
+    assert _norm_industry("nan") == "unknown" and _norm_industry(None) == "unknown"
+    assert _norm_industry("") == "unknown" and _norm_industry(" NaN ") == "unknown" and _norm_industry("null") == "unknown"
+    assert _norm_industry("银行") == "银行"
+    print("cleaning.py 自检 OK:缺行=停牌 / flag兼容 / 判据分离顺延跨缺行 / 杂交上报(约束②) / "
+          "无价行=no_price剔除 / industry缺失→unknown(人批2026-07-08)")
