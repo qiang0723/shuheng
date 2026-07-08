@@ -81,7 +81,10 @@ def run_study(reader, pap: dict, *, benchmark_mode: str = "market",
 
     # ── 拉数 + date 轴 ────────────────────────────────────────────────────────
     by_sec = reader.prices_by_security()
-    all_dates = sorted({r.trade_date for rows in by_sec.values() for r in rows})
+    # 轴=reader.calendar()(约束②日历轴):真实域=explore_reader_calendar(8187 日历日,缺行=停牌判据
+    #   须在完整日历轴上数);合成域 SyntheticReader.calendar()=全证券 trade_date 并集=原 by_sec union
+    #   → all_dates 与旧 `sorted({...})` 逐一致(约束③ 合成域零回归)。
+    all_dates = [c.trade_date for c in reader.calendar()]
     date_index = {d: j for j, d in enumerate(all_dates)}
     n_dates = len(all_dates)
 
@@ -89,8 +92,10 @@ def run_study(reader, pap: dict, *, benchmark_mode: str = "market",
     sec_returns = {ts: bench.returns_by_date(rows, all_dates) for ts, rows in by_sec.items()}
     if benchmark_mode == "pool":
         mkt = bench.pool_equal_weight_market(sec_returns, pool or set(by_sec), n_dates)
+    elif hasattr(reader, "market_return"):
+        mkt = reader.market_return(all_dates)          # 真实域:读步3预计算全市场等权(引擎读表不现算)
     else:
-        mkt = bench.equal_weight_market(sec_returns, n_dates)
+        mkt = bench.equal_weight_market(sec_returns, n_dates)   # 合成域:现算(路径不变,约束③零回归)
 
     # ── 逐事件清洗 + compute ──────────────────────────────────────────────────
     cleaned: list[CleanedEvent] = []
