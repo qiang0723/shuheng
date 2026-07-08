@@ -15,7 +15,7 @@ import psycopg
 
 _ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))   # 仓根(.env 在此)
 
-STAGE = "/tmp/s3prod"
+STAGE = os.environ.get("S3PROD_DIR", os.path.expanduser("~/s3prod"))  # 持久盘(非tmpfs);多天采集抗重启
 HITS = STAGE + "/hits.jsonl"
 DONE = STAGE + "/done.txt"
 ERRS = STAGE + "/errors.jsonl"
