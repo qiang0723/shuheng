@@ -21,7 +21,10 @@ from taosha.compute.calendar_pf import CalEvent, calendar_time
 from taosha.compute.market_model import sim_fit
 from taosha.compute.rank_test import RankSecurity, corrado_rank
 from taosha.engine import benchmark as bench
-from taosha.engine.cleaning import CleanedEvent, clean_event, year_breakdown
+from taosha.engine import execution as execu
+from taosha.engine.cleaning import (
+    CleanedEvent, clean_event, layer_year_breakdown, year_breakdown,
+)
 from taosha.experiment import gates
 from taosha.experiment.pap import parse_test_windows
 
@@ -150,6 +153,43 @@ def _type_strata(valid_events: list, main_len: int, robust_len: int, alpha: floa
     return out
 
 
+def _tradeable(valid_events: list, cost: Optional[dict], main_len: int, robust_len: int) -> dict:
+    """可交易口径净收益汇总(选项2;pap `cost` 冻结定义)。合并 + 三层各出主/稳健窗净/毛额 + 出场诊断。
+
+    pap 无 cost 块 → available=False(不适用,不静默造数)。纯读 se_meta['tradeable'](进出场价),
+    不碰统计路径(CAR/AR 用 close,可交易用 open 进/close 出)→ 既有键零回归。零调参、零新设计。"""
+    if not cost:
+        return {"available": False, "note": "pap 无 cost 块 → 可交易口径不适用(进出场成本未定义)"}
+    buy_fee, sell_fee = execu.cost_fractions(cost)
+    main_label, rob_label = f"[0,+{main_len-1}]", f"[0,+{robust_len-1}]"
+
+    def _blocks(trs):
+        return {"main": execu.window_block(trs, buy_fee, sell_fee, "main", main_label),
+                "robust": execu.window_block(trs, buy_fee, sell_fee, "robust", rob_label)}
+
+    all_tr = [v[1]["tradeable"] for v in valid_events]
+    groups: dict = {}
+    for v in valid_events:
+        groups.setdefault(v[1].get("event_type_layer", "unknown"), []).append(v[1]["tradeable"])
+    layers = {}
+    for lay in sorted(groups, key=lambda k: (_LAYER_ORDER.get(k, 9), k)):
+        layers[lay] = {"layer_key": lay, "layer_label": _LAYER_LABEL.get(lay, lay),
+                       **_blocks(groups[lay])}
+    return {
+        "available": True,
+        "note": "pap 既定可交易口径(cost 冻结):进场=τ=0 后复权 open、出场=窗尾后复权 close、"
+                "成本乘式净额(买费=佣金+滑点/卖费=佣金+印花+滑点);一字涨停不可成交由 cleaning 顺延/"
+                "放弃处置进场侧;窗尾不可成交按字面'收盘出'计、单列诊断。报告与锚对照用途,不改统计判决。",
+        "cost": {"commission": cost.get("commission"), "stamp_tax_sell": cost.get("stamp_tax_sell"),
+                 "slippage_oneway": cost.get("slippage_oneway"),
+                 "limit_up_board_untradeable": cost.get("limit_up_board_untradeable"),
+                 "buy_fee": buy_fee, "sell_fee": sell_fee,
+                 "net_formula": "close_exit*(1-卖费)/(open_entry*(1+买费))-1"},
+        "combined": _blocks(all_tr),
+        "layers": layers,
+    }
+
+
 def run_study(reader, pap: dict, *, benchmark_mode: str = "market",
               pool: Optional[set] = None) -> dict:
     """跑一条已冻结假设的事件研究,返回 result 字典(供 report + 落库)。
@@ -250,10 +290,34 @@ def run_study(reader, pap: dict, *, benchmark_mode: str = "market",
             return "none"
 
         diag_censor = [_censor_at(ce.tau0_idx + k) for k in range(DIAG_ROBUST_LEN)]
+
+        # 可交易口径进/出场价捕获(选项2;pap cost 冻结):进场=τ=0(w_idx[0]=tau0_idx)后复权 open,
+        #   出场=窗尾(主 w_idx[main_len-1]/稳健 w_idx[robust_len-1])后复权 close。窗尾缺行→exit_status
+        #   记 suspend_or_missing、close=None(execution 排除,不以不可成交价充数)。纯读价,不碰统计路径。
+        def _exit_status(idx, _bi=ev_by_idx):
+            row = _bi.get(idx)
+            if row is None:
+                return "suspend_or_missing"
+            if row.limit_status in ("one_word", "limit_up", "limit_down"):
+                return row.limit_status
+            return "none"
+
+        _entry_row = ev_by_idx.get(w_idx[0])
+        _exit_main = ev_by_idx.get(w_idx[main_len - 1])
+        _exit_rob = ev_by_idx.get(w_idx[robust_len - 1])
+        tradeable = {
+            "entry_open": _entry_row.open if _entry_row is not None else None,
+            "exit_close_main": _exit_main.close if _exit_main is not None else None,
+            "exit_close_robust": _exit_rob.close if _exit_rob is not None else None,
+            "exit_status_main": _exit_status(w_idx[main_len - 1]),
+            "exit_status_robust": _exit_status(w_idx[robust_len - 1]),
+        }
+
         se_meta = {"ts_code": ev.ts_code, "event_id": ev.event_id, "board": ce.board,
                    "regime_segment": ce.regime_segment, "industry": ce.industry,
                    "postponed": ce.postponed, "is_st": ce.is_st, "diag_censor": diag_censor,
-                   "event_type_layer": ev.event_type_layer}   # 三层分解(pap layers/event_def)
+                   "event_type_layer": ev.event_type_layer,   # 三层分解(pap layers/event_def)
+                   "tradeable": tradeable}                     # 可交易口径进/出场价(选项2)
         # 秩检验输入:估计窗 AR(相对位置 -250..-91)+ 事件窗 AR;日历法输入:窗内日期+AR
         est_ar_seq = [fit.abnormal[j] for j in range(est_lo, est_hi + 1)]
         w_dates = [all_dates[j] for j in w_idx]
@@ -308,6 +372,9 @@ def _assemble(pap, cleaned, valid_events, benchmark_mode, main_len, robust_len) 
     # 各层独立跑同一流水线(不碰上面 combined 计算路径 → combined 既有键逐字节不变,约束③)。
     type_strata = _type_strata(valid_events, main_len, robust_len, alpha) if n >= 1 else {}
 
+    # 可交易口径(选项2;pap cost 冻结;新增键,不碰统计路径 → 既有键零回归)
+    tradeable = _tradeable(valid_events, pap.get("cost"), main_len, robust_len) if n >= 1 else {}
+
     # 板块分层(item 8):有效事件按 board 计数 + 主窗 CAAR;ST 层为已剔除层
     strata = _board_strata(cleaned, valid_events)
 
@@ -348,6 +415,8 @@ def _assemble(pap, cleaned, valid_events, benchmark_mode, main_len, robust_len) 
         "per_tau": per_tau, "car": car,
         "robustness": robustness,            # 稳健性两道(Corrado 秩 + 日历时间组合,spec §6)
         "type_strata": type_strata,          # 三层分解(预喜/预亏/扭亏;pap 冻结 layers/event_def)
+        "tradeable": tradeable,              # 可交易口径(选项2;pap cost 冻结;报告/锚对照,不改判决)
+        "rejections_by_layer": layer_year_breakdown(cleaned),  # 剔除分层×年份×原因(停牌回炉议题层维度)
         "board_strata": strata,
         "industry_coverage": industry_cov,    # 口径④携带:'unknown' 残余组占比(报告项;>5% 升级)
         "censor_diagnostic": censor_diag,     # 步3b 删失诊断窗(R5;报告项、不进 verdict)

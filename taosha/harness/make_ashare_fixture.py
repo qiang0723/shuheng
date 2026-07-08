@@ -104,12 +104,16 @@ def generate(seed: int = 20260707) -> dict:
         if evk + 1 < N_TRADING:
             r[evk + 1] += INJECT_AR_TAU0
 
-        # 价格累乘
+        # 价格累乘;open=当日部分隔夜跳空(前收×exp(0.4·r_t),确定性;仅供可交易口径进场,
+        #   不进 close 收益路径 → 既有键零回归)。前收 t=0 用初始 100。
         px = [100.0]
+        openpx: list = []
         for t in range(N_TRADING):
+            openpx.append(px[-1] * math.exp(0.4 * r[t]))   # px[-1]=前收(t=0 时=100)
             px.append(px[-1] * math.exp(r[t]))
         px = px[1:]
         close: list = list(px)
+        opn: list = list(openpx)
         suspended = [False] * N_TRADING
         limit_status = ["none"] * N_TRADING
 
@@ -130,7 +134,12 @@ def generate(seed: int = 20260707) -> dict:
         if i in one_word_at_event and evk + 1 < N_TRADING:
             limit_status[evk + 1] = "one_word"
 
-        secs[name] = {"close": close, "suspended": suspended, "limit": limit_status,
+        # open 与 close 同步停牌(缺行日 open=None,禁零填充;契约 __post_init__ 校验)
+        for t in range(N_TRADING):
+            if close[t] is None:
+                opn[t] = None
+
+        secs[name] = {"close": close, "open": opn, "suspended": suspended, "limit": limit_status,
                       "board": board, "is_st": is_st, "industry": ind}
         events.append({
             "ts_code": name, "event_id": f"E{i+1:04d}",
@@ -160,15 +169,17 @@ def write_csv(data: dict, prices_path: str, events_path: str, meta_path: str) ->
     dates, secs = data["dates"], data["secs"]
     with open(prices_path, "w", newline="") as fh:
         w = csv.writer(fh)
-        # 契约 §1 列序
+        # 契约 §1 列序(open 追加末列,与 contract.PRICE_COLUMNS / 010 视图同序)
         w.writerow(["ts_code", "trade_date", "close", "is_suspended",
-                    "limit_status", "board", "is_st", "industry"])
+                    "limit_status", "board", "is_st", "industry", "open"])
         for name, s in secs.items():
             for t, d in enumerate(dates):
                 c = s["close"][t]
+                o = s["open"][t]
                 w.writerow([name, d.isoformat(), "" if c is None else f"{c:.10f}",
                             int(s["suspended"][t]), s["limit"][t], s["board"],
-                            int(s["is_st"]), s["industry"]])
+                            int(s["is_st"]), s["industry"],
+                            "" if o is None else f"{o:.10f}"])
     with open(events_path, "w", newline="") as fh:
         w = csv.writer(fh)
         w.writerow(["ts_code", "event_id", "first_ann_date", "event_type_layer", "snapshot_batch"])

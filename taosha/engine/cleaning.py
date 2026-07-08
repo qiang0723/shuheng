@@ -44,6 +44,7 @@ class CleanedEvent:
     industry: str
     regime_segment: str                       # 创业板 regime 分段(pre_10pct/post_20pct);他板同样标注
     t_idx: int                                # 事件日 T 在 date 轴索引
+    event_type_layer: str = "unknown"         # 三层(预喜/预亏/扭亏);供剔除分布的层维度分解(停牌回炉议题)
     rejected: bool = False
     reject_reason: Optional[str] = None        # 'history'/'suspension'/'st'/'coverage'/'postpone'
     reject_year: Optional[int] = None
@@ -65,6 +66,7 @@ def clean_event(rows: list[PriceRow], event, date_index: dict) -> CleanedEvent:
     rows: 该证券按 trade_date 升序的全期 PriceRow;event: EventRow;date_index: {date: idx}。
     """
     yr = event.first_ann_date.year
+    layer = getattr(event, "event_type_layer", "unknown")   # 层维度(合成自检 _Ev 无此属性 → unknown)
 
     # 无价行前置剔除(人批 2026-07-08):事件票在价视图无 bar(真实域可能:退市/无holdout前史)。
     #   数据残缺样本 → 剔除 no_price(计入年份剔除报告 + 偏差声明保守方向),不以残缺样本充数。
@@ -72,7 +74,8 @@ def clean_event(rows: list[PriceRow], event, date_index: dict) -> CleanedEvent:
         ce = CleanedEvent(
             ts_code=event.ts_code, event_id=event.event_id,
             first_ann_date=event.first_ann_date, board="unknown", is_st=False,
-            industry="unknown", regime_segment=fa.regime_segment(event.first_ann_date), t_idx=-1)
+            industry="unknown", regime_segment=fa.regime_segment(event.first_ann_date), t_idx=-1,
+            event_type_layer=layer)
         ce.rejected, ce.reject_reason, ce.reject_year = True, "no_price", yr
         ce.notes.append("无价行(事件票在价视图无 bar)→ 剔除(no_price;数据残缺,保守偏差)")
         return ce
@@ -83,7 +86,7 @@ def clean_event(rows: list[PriceRow], event, date_index: dict) -> CleanedEvent:
         ts_code=event.ts_code, event_id=event.event_id,
         first_ann_date=event.first_ann_date, board=r0.board, is_st=r0.is_st,
         industry=_norm_industry(r0.industry), regime_segment=fa.regime_segment(event.first_ann_date),
-        t_idx=t_idx if t_idx is not None else -1,
+        t_idx=t_idx if t_idx is not None else -1, event_type_layer=layer,
     )
 
     # 事件日不在交易轴(不应发生于合成域)→ 剔除
@@ -178,6 +181,34 @@ def year_breakdown(cleaned: list[CleanedEvent]) -> dict:
         "alert": (rej / total) > fa.SUSPENSION_ALERT_RATIO if total else False,
         "alert_threshold": fa.SUSPENSION_ALERT_RATIO,
     }
+
+
+def layer_year_breakdown(cleaned: list[CleanedEvent]) -> dict:
+    """剔除分布**分层×年份×原因**分解(停牌回炉议题层维度,2026-07-08 议毕补数据)。
+
+    top-level year_breakdown 为合并口径;本函数按三层(good/bad/turnaround)各出 by_year(含
+    by_reason),供复核"停牌剔除年份偏斜是否另有层维度偏斜"。纯计数、不下结论(报告项)。
+    返回 {layer: {by_year:{...}, total, rejected, reject_ratio,
+                  by_reason_total:{reason:count}}}。"""
+    out: dict = {}
+    for ce in cleaned:
+        lay = ce.event_type_layer or "unknown"
+        y = ce.reject_year if ce.reject_year is not None else ce.first_ann_date.year
+        L = out.setdefault(lay, {"by_year": {}, "by_reason_total": {}})
+        d = L["by_year"].setdefault(y, {"total": 0, "rejected": 0, "by_reason": {}})
+        d["total"] += 1
+        if ce.rejected:
+            d["rejected"] += 1
+            d["by_reason"][ce.reject_reason] = d["by_reason"].get(ce.reject_reason, 0) + 1
+            L["by_reason_total"][ce.reject_reason] = L["by_reason_total"].get(ce.reject_reason, 0) + 1
+    for lay, L in out.items():
+        for y, d in L["by_year"].items():
+            d["reject_ratio"] = d["rejected"] / d["total"] if d["total"] else 0.0
+        L["by_year"] = dict(sorted(L["by_year"].items()))
+        L["total"] = sum(d["total"] for d in L["by_year"].values())
+        L["rejected"] = sum(d["rejected"] for d in L["by_year"].values())
+        L["reject_ratio"] = (L["rejected"] / L["total"]) if L["total"] else 0.0
+    return dict(sorted(out.items()))
 
 
 if __name__ == "__main__":

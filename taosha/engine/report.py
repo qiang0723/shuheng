@@ -161,6 +161,35 @@ def render(result: dict) -> str:
         L.append("  ⚠ 合并口径 verdict 混合正负漂移可抵消,判读须以本三层分解为准(见上 note)。")
         L.append("")
 
+    # ④'''' 可交易口径(选项2;pap cost 冻结;报告/锚对照,不改统计判决)
+    tr = result.get("tradeable") or {}
+    if tr.get("available"):
+        c = tr.get("cost") or {}
+        L.append("【可交易口径净收益(选项2;pap cost 冻结;报告项·不改统计判决)】")
+        L.append(f"  成本(冻结率): 佣金={_fmt(c.get('commission'),5)} 印花(卖)={_fmt(c.get('stamp_tax_sell'),5)} "
+                 f"滑点(单边)={_fmt(c.get('slippage_oneway'),5)} → 买费={_fmt(c.get('buy_fee'),5)} "
+                 f"卖费={_fmt(c.get('sell_fee'),5)}")
+        L.append(f"  口径: 进场=τ=0 后复权 open,出场=窗尾后复权 close,净额={c.get('net_formula')}")
+
+        def _tr_line(tag, blk):
+            for wk in ("main", "robust"):
+                w = blk.get(wk) or {}
+                net, gro = (w.get("net") or {}), (w.get("gross") or {})
+                cen = w.get("exit_censor") or {}
+                L.append(
+                    f"  {tag:<10} {wk:<6}{w.get('window',''):<9} N={w.get('n_events',0):<6} "
+                    f"净:均值={_fmt(net.get('mean'),5)} 中位={_fmt(net.get('median'),5)} "
+                    f"胜率={_fmt(net.get('pos_frac'),3)} | 毛均={_fmt(gro.get('mean'),5)} "
+                    f"| 排除(窗尾缺close)={w.get('excluded_no_close',0)} "
+                    f"出场删失[一字{cen.get('one_word',0)}/跌停{cen.get('limit_down',0)}/"
+                    f"停牌{cen.get('suspend_or_missing',0)}]")
+
+        _tr_line("合并", tr.get("combined") or {})
+        for key, blk in (tr.get("layers") or {}).items():
+            _tr_line(f"{blk.get('layer_label','')}({key})", blk)
+        L.append(f"  注: {tr.get('note','')}")
+        L.append("")
+
     # ⑤ verdict(统计事实)
     L.append(f"【verdict(统计终态,非交易判断)】{result['verdict']}")
     L.append(f"  {result['verdict_note']}")

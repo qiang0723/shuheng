@@ -41,6 +41,8 @@ class SyntheticReader:
                     board=r["board"],
                     is_st=bool(int(r["is_st"])),
                     industry=r["industry"],
+                    # open=可交易口径进场价(契约末列);缺列(旧 fixture)或空 → None(禁零填充)
+                    open=(None if r.get("open", "") == "" else float(r["open"])),
                 )
 
     def _raw_events(self) -> Iterator[EventRow]:

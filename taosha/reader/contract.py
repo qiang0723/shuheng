@@ -15,9 +15,12 @@ from typing import Optional
 HOLDOUT_START = dt.date(2024, 7, 1)
 
 # 契约列(顺序即视图列顺序;Q3 视图须逐列对齐)
+# ⚠ open 追加在**末尾**(industry 之后):Postgres CREATE OR REPLACE VIEW 只允许在列尾新增,
+#   故 010 视图增列必落末尾;契约同序。open=后复权开盘(切片3 步7 选项2 可交易口径进场价,
+#   pap exp_id5 冻结"T+1 开盘进";不进 close 收益路径,既有键零回归)。
 PRICE_COLUMNS = (
     "ts_code", "trade_date", "close", "is_suspended",
-    "limit_status", "board", "is_st", "industry",
+    "limit_status", "board", "is_st", "industry", "open",
 )
 EVENT_COLUMNS = (
     "ts_code", "event_id", "first_ann_date", "event_type_layer", "snapshot_batch",
@@ -34,7 +37,11 @@ BOARDS = ("main", "chinext", "star", "bse")
 
 @dataclass(frozen=True, slots=True)
 class PriceRow:
-    """explore_reader_prices 一行(契约 §1)。close=None ⇔ 停牌/无交易(禁零填充)。"""
+    """explore_reader_prices 一行(契约 §1)。close=None ⇔ 停牌/无交易(禁零填充)。
+
+    open=后复权开盘价(契约末列,010 增;可交易口径进场价 = τ=0 当日 open)。停牌/无交易日
+    open=None(同 close,禁零填充)。默认 None 保住旧位置构造(cleaning 自检、不产 open 的场景)。
+    """
     ts_code: str
     trade_date: dt.date
     close: Optional[float]
@@ -43,6 +50,7 @@ class PriceRow:
     board: str
     is_st: bool
     industry: str
+    open: Optional[float] = None
 
     def __post_init__(self):
         if self.limit_status not in LIMIT_STATUS:
@@ -51,6 +59,8 @@ class PriceRow:
             raise ValueError(f"board 非法: {self.board!r}")
         if self.is_suspended and self.close is not None:
             raise ValueError(f"{self.ts_code}@{self.trade_date}: 停牌日 close 必须 None(禁零填充)")
+        if self.is_suspended and self.open is not None:
+            raise ValueError(f"{self.ts_code}@{self.trade_date}: 停牌日 open 必须 None(禁零填充)")
 
 
 @dataclass(frozen=True, slots=True)

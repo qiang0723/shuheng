@@ -26,6 +26,9 @@ def synth_pap() -> dict:
                   "suspension": "事件落停牌期剔除", "st": "剔除", "one_word": "顺延"},
         snapshot_batch_req="SYNTH",
     )
+    # 可交易口径 cost 块(选项2;合成域也走该口径出新键,rates 对齐真实 exp_id5 pap 冻结值)
+    p["cost"] = {"commission": 0.00025, "stamp_tax_sell": 0.001, "slippage_oneway": 0.001,
+                 "limit_up_board_untradeable": True}
     p["_family_trial"] = 1
     return p
 
