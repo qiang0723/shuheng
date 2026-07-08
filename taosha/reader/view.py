@@ -129,6 +129,17 @@ class ViewReader:
             rows = [CalendarRow(trade_date=d, pretrade_date=p) for d, p in cur.fetchall()]
         return enforce_holdout_calendar(rows)
 
+    # ── b1 池成员(#2b;预计算 pool_b1_current;引擎读表不现算全市场 amount)──────────
+    def pool_membership(self) -> dict:
+        """{trade_date: frozenset(ts_code)} 从 taosha `pool_b1_current`(max batch 路由)读 b1 池成员。
+        供 #2b 事件生成的 PIT 过滤(进场日在池)。口径=liquidity_pool(003 预计算,frozen_digest 在 batch)。"""
+        out: dict = {}
+        with self._connect(self._tdsn) as c, c.cursor() as cur:
+            cur.execute("SELECT trade_date, ts_code FROM pool_b1_current")
+            for d, ts in cur.fetchall():
+                out.setdefault(d, set()).add(ts)
+        return {d: frozenset(s) for d, s in out.items()}
+
     # ── 市场基准(步3 预计算全市场等权;引擎读表不现算)────────────────────────
     def market_return(self, dates: list) -> list:
         """按给定 date 轴返回全市场等权连续(对数)日收益;轴上无该日(如首日/表未覆盖)→ None。
