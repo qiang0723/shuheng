@@ -171,7 +171,10 @@ def _tradeable(valid_events: list, cost: Optional[dict], main_len: int, robust_l
     all_tr = [v[1]["tradeable"] for v in valid_events]
     groups: dict = {}
     for v in valid_events:
-        groups.setdefault(v[1].get("event_type_layer", "unknown"), []).append(v[1]["tradeable"])
+        lay = v[1].get("event_type_layer")
+        if lay is None:          # #2b 单信号事件:无 layer 维度 → 不出层分解(合并即全体,免 None(None) 行)
+            continue
+        groups.setdefault(lay, []).append(v[1]["tradeable"])
     layers = {}
     for lay in sorted(groups, key=lambda k: (_LAYER_ORDER.get(k, 9), k)):
         layers[lay] = {"layer_key": lay, "layer_label": _LAYER_LABEL.get(lay, lay),
