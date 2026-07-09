@@ -72,10 +72,11 @@ def main():
     result = runner.run_study(reader, pap, benchmark_mode="pool_pit",
                               events=event_rows, strata_enabled=False)
 
-    # 复现留痕(spec §9):记池成员批次 + 池等权基准批次(引擎读表不现算,批次可溯源)
+    # 复现留痕(spec §9):记池成员批次 + 池等权基准批次(引擎读表不现算,批次可溯源)。
+    #   批次号从引擎可读的数据表(membership/return,带 batch_id 列)取 max,不读 *_batch 元表(不扩权)。
     result["audit"]["pool_snapshot"] = {
-        "pool_b1_batch": _batch_id(reader, "pool_b1_batch"),
-        "pool_return_batch": _batch_id(reader, "pool_b1_return_batch"),
+        "pool_b1_batch": _batch_id(reader, "pool_b1_membership"),
+        "pool_return_batch": _batch_id(reader, "pool_b1_return"),
         "note": "b1 池成员=pool_b1_current(max batch);池等权基准=pool_b1_return_current(max batch);"
                 "基准成分逐日=当日池快照(验收硬项:seed_pool_b1_return --verify)。",
     }
