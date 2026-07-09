@@ -115,12 +115,20 @@ def _src(universe_param: str) -> str:
             f"WHERE p.ts_code = ANY({universe_param})")
 
 
-def load_pool_snapshots(tconn) -> dict:
-    """taosha pool_b1_current(max batch)→ {trade_date: frozenset(ts_code)} 当日池快照。"""
+def load_pool_snapshots(conn, pool_batch: Optional[int] = None,
+                        view: str = "pool_b1_membership") -> dict:
+    """当日池快照 {trade_date: frozenset(ts_code)}。
+    落库侧(taosha_app):读 pool_b1_membership WHERE batch_id=pool_batch(=pool_b1_current 同集,
+      taosha_app 有 SELECT、不读 view 免扩权);验收侧(taosha_engine):view='pool_b1_current'(引擎视角)。"""
     by_date: dict = {}
-    with tconn.cursor(name="pool_snap_stream") as cur:
+    if view == "pool_b1_current":
+        sql, params = "SELECT trade_date, ts_code FROM pool_b1_current", ()
+    else:
+        sql = "SELECT trade_date, ts_code FROM pool_b1_membership WHERE batch_id=%s"
+        params = (pool_batch,)
+    with conn.cursor(name="pool_snap_stream") as cur:
         cur.itersize = 200_000
-        cur.execute("SELECT trade_date, ts_code FROM pool_b1_current")
+        cur.execute(sql, params)
         for d, ts in cur:
             by_date.setdefault(d, set()).add(ts)
     return {d: frozenset(s) for d, s in by_date.items()}
@@ -225,8 +233,8 @@ def run(dry: bool):
 
     with psycopg.connect(tdsn) as tconn:
         pool_batch = _pool_batch_id(tconn)
-        print(f"当日池快照:pool_b1_current(pool_b1_batch={pool_batch})加载中…", flush=True)
-        pool_by_date = load_pool_snapshots(tconn)
+        print(f"当日池快照:pool_b1_membership(batch={pool_batch}=pool_b1_current 同集)加载中…", flush=True)
+        pool_by_date = load_pool_snapshots(tconn, pool_batch=pool_batch)
     universe = sorted({ts for s in pool_by_date.values() for ts in s})
     print(f"  评估日 {len(pool_by_date)} 天,池宇宙(全期并集)={len(universe)} 票", flush=True)
 
@@ -282,10 +290,15 @@ def verify():
     import psycopg
     root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     env = load_env(os.path.join(root, ".env"))
-    qdsn, tdsn = env.get("QBASE_APP_DSN"), env.get("TAOSHA_APP_DSN")
+    # 引擎视角(taosha_engine):读引擎自己看到的 pool_b1_current(池快照)+ pool_b1_return_current(基准)
+    #   + qbase explore_reader 价视图 → 验的是"引擎读到的基准==引擎读到的当日池快照等权",最铁。
+    qdsn = env.get("TAOSHA_ENGINE_QBASE_DSN")
+    tdsn = env.get("TAOSHA_ENGINE_TAOSHA_DSN")
+    if not qdsn or not tdsn:
+        sys.exit("缺 TAOSHA_ENGINE_QBASE_DSN / TAOSHA_ENGINE_TAOSHA_DSN(.env);验收硬项走引擎只读身份")
 
     with psycopg.connect(tdsn) as tconn:
-        pool_by_date = load_pool_snapshots(tconn)
+        pool_by_date = load_pool_snapshots(tconn, view="pool_b1_current")   # 引擎视角池快照
         with tconn.cursor() as cur:
             cur.execute("SELECT trade_date, ret_pool_eqw, n_pool_stocks FROM pool_b1_return_current "
                         "ORDER BY trade_date")
