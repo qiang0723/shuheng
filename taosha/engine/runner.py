@@ -21,6 +21,7 @@ from taosha.compute.calendar_pf import CalEvent, calendar_time
 from taosha.compute.market_model import sim_fit
 from taosha.compute.rank_test import RankSecurity, corrado_rank
 from taosha.engine import benchmark as bench
+from taosha.engine import drawdown_events as dde
 from taosha.engine import execution as execu
 from taosha.engine.cleaning import (
     CleanedEvent, clean_event, layer_year_breakdown, year_breakdown,
@@ -191,15 +192,24 @@ def _tradeable(valid_events: list, cost: Optional[dict], main_len: int, robust_l
 
 
 def run_study(reader, pap: dict, *, benchmark_mode: str = "market",
-              pool: Optional[set] = None) -> dict:
+              pool: Optional[set] = None, events: Optional[list] = None,
+              strata_enabled: bool = True) -> dict:
     """跑一条已冻结假设的事件研究,返回 result 字典(供 report + 落库)。
 
-    benchmark_mode: 'market'(全市场等权)/'pool'(池内等权)——口径②冻结基准二选一。
-    pool: benchmark_mode='pool' 时的池成员 ts_code 集合。
+    benchmark_mode: 'market'(全市场等权)/'pool'(静态池等权)/'pool_pit'(#2b b1池等权PIT活基准,
+      读预计算表 reader.pool_return,基准成分逐日=当日池快照)——口径②冻结基准。
+    pool: benchmark_mode='pool' 时的静态池成员 ts_code 集合。
+    events: 显式事件源(#2b=价格模式生成的 DrawdownEventRow 列表);None → reader.events()(#4 台账事件)。
+    strata_enabled: 三层(预喜/预亏/扭亏)分解开关;#2b 单信号事件 → False(三层不适用)。
     """
-    # ── 检验窗从 pap 读(裁定 2026-07-07):main/robust = 首/末检验窗点数(#4=(20,60))──
+    # ── 检验窗从 pap 读(裁定 2026-07-07):main/robust = 首/末检验窗点数(#4/#2b=(20,60))──
     test_win = parse_test_windows(pap)
     main_len, robust_len = test_win[0], test_win[-1]
+
+    # 事件源:#2b 显式传入生成事件(价格模式 PIT);#4 走 reader.events()(台账)。
+    event_src = list(events) if events is not None else list(reader.events())
+    # #2b drawdown 事件带 D1/D2/D3 诊断属性(报告项,不进 verdict)——据此启用诊断聚合与 se_meta 带出。
+    is_drawdown = bool(event_src) and hasattr(event_src[0], "d1_never_broke_ma10")
 
     # ── 拉数 + date 轴 ────────────────────────────────────────────────────────
     by_sec = reader.prices_by_security()
@@ -214,7 +224,12 @@ def run_study(reader, pap: dict, *, benchmark_mode: str = "market",
     # sec_returns=每票在 all_dates 上稠密展开。pool/合成域需全量(算等权基准);真实 market 域
     # 基准读预计算表(不需全量 sec_returns)→ 惰性化(事件循环内按票现算)避 5356×8187 稠密全物化
     # OOM(实测全量 anon-rss 6.9G/2c7.2G 机 OOM)。合成/pool 走本 if/else 全物化分支不变→约束③零回归。
-    if benchmark_mode == "pool":
+    if benchmark_mode == "pool_pit":
+        # #2b:b1 池等权 PIT 活基准——读预计算表 reader.pool_return(基准成分逐日=当日池快照,
+        #   append-only+batch,类比 market_return;引擎读表不现算)。sec_returns 惰性(同 market,内存)。
+        mkt = reader.pool_return(all_dates)
+        sec_returns = None
+    elif benchmark_mode == "pool":
         sec_returns = {ts: bench.returns_by_date(rows, all_dates) for ts, rows in by_sec.items()}
         mkt = bench.pool_equal_weight_market(sec_returns, pool or set(by_sec), n_dates)
     elif hasattr(reader, "market_return"):
@@ -228,7 +243,7 @@ def run_study(reader, pap: dict, *, benchmark_mode: str = "market",
     cleaned: list[CleanedEvent] = []
     valid_events: list[SecurityEvent] = []
     _ret_cache: dict = {}   # 真实域惰性收益单键缓存(events 按 ts_code 有序→免同票重算、内存 O(1票))
-    for ev in reader.events():
+    for ev in event_src:
         rows = by_sec.get(ev.ts_code, [])
         ce = clean_event(rows, ev, date_index)
         if ce.rejected:
@@ -318,6 +333,9 @@ def run_study(reader, pap: dict, *, benchmark_mode: str = "market",
                    "postponed": ce.postponed, "is_st": ce.is_st, "diag_censor": diag_censor,
                    "event_type_layer": ev.event_type_layer,   # 三层分解(pap layers/event_def)
                    "tradeable": tradeable}                     # 可交易口径进/出场价(选项2)
+        if is_drawdown:   # #2b:D1/D2/D3 诊断带入(报告项聚合;#4 台账事件无此属性 → se_meta 不变,约束③)
+            se_meta["drawdown"] = (ev.d1_never_broke_ma10, ev.d2_episode_to_entry_days,
+                                   ev.d3_broke_ma20_before_entry)
         # 秩检验输入:估计窗 AR(相对位置 -250..-91)+ 事件窗 AR;日历法输入:窗内日期+AR
         est_ar_seq = [fit.abnormal[j] for j in range(est_lo, est_hi + 1)]
         w_dates = [all_dates[j] for j in w_idx]
@@ -326,10 +344,13 @@ def run_study(reader, pap: dict, *, benchmark_mode: str = "market",
         valid_events.append((se, se_meta, rank_sec, cal_ev))
         cleaned.append(ce)
 
-    return _assemble(pap, cleaned, valid_events, benchmark_mode, main_len, robust_len)
+    return _assemble(pap, cleaned, valid_events, benchmark_mode, main_len, robust_len,
+                     strata_enabled=strata_enabled,
+                     drawdown_events=(event_src if is_drawdown else None))
 
 
-def _assemble(pap, cleaned, valid_events, benchmark_mode, main_len, robust_len) -> dict:
+def _assemble(pap, cleaned, valid_events, benchmark_mode, main_len, robust_len,
+              *, strata_enabled: bool = True, drawdown_events=None) -> dict:
     ses = [v[0] for v in valid_events]
     rank_secs = [v[2] for v in valid_events]
     cal_evs = [v[3] for v in valid_events]
@@ -370,7 +391,12 @@ def _assemble(pap, cleaned, valid_events, benchmark_mode, main_len, robust_len) 
 
     # 三层分解(预喜/预亏/扭亏;pap layers/event_def 冻结定义;层外已在视图排除)——纯增量,
     # 各层独立跑同一流水线(不碰上面 combined 计算路径 → combined 既有键逐字节不变,约束③)。
-    type_strata = _type_strata(valid_events, main_len, robust_len, alpha) if n >= 1 else {}
+    # #2b(strata_enabled=False):单信号事件、pap event_def 无 layers → 三层不适用,不误入 'unknown' 层。
+    if strata_enabled:
+        type_strata = _type_strata(valid_events, main_len, robust_len, alpha) if n >= 1 else {}
+    else:
+        type_strata = {"applicable": False,
+                       "note": "#2b 单信号事件:三层(预喜/预亏/扭亏)不适用(pap event_def 无 layers 维度)"}
 
     # 可交易口径(选项2;pap cost 冻结;新增键,不碰统计路径 → 既有键零回归)
     tradeable = _tradeable(valid_events, pap.get("cost"), main_len, robust_len) if n >= 1 else {}
@@ -399,7 +425,22 @@ def _assemble(pap, cleaned, valid_events, benchmark_mode, main_len, robust_len) 
                 "valid_days_max": max(cov_days) if cov_days else None,
                 "valid_days_mean": (sum(cov_days) / len(cov_days)) if cov_days else None}
 
-    return {
+    # #2b D1/D2/D3 诊断(F2;报告项·不进 verdict):generated=池内全部生成事件、valid=过清洗存活子集。
+    #   #4(drawdown_events=None)→ 不计、result 不含此键(约束③:#4 result 逐字节不变)。
+    drawdown_diag = None
+    if drawdown_events is not None:
+        gen_triples = [(e.d1_never_broke_ma10, e.d2_episode_to_entry_days,
+                        e.d3_broke_ma20_before_entry) for e in drawdown_events]
+        val_triples = [v[1]["drawdown"] for v in valid_events if "drawdown" in v[1]]
+        drawdown_diag = {
+            "note": "F2 事件生成诊断(附录F-rev1;报告项·不进 verdict)。D1=进场前从未破ma10占比、"
+                    "D2=回撤触发→进场交易日数分布、D3=进场前曾破ma20占比。generated=池内全部生成事件、"
+                    "valid=过A股清洗存活子集(剔停牌/ST/覆盖不足等)。",
+            "generated": dde.diagnostic_summary(gen_triples),
+            "valid": dde.diagnostic_summary(val_triples),
+        }
+
+    result = {
         "audit": {
             "frozen_config_digest": fc.audit_digest(),
             "frozen_ashare_digest": fa.audit_digest(),
@@ -423,6 +464,9 @@ def _assemble(pap, cleaned, valid_events, benchmark_mode, main_len, robust_len) 
         "verdict": verdict, "verdict_note": verdict_note,
         "snapshot_batch": pap.get("snapshot_batch_req", "SYNTH"),
     }
+    if drawdown_diag is not None:      # #2b 专属键(#4 不含 → 约束③ result 逐字节不变)
+        result["drawdown_diagnostic"] = drawdown_diag
+    return result
 
 
 def _board_strata(cleaned, valid_events) -> dict:

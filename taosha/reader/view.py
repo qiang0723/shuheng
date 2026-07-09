@@ -149,6 +149,17 @@ class ViewReader:
             m = {d: float(r) for d, r in cur.fetchall()}
         return [m.get(d) for d in dates]
 
+    # ── #2b b1 池等权 PIT 活基准(004 预计算;基准成分逐日=当日池快照;引擎读表不现算)────
+    def pool_return(self, dates: list) -> list:
+        """按给定 date 轴返回 b1 池等权连续(对数)日收益;轴上无该日(首日/表未覆盖/池空)→ None。
+        读 taosha `pool_b1_return_current`(max batch 路由视图)。逐日 ret = 当日池快照成员
+        (pool_b1_current[d])中有present bar且有前序present bar的票 log(close_d/close_前序)的等权平均
+        (004 seed 落库,验收硬项=抽日成分==当日池快照)。#2b SIM regressor rm(口径②池内假设=池等权)。"""
+        with self._connect(self._tdsn) as c, c.cursor() as cur:
+            cur.execute("SELECT trade_date, ret_pool_eqw FROM pool_b1_return_current")
+            m = {d: float(r) for d, r in cur.fetchall()}
+        return [m.get(d) for d in dates]
+
 
 if __name__ == "__main__":
     # 冒烟(需 .env 引擎 DSN + 真视图/表):证契约可读、样本取自事件票、市场基准对齐。

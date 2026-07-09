@@ -33,7 +33,11 @@ def _fmt(x, nd=4):
 def render(result: dict) -> str:
     a = result["audit"]
     L = []
-    L.append("═══ 淘沙 · 事件研究体检报告(切片2 合成验收)═══")
+    # 横幅:#2b(含 drawdown_diagnostic 键)出专属标题;#4/合成无此键 → 保留原标题(约束③不动 #4)。
+    if result.get("drawdown_diagnostic") is not None:
+        L.append("═══ 淘沙 · 事件研究体检报告(#2b 回撤反抽·b1池 事件版)═══")
+    else:
+        L.append("═══ 淘沙 · 事件研究体检报告(切片2 合成验收)═══")
     L.append(f"快照批次: {result.get('snapshot_batch')}  |  基准口径: {a['benchmark_mode']}(口径②)")
     L.append(f"冻结口径审计: frozen_config={a['frozen_config_digest'][:16]}… "
              f"frozen_ashare={a['frozen_ashare_digest'][:16]}…")
@@ -159,6 +163,31 @@ def render(result: dict) -> str:
         if nvs is not None:
             L.append(f"  三层存活合计={nvs}(应=合并 N_valid={result.get('n_valid')};层外已在视图排除)")
         L.append("  ⚠ 合并口径 verdict 混合正负漂移可抵消,判读须以本三层分解为准(见上 note)。")
+        L.append("")
+    elif ts.get("applicable") is False:
+        L.append(f"【三层分解】不适用 —— {ts.get('note', '')}")
+        L.append("")
+
+    # ④''''' #2b 事件生成诊断 D1/D2/D3(F2 附录F-rev1;报告项·不进 verdict)
+    dd = result.get("drawdown_diagnostic")
+    if dd:
+        L.append("【#2b 事件生成诊断 D1/D2/D3(F2;报告项·不进 verdict)】")
+        L.append(f"  注: {dd.get('note', '')}")
+
+        def _dd_line(tag, s):
+            if not s or s.get("n", 0) == 0:
+                L.append(f"  {tag:<10} N=0(无事件)")
+                return
+            d2 = s.get("d2") or {}
+            L.append(
+                f"  {tag:<10} N={s['n']:<6} "
+                f"D1(从未破ma10)={_fmt(s.get('d1_never_broke_ma10_frac'),3)}({s.get('d1_count')}) | "
+                f"D2(触发→进场交易日)[min/中位/mean/max]="
+                f"{d2.get('min')}/{_fmt(d2.get('median'),1)}/{_fmt(d2.get('mean'),1)}/{d2.get('max')} | "
+                f"D3(进场前破ma20)={_fmt(s.get('d3_broke_ma20_before_entry_frac'),3)}({s.get('d3_count')})")
+
+        _dd_line("池内生成", dd.get("generated"))
+        _dd_line("清洗存活", dd.get("valid"))
         L.append("")
 
     # ④'''' 可交易口径(选项2;pap cost 冻结;报告/锚对照,不改统计判决)
