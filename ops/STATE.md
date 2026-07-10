@@ -165,6 +165,14 @@
 
 **开工顺序**:施工令留痕(本节)→**离场 5 空白已拍定(2026-07-10,见上 P1-P5)**→⏳当前=写事件级持有路径模拟(compute 纯函数,消费事件版同源进场事件)+ DSR 报告项(纯函数+单测,DSR的V口径实现到该分支再上报)+ 单测→策略版跑(事件版已毕)→步④验收照 #4 先例(审计→终签→人开卡;验收增列 DSR 实物 + 同源一致性声明)。
 
+**契约侦查完成(2026-07-10,数据盲读代码/查 pap,零出数):**
+- **#2b(exp_id=3) pap `cost` 块已冻结** = `commission 0.00025 / stamp_tax_sell 0.001 / slippage_oneway 0.001 / limit_up_board_untradeable=true`(买费 **0.00125**·卖费 **0.00225**,与 #4 同率)→ **无新成本待拍点**,直接复用 `engine/execution.py` 的 `cost_fractions`+`net_return` 乘式净额。pap `window`="事件版20/60日;策略版按离场"(后半正是附录B步③域)。
+- **契约**:`PriceRow` 有 `open`(后复权,可交易进场价=T+1 当日 open)、`limit_status∈{none,limit_up,limit_down,one_word}`;进场成本=T+1 后复权 open、强平线=成本×0.8;停牌=is_suspended(close/open 均 None)或缺行(日历轴断档)。
+- **runner.py 已 613 行(破 500 红线)**→ 策略版**独立成件**、不再堆 runner。
+- **实现计划(4 模块)**:①`compute/holding_path.py` 纯函数(离场路径模拟,P1-P5 全已拍,无阻塞先写+单测)②`compute/dsr.py`(PSR 偏度/峰度修正 + DSR N=2,V 口径待拍分支上报)③`engine/drawdown_strategy.py`(接 reader 逐票逐事件跑路径,独立于 runner)④报告增段(DSR+已知口径特征登记)+ 合成回归(约束③#4 逐字节零回归)+ 步④验收。
+- **⚠两预告停点**:(a)**ADJ-BMP 应用口径(大概率下个待拍)**:附录B2 仅"路径净收益替代固定窗 CAR 过 ADJ-BMP",但变长持有期净收益如何转异常/标准化进 BMP 截面(估计窗 s_i?减 b1 基准同期?)**未细化**→ 实现到引擎接入若操作化不足,成套上报人拍(数据盲);(b)**one_word 方向判定(P3 小口径·工程自决+登记)**:一字板方向不明,拟用后复权 close 相对前一交易日 close 判向(一字跌停卖不掉→顺延·一字涨停→可卖),不劳人拍。
+- **⏳收工点(2026-07-10):下一步 = 写 `compute/holding_path.py` + 单测**(纯函数本地可验、无 DB)。两台 git 干净一致 HEAD `07b243c`。
+
 ## 待答点(挂账,见 qbase/quality/caveats-and-ledger.md)
 
 - **L1**:巨潮 secCode/orgId 填充验收(行数 + secCode↔orgId 对射抽查)——巨潮件采集时。
