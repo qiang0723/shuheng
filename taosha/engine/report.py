@@ -225,3 +225,102 @@ def render(result: dict) -> str:
     L.append("")
     L.append(NO_ADVICE_FOOTER)
     return "\n".join(L)
+
+
+def render_strategy(result: dict) -> str:
+    """#2b 策略版报告(附录B B1/B2 + 附录G;步③模块④增段)。
+
+    独立于 render()(事件版/合成共享渲染,不碰 → 约束③零回归);消费 drawdown_strategy.run_strategy
+    的 result。只陈述统计事实(铁律⑤);判决权归事件版(四件套④)。"""
+    sv = result["strategy_version"]
+    a = result["audit"]
+    L = []
+    L.append("═══ 淘沙 · 事件研究体检报告(#2b 回撤反抽·b1池 策略版)═══")
+    L.append(f"  定义: {sv['definition']}")
+    L.append(f"  判决权: {sv['verdict_authority']} —— {sv['authority_note']}")
+    L.append("")
+
+    # ① 样本 + 同源一致性(步④硬项)
+    sc = sv["source_consistency"]
+    L.append(f"【样本 · 同源一致性】输入事件={sv['n_events_input']} → 同源存活(=事件版 N_valid 同构造)"
+             f"={sv['n_survivors_sourced']} → 策略版消费={sv['n_consumed']} "
+             f"(样本闸 {sv['sample_gate']['gate']}:{sv['sample_gate']['state']})")
+    L.append(f"  差集归因: 建仓价缺={sc['excluded_no_entry_open']['n']} "
+             f"基准缺日={sc['excluded_bench_gap']['n']} 标准化不可得={sc['excluded_sbhar_none']['n']}"
+             + ("(差集为空:消费集==同源存活全集)" if not (sc['excluded_no_entry_open']['n']
+                or sc['excluded_bench_gap']['n'] or sc['excluded_sbhar_none']['n']) else ""))
+    L.append(f"  {sc['note']}")
+    L.append("")
+
+    # ② 事件级收益分布(净/毛/基准BH/BHAR)
+    c = sv["cost"]
+    L.append(f"【事件级收益分布(附录G 离场;成本乘式:买费={_fmt(c['buy_fee'],5)} 卖费={_fmt(c['sell_fee'],5)})】")
+    for tag, key in (("净收益", "net"), ("毛收益", "gross"),
+                     ("池同跨度BH", "benchmark_bh"), ("BHAR(净−基准)", "bhar")):
+        d = sv[key]
+        L.append(f"  {tag:<12} N={d['n']:<7} 均值={_fmt(d['mean'],5)} 中位={_fmt(d['median'],5)} "
+                 f"胜率={_fmt(d['pos_frac'],3)} sd={_fmt(d['std'],5)}")
+    L.append("")
+
+    # ③ ADJ-BMP 四件套检验(②截面 + ③右偏稳健项)
+    ab = sv["adj_bmp_bhar"]
+    L.append(f"【ADJ-BMP(四件套②:SBHAR=BHAR/(σ_est·√H) 截面)】ρ̄={_fmt(ab['rho_bar'])}"
+             f"(行业内 {ab['rho_n_pairs']} 对) N={ab['n']}")
+    L.append(f"  SBHAR 均值={_fmt(ab['mean'])} sd={_fmt(ab['sd'])} z={_fmt(ab['z'],3)} "
+             f"× KP因子={_fmt(ab['kp_factor'],6)} → adj_z={_fmt(ab['adj_z'],3)} "
+             f"(双侧 α={ab['alpha']:.4f} 临界±{ab['z_crit']:.3f},family_trial={ab['family_trial']})")
+    L.append(f"  统计事实标注: {ab['sig_state']} —— {ab['sig_note']}")
+    st = sv["skew_adjusted_t"]
+    L.append(f"  四件套③ BHAR 右偏稳健项(Hall 1992/LBT 1999): skew={_fmt(st['skew'],3)} "
+             f"t_plain={_fmt(st['t_plain'],3)} → t_sa={_fmt(st['t_sa'],3)}")
+    L.append("")
+
+    # ④ DSR 常设报告项(施工令①;不进 verdict)
+    d = sv.get("dsr") or {}
+    L.append(f"【DSR(常设报告项,不进 verdict;V口径=proxy 人裁 2026-07-10)】")
+    L.append(f"  n={d.get('n')} N_trials={d.get('N')} v_mode={d.get('v_mode')} "
+             f"SR̂={_fmt(d.get('sr_hat'),5)} skew={_fmt(d.get('skew'),3)} kurt={_fmt(d.get('kurtosis'),3)}")
+    L.append(f"  V(proxy)={_fmt(d.get('v'),8)} SR*={_fmt(d.get('sr_star'),6)} "
+             f"PSR(vs 0)={_fmt(d.get('psr_vs_zero'),6)} DSR={_fmt(d.get('dsr'),6)}")
+    L.append(f"  {sv['dsr_note']}")
+    L.append("")
+
+    # ⑤ 附录G 诊断(报告项)
+    dg = sv["diagnostics"]
+    L.append("【附录G 诊断(报告项)】")
+    L.append(f"  离场主因: {dg['exit_reasons']} | G2 同日双触发={dg['dual_trigger']['n']}"
+             f"(双 flag 均记账,主因归强平)")
+    po = dg["postpone"]
+    dd = po.get("days_dist") or {}
+    L.append(f"  G4 顺延: n={po['n_postponed']} 天数[min={dd.get('min')} 中位={dd.get('median')} "
+             f"均值={_fmt(dd.get('mean'),2)} max={dd.get('max')}](日历交易日轴) "
+             f"极端(>20 交易日)={len(po['extreme_cases'])} 例(单列不静默):")
+    for x in po["extreme_cases"]:
+        L.append(f"    · {x['event_id']}: 顺延 {x['postpone_days']} 交易日"
+                 f"(present-bar 差 {x['postpone_bars']};删失={x['right_censored']})")
+    rc = dg["right_censored"]
+    un = rc.get("unrealized_net") or {}
+    L.append(f"  G5 右删失(open_position): n={rc['n']} 占比={_fmt(rc['pct'],5)} "
+             f"末端 mark-to-market 未实现净收益: 均值={_fmt(un.get('mean'),5)} N={un.get('n')}(不剔除)")
+    hb, hd = dg.get("holding_bars_dist") or {}, dg.get("holding_days_dist") or {}
+    L.append(f"  持有期: bars[中位={hb.get('median')} 均值={_fmt(hb.get('mean'),1)} max={hb.get('max')}] "
+             f"日历交易日[中位={hd.get('median')} 均值={_fmt(hd.get('mean'),1)} max={hd.get('max')}]")
+    L.append("")
+
+    # ⑥ 已知口径特征登记(附录G;显式不藏)
+    L.append("【已知口径特征登记(附录G,显式不藏)】")
+    for feat in sv["known_caliber_features"]:
+        L.append(f"  · {feat}")
+    L.append("")
+
+    # ⑦ 偏差方向声明(同事件版清洗流水线,同段适用)+ 审计
+    L.append(BIAS_DECLARATION)
+    L.append("")
+    L.append("【口径审计摘要】")
+    L.append(f"  frozen_config={a['frozen_config_digest'][:8]}… frozen_ashare={a['frozen_ashare_digest'][:8]}… "
+             f"benchmark={a['benchmark_mode']} family_trial={a['family_trial']} α={a['family_alpha']}")
+    ps = a.get("pool_snapshot") or {}
+    L.append(f"  池血缘: pool_b1_batch={ps.get('pool_b1_batch')} pool_return_batch={ps.get('pool_return_batch')}")
+    L.append("")
+    L.append(NO_ADVICE_FOOTER)
+    return "\n".join(L)

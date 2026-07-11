@@ -26,6 +26,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--exp-id", type=int, default=3)
     ap.add_argument("--json", default=None)
+    ap.add_argument("--report", default=None)
     a = ap.parse_args()
 
     row = ledger.get(a.exp_id)
@@ -80,6 +81,12 @@ def main():
         with open(a.json, "w") as fh:
             json.dump(result, fh, ensure_ascii=False, indent=2, default=str)
         print(f"result_json → {a.json}", flush=True)
+    if a.report:
+        from taosha.engine.report import render_strategy
+        rendered = render_strategy(result)
+        with open(a.report, "w") as fh:
+            fh.write(rendered)
+        print(f"report → {a.report}", flush=True)
 
 
 def _f(x):
