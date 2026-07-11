@@ -72,9 +72,11 @@ def main():
     sv = result["strategy_version"]
     print(f"\n消费事件 n={sv['n_consumed']}(同源存活 {sv['n_survivors_sourced']};闸 "
           f"{sv['sample_gate']['state']});净均值={_f(sv['net']['mean'])} "
-          f"BHAR均值={_f(sv['bhar']['mean'])} adj_z={_f(sv['adj_bmp_bhar']['adj_z'])} "
-          f"[{sv['adj_bmp_bhar']['sig_state']}(判决权归事件版)] "
-          f"t_sa={_f(sv['skew_adjusted_t']['t_sa'])} "
+          f"毛超额={_f(sv['bhar_gross']['mean'])} 净超额={_f(sv['bhar']['mean'])} "
+          f"adj_z(毛主检验)={_f(sv['adj_bmp_bhar_gross']['adj_z'])} "
+          f"[{sv['adj_bmp_bhar_gross']['sig_state']}(判决权归事件版)] "
+          f"adj_z(净并报)={_f(sv['adj_bmp_bhar']['adj_z'])} "
+          f"t_sa(毛)={_f(sv['skew_adjusted_t_gross']['t_sa'])} "
           f"DSR={_f((sv['dsr'] or {}).get('dsr'))}", flush=True)
 
     if a.json:

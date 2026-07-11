@@ -146,17 +146,20 @@ def run_strategy(reader, pap: dict, events: list) -> dict:
             excluded["bench_gap"].append(ev.event_id)
             continue
         bench_bh = math.exp(sum(seg)) - 1.0
-        bhar = net - bench_bh
+        bhar = net - bench_bh                      # 净超额(净额并报行)
+        bhar_gross = gross - bench_bh              # 毛超额(主检验行;人批补正 2026-07-11,框架口径)
         h_days = exit_cal - ce.tau0_idx + 1        # 持有日历交易日数(与①跨度同轴)
         sbh = bt.sbhar(bhar, fit.est_ar_sd, h_days)
-        if sbh is None:                            # est_ar_sd≤0 极端(如实归因,不静默)
+        sbh_gross = bt.sbhar(bhar_gross, fit.est_ar_sd, h_days)
+        if sbh is None or sbh_gross is None:       # est_ar_sd≤0 极端(如实归因,不静默;毛/净同分母)
             excluded["sbhar_none"].append(ev.event_id)
             continue
         rho_inputs.append(SecurityEvent(
             est_ar_sd=fit.est_ar_sd, L=fit.delta, x_bar=fit.x_bar, sxx=fit.sxx,
             event_market=[], event_abnormal=[], industry=ce.industry,
             est_ar_by_date=est_ar_by_date))
-        paths.append((ev, ce, path, net, gross, bench_bh, bhar, sbh, h_days))
+        paths.append((ev, ce, path, net, gross, bench_bh, bhar, sbh, h_days,
+                      bhar_gross, sbh_gross))
 
     # ── 截面检验(四件套②③)+ 闸/门槛(附录B B2)──────────────────────────────────
     n = len(paths)
@@ -165,12 +168,18 @@ def run_strategy(reader, pap: dict, events: list) -> dict:
     grosses = [p[4] for p in paths]
     bhars = [p[6] for p in paths]
     sbhars = [p[7] for p in paths]
+    bhars_gross = [p[9] for p in paths]
+    sbhars_gross = [p[10] for p in paths]
     rho = rho_bar_within_industry(rho_inputs) if rho_inputs else {"rho_bar": 0.0, "n_pairs": 0,
                                                                   "n_securities": 0, "note": "空截面"}
+    # 主检验 = 毛超额(人批补正 2026-07-11:检验挂毛超额、净额并报;首跑挂净=偏离,留痕见输出)
+    ct_gross = bt.cross_test(sbhars_gross, rho["rho_bar"], kp2010_factor)
+    sat_gross = bt.skew_adjusted_t(bhars_gross)
+    # 净额并报行(首跑口径保留为对照)
     ct = bt.cross_test(sbhars, rho["rho_bar"], kp2010_factor)
     sat = bt.skew_adjusted_t(bhars)
     z_crit = NormalDist().inv_cdf(1 - alpha / 2)
-    adj_sig = (ct["adj_z"] is not None and abs(ct["adj_z"]) > z_crit)
+    adj_sig = (ct_gross["adj_z"] is not None and abs(ct_gross["adj_z"]) > z_crit)
     if sample_state == "INSUFFICIENT":
         sig_state = "INSUFFICIENT"
     else:
@@ -206,7 +215,7 @@ def run_strategy(reader, pap: dict, events: list) -> dict:
             "note": "G5:样本末端未离场=右删失+末端收盘 mark-to-market,不剔除(剔除=幸存偏差);"
                     "此子集净收益为未实现成分(open_position)"},
         "holding_bars_dist": _dist([p.holding_bars for _, _, p, *_ in paths]),
-        "holding_days_dist": _dist([h for *_, h in paths]),
+        "holding_days_dist": _dist([t[8] for t in paths]),   # t[8]=h_days(元组扩长后忌尾位解包)
     }
 
     rej = year_breakdown(cleaned)
@@ -236,17 +245,38 @@ def run_strategy(reader, pap: dict, events: list) -> dict:
             "gross": execu.aggregate(grosses),
             "benchmark_bh": execu.aggregate([p[5] for p in paths]),
             "bhar": execu.aggregate(bhars),
-            "adj_bmp_bhar": {
-                "framework": "四件套②:SBHAR_i=BHAR_i/(est_ar_sd_i·√H_i);截面 z=mean/sd·√N × KP2010",
+            "bhar_gross": execu.aggregate(bhars_gross),
+            "test_object_note": "人批补正(2026-07-11):检验挂毛超额(毛路径收益−池同跨度BH)、净额并报;"
+                                "首跑实现挂净超额=偏离(方向保守:净扣成本使超额更负),人批补正留痕。",
+            "adj_bmp_bhar_gross": {
+                "framework": "四件套②主检验(毛超额):SBHAR_i=BHAR_gross_i/(est_ar_sd_i·√H_i);"
+                             "截面 z=mean/sd·√N × KP2010",
                 "rho_bar": rho["rho_bar"], "rho_n_pairs": rho["n_pairs"], "rho_note": rho["note"],
-                **ct,
+                **ct_gross,
                 "alpha": alpha, "z_crit": z_crit, "family_trial": family_trial,
                 "sig_state": sig_state,
                 "sig_note": "统计事实标注(判决权归事件版,不改台账 verdict)",
             },
+            "adj_bmp_bhar": {
+                "framework": "净额并报行(净超额=净路径收益−池同跨度BH;首跑口径保留为对照,非主检验)",
+                "rho_bar": rho["rho_bar"], "rho_n_pairs": rho["n_pairs"], "rho_note": rho["note"],
+                **ct,
+                "alpha": alpha, "z_crit": z_crit, "family_trial": family_trial,
+            },
+            "skew_adjusted_t_gross": {
+                "framework": "四件套③主检验(毛超额右偏稳健项,Hall 1992/LBT 1999)",
+                **sat_gross,
+            },
             "skew_adjusted_t": {
-                "framework": "四件套③:BHAR 右偏稳健项(Hall 1992/LBT 1999),对原始 BHAR 截面",
+                "framework": "净额并报行(净超额右偏稳健项,对照)",
                 **sat,
+            },
+            "anchor_menu": {
+                "note": "开卡对照菜单(人指 2026-07-11;量纲:①②③=事件级简单收益均值〔小数〕,④=净收益>0 占比)",
+                "gross_bhar_mean": (execu.aggregate(bhars_gross) or {}).get("mean"),
+                "net_raw_mean": (execu.aggregate(nets) or {}).get("mean"),
+                "net_bhar_mean": (execu.aggregate(bhars) or {}).get("mean"),
+                "win_rate_net": (execu.aggregate(nets) or {}).get("pos_frac"),
             },
             "dsr": dsr,
             "dsr_note": "DSR 常设报告项(施工令①;BLdP 精确公式;V 口径=proxy 人裁 2026-07-10;"
@@ -312,7 +342,6 @@ if __name__ == "__main__":
     sv = res["strategy_version"]
     assert sv["n_consumed"] == 1 and sv["verdict_authority"] == "event_version", sv["n_consumed"]
     assert sv["sample_gate"]["state"] == "INSUFFICIENT"        # n=1 < 30(合法结果非报错)
-    assert sv["adj_bmp_bhar"]["sig_state"] == "INSUFFICIENT"
     # 路径:τ=0=idx331 建仓 open=102;idx345 close=90 破 ma20 离场(收盘确认+触发日 close 成交,90>81.6 不强平)
     assert sv["diagnostics"]["exit_reasons"].get("break_ma20") == 1, sv["diagnostics"]["exit_reasons"]
     exp_net = 90.0 * (1 - 0.00225) / (102.0 * (1 + 0.00125)) - 1
@@ -322,6 +351,17 @@ if __name__ == "__main__":
     exp_bench = math.exp(sum(_mkt[331:346])) - 1.0
     assert abs(sv["benchmark_bh"]["mean"] - exp_bench) < 1e-12, (sv["benchmark_bh"], exp_bench)
     assert abs(sv["bhar"]["mean"] - (exp_net - exp_bench)) < 1e-12
+    # 毛超额(主检验,人批补正 2026-07-11):gross=90/102−1;bhar_gross=gross−bench;菜单四数量纲核对
+    exp_gross = 90.0 / 102.0 - 1
+    assert abs(sv["gross"]["mean"] - exp_gross) < 1e-12
+    assert abs(sv["bhar_gross"]["mean"] - (exp_gross - exp_bench)) < 1e-12
+    am = sv["anchor_menu"]
+    assert abs(am["gross_bhar_mean"] - (exp_gross - exp_bench)) < 1e-12
+    assert abs(am["net_raw_mean"] - exp_net) < 1e-12
+    assert abs(am["net_bhar_mean"] - (exp_net - exp_bench)) < 1e-12
+    assert am["win_rate_net"] == 0.0                      # 单事件亏损 → 胜率 0
+    assert "adj_bmp_bhar_gross" in sv and sv["adj_bmp_bhar_gross"]["sig_state"] == "INSUFFICIENT"
+    assert "sig_state" not in sv["adj_bmp_bhar"]          # 净行=并报,不挂 sig_state
     assert sv["diagnostics"]["holding_days_dist"]["max"] == 15
     # 同源差集为空(单事件全消费)
     sc = sv["source_consistency"]

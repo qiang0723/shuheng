@@ -252,27 +252,40 @@ def render_strategy(result: dict) -> str:
     L.append(f"  {sc['note']}")
     L.append("")
 
-    # ② 事件级收益分布(净/毛/基准BH/BHAR)
+    # ② 事件级收益分布(净/毛/基准BH/毛超额/净超额)
     c = sv["cost"]
     L.append(f"【事件级收益分布(附录G 离场;成本乘式:买费={_fmt(c['buy_fee'],5)} 卖费={_fmt(c['sell_fee'],5)})】")
-    for tag, key in (("净收益", "net"), ("毛收益", "gross"),
-                     ("池同跨度BH", "benchmark_bh"), ("BHAR(净−基准)", "bhar")):
+    for tag, key in (("净收益", "net"), ("毛收益", "gross"), ("池同跨度BH", "benchmark_bh"),
+                     ("毛超额(毛−基准)", "bhar_gross"), ("净超额(净−基准)", "bhar")):
         d = sv[key]
-        L.append(f"  {tag:<12} N={d['n']:<7} 均值={_fmt(d['mean'],5)} 中位={_fmt(d['median'],5)} "
+        L.append(f"  {tag:<14} N={d['n']:<7} 均值={_fmt(d['mean'],5)} 中位={_fmt(d['median'],5)} "
                  f"胜率={_fmt(d['pos_frac'],3)} sd={_fmt(d['std'],5)}")
     L.append("")
 
-    # ③ ADJ-BMP 四件套检验(②截面 + ③右偏稳健项)
-    ab = sv["adj_bmp_bhar"]
-    L.append(f"【ADJ-BMP(四件套②:SBHAR=BHAR/(σ_est·√H) 截面)】ρ̄={_fmt(ab['rho_bar'])}"
-             f"(行业内 {ab['rho_n_pairs']} 对) N={ab['n']}")
-    L.append(f"  SBHAR 均值={_fmt(ab['mean'])} sd={_fmt(ab['sd'])} z={_fmt(ab['z'],3)} "
-             f"× KP因子={_fmt(ab['kp_factor'],6)} → adj_z={_fmt(ab['adj_z'],3)} "
-             f"(双侧 α={ab['alpha']:.4f} 临界±{ab['z_crit']:.3f},family_trial={ab['family_trial']})")
-    L.append(f"  统计事实标注: {ab['sig_state']} —— {ab['sig_note']}")
-    st = sv["skew_adjusted_t"]
-    L.append(f"  四件套③ BHAR 右偏稳健项(Hall 1992/LBT 1999): skew={_fmt(st['skew'],3)} "
-             f"t_plain={_fmt(st['t_plain'],3)} → t_sa={_fmt(st['t_sa'],3)}")
+    # ③ ADJ-BMP 四件套检验:主检验=毛超额(人批补正 2026-07-11)、净额并报;③右偏稳健项毛/净并列
+    def _test_line(tag, ab, st):
+        L.append(f"  {tag}: SBHAR 均值={_fmt(ab['mean'])} sd={_fmt(ab['sd'])} z={_fmt(ab['z'],3)} "
+                 f"× KP={_fmt(ab['kp_factor'],6)} → adj_z={_fmt(ab['adj_z'],3)} | "
+                 f"右偏项(Hall/LBT): skew={_fmt(st['skew'],3)} t_plain={_fmt(st['t_plain'],3)} "
+                 f"→ t_sa={_fmt(st['t_sa'],3)}")
+
+    abg = sv["adj_bmp_bhar_gross"]
+    L.append(f"【ADJ-BMP(四件套②:SBHAR=超额/(σ_est·√H) 截面;主检验=毛超额、净额并报)】"
+             f"ρ̄={_fmt(abg['rho_bar'])}(行业内 {abg['rho_n_pairs']} 对) N={abg['n']} "
+             f"(双侧 α={abg['alpha']:.4f} 临界±{abg['z_crit']:.3f},family_trial={abg['family_trial']})")
+    _test_line("毛超额(主检验)", abg, sv["skew_adjusted_t_gross"])
+    _test_line("净超额(并报) ", sv["adj_bmp_bhar"], sv["skew_adjusted_t"])
+    L.append(f"  统计事实标注(挂毛超额): {abg['sig_state']} —— {abg['sig_note']}")
+    L.append(f"  偏离留痕: {sv['test_object_note']}")
+    L.append("")
+
+    # ③b 开卡对照菜单(人指 2026-07-11;四数注明量纲)
+    am = sv["anchor_menu"]
+    L.append("【开卡对照菜单(量纲:①②③=事件级简单收益均值〔小数,×100=%〕;④=净收益>0 事件占比)】")
+    L.append(f"  ① 毛超额均值   = {_fmt(am['gross_bhar_mean'],6)}")
+    L.append(f"  ② 原始净额均值 = {_fmt(am['net_raw_mean'],6)}")
+    L.append(f"  ③ 净超额均值   = {_fmt(am['net_bhar_mean'],6)}")
+    L.append(f"  ④ 胜率(净)     = {_fmt(am['win_rate_net'],4)}")
     L.append("")
 
     # ④ DSR 常设报告项(施工令①;不进 verdict)
