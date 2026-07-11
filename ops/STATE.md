@@ -182,7 +182,8 @@
   - **模块④✅(commit`15df9ae`)**:`report.render_strategy` 独立渲染(不碰共享 render;**约束③二次实测 sha`3116ba9b`同**)+driver `--report`;真实报告已渲染。
   - **产物**:aliyun `/tmp/s3step3/{strategy,rerun_strategy}_{result.json,report.txt}`+本地备份 `scratchpad/s3step3_backup/`(⚠/tmp=tmpfs 重启清,本地备份为准)。
   - **验收档**:`taosha/docs/slice3-step3-strategy-acceptance-2026-07-11.md`(照 #4 先例全套+施工令增列:同源一致性声明§3/DSR 实物+proxy 登记§5/**PBO 不适用结构理由§6**/**CPCV 边界登记§7**/附录G 口径特征登记§8/G8 固化回归§9/确定性§10)。
-  - **⏳下一动作=交人验收**(事件版 NOT_SIG+策略版体检对照两封数,不解读);人验收+开卡后 result(事件版+策略版)walk persist 状态机写台账 exp_id=3 终态→#2b 闭卷。携带项:report.py:36 旧标题残留(不动);策略版 result 落库待开卡(driver 不抢跑,#4 先例)。
+  - **⚖人批补正(2026-07-11,验收通过在望、补一件即终签)**:①**检验挂毛超额、净额并报**——BHAR/adj_z 首跑实现挂净收益,与四件套框架不符;补毛超额行(毛路径收益−池同跨度 BH 的均值/adj_z/skew-adjusted t)与净行并列入报告,主检验(sig_state)挂毛超额;**偏离留痕:实现时挂净(2026-07-11 首跑)、方向保守(净扣成本使超额更负)、人批补正**;②**开卡对照菜单四数(注明量纲)**:①毛超额均值 ②原始净额均值(−0.861%) ③净超额均值(−0.909%) ④胜率(25.0%);③**G4 交易日口径注记(日历轴计、停牌 bar 差低估)确认入档**(验收档 §4/§9 在档)。
+  - **⏳下一动作=补正施工(毛超额行+开卡菜单)→重跑受控 diff(既有键不变+受控新增)→验收档更新→终签**;人开卡后 result(事件版+策略版)walk persist 状态机写台账 exp_id=3 终态→#2b 闭卷。携带项:report.py:36 旧标题残留(不动);策略版 result 落库待开卡(driver 不抢跑,#4 先例)。
 
 ## 待答点(挂账,见 qbase/quality/caveats-and-ledger.md)
 
