@@ -16,11 +16,12 @@
 
 **六项状态看板**:
 - ① 台账状态机焊死(反向+正向双控):**✅ 施工+自检完毕,待架构窗口验收**(2026-07-12)。005 迁移已 apply(字段变更绑定唯一合法迁移+出生焊死+closure_reason 列);**人拍A(施工中裁决)**=closed 关闭原因载体改 `closure_reason` 新列、close() 停写 result_json、exp2 历史行原样保留;自检 `taosha/experiment/verify_state_machine.py` **44/44 PASS**(taosha_app 实测,a 反向 30 拒+b 正向 10 通,事务回滚零残留);验收档 `taosha/docs/hardening-item1-statemachine-acceptance-2026-07-12.md`(§5 出生焊死加固上报/§6 探针 now() 缺陷留痕/§7 identity 序号空洞登记)。台账 25 行未受扰。
-- ② StudySnapshot 快照锁定(fail-closed):⏳ 开工中(受权角色生成不可变 manifest〔qbase 源批次向量+taosha 派生批次〕;引擎按 manifest 路由受限视图,不扩底表权限;无 manifest 拒跑禁静默回退 *_current;result.audit 记 manifest ID+digest)
+- ② StudySnapshot 快照锁定(fail-closed):**✅ 施工+三件验收完毕,待架构窗口验收**(2026-07-12)。taosha 006(manifest 表 append-only+digest 触发器权威计算+严格路由函数+三 *_snap 视图)+ qbase 012(explore_reader_*_snap 三视图 GUC 路由)已 apply;**引擎收权=唯一读径 manifest 路由 *_snap**(current 视图+taosha 底表 SELECT 全收,加固上报);ViewReader/三 driver 必须 --snapshot-id,result.audit 记 manifest ID+digest;manifest #1(digest 2a8a271f…)。验收:fail-closed 探针 **16/16 全拒**;同 manifest 读面双跑逐字节同(修 tie 前 5f9acf51… 三跑同/修后参考 **1afba7d3…** 双跑同);并发落 market_return batch=2(8186 行双算闸过)snap 不受扰、current 已移。验收档 `taosha/docs/hardening-item2-studysnapshot-acceptance-2026-07-12.md`(§4 携带项:seed_pool_b1_return --verify 下次池种子改走 snap 范式)。产物备份 /root/s3hard2_backup/。
+- **⚖tie 缺陷人拍 A(2026-07-12,② 验收实测揪出)**:008/012 事件视图 DISTINCT ON 最早 ann_date 并列(11,689 对;存在可漂 19 对〔实测 105,584↔105,587〕/层可漂 62 对)→ **工程钉死次级键 id ASC**(013 已 apply 两视图同口径,"任意但永远同一行"不宣称语义);钉死后恒 **105,590**;钉死效应在 ③ diff 与 ST 修复**分开归因**;#4 闭卷不动;**人拍:exp5 补 addendum 附注(c),随附注(b) 一并补录**。
 - ③ 事件日 ST 修复+全量受控 diff:⛔ 待 ①② 过架构窗口(cleaning ST 剔除改按事件日行 is_st〔现 rows[0]〕;#4/#2b 全量重算清洗段受控语义 diff;**禁止以修复前计数预判影响**;diff 产物=post-ST 新基线 sha 登记;旧闭卷 sha 永久保留;已闭卷两案走 ⑤ 附注不重跑不改判)
 - ④ 共享存活样本主干(宪章第5条实质验收):⛔ 待 ③(clean_event→sim_fit→coverage→robust 边界单一主干,runner 与策略版共同调用;验收=与 ③ 新基线三份逐字节一致+平行链消失〔单一调用点〕;#3 检验接入前置)
-- ⑤ experiment_addendum 审计附属表:⏳ 建表+附注(a) 可即做;附注(b) 待 ③(append-only+同款触发器;附注(a)=exp3 策略版定性"冻结口径下的不可执行诊断值…不构成真实可交易表现证据"不影响 verdict;附注(b)=exp3/5 ST rows[0] 缺陷,影响以 ③ diff 实测为准;**原 result_json 一字不动**)
-- ⑥ 环境钉死+端到端集成回归:⏳ Python 钉版+锁文件可即做;集成回归留末位(**新 PAP 模板硬门随 v1.6 入档**:下一条含策略版假设起,离场执行口径必须可执行〔触发日次日开盘成交,或显式盘尾决策规则+滑点注记〕,同刻收盘判定+同刻成交不再允许;纯事件研究假设如 #3 不受此约束)
+- ⑤ experiment_addendum 审计附属表:**◐ 前半完毕**(2026-07-12)——007 迁移已 apply(append-only 同款焊死+result_sha256 锚定)+ **附注(a) 已入库**(addendum_id=1,exp3,人批原文逐字,锚 result sha `e3d2aef92bd47c6b…`,affects_verdict=false)+ 自检 verify_addendum **8/8 PASS**(INSERT 通/UPDATE·DELETE 拒/原 result 一字不动断言);**待 ③ diff 出数后补录附注(b)(exp3/5 ST 缺陷)+ 附注(c)(exp5 tie 缺陷,人拍 2026-07-12)→ ⑤ 关闭**。
+- ⑥ 环境钉死+端到端集成回归:**◐ 即刻半完毕**(2026-07-12)——Python 钉版 **3.14**(两台实况 3.14.4;施工单括注 3.11/3.12 按人令"以两台实况为准"条款修正,验收档登记)+ 生产 venv 依赖锁 `ops/runtime/requirements-qbase-ingest.lock` + `ops/verify_runtime.py` 常设自检(生产 strict 21/21 一致 ALL PASS;开发机=解释器钉版+通报模式);**端到端集成回归留末位(消费 ②④ 终态);新 PAP 模板硬门随 v1.6 入档**(下一条含策略版假设起,离场执行口径必须可执行〔触发日次日开盘成交,或显式盘尾决策规则+滑点注记〕,同刻收盘判定+同刻成交不再允许;纯事件研究假设如 #3 不受此约束)
 
 **收口**:六项完毕出硬化验收包(逐项实物+三份新基线 sha+addendum 表实物)→ 外部第二视角复审(标准:非法路径真走不通、同一快照真复跑同一结果)+ 架构窗口终审 → 窗口关闭恢复假设检验。
 
