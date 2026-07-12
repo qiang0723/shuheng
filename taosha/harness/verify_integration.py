@@ -68,7 +68,8 @@ def _chain(sid: int) -> tuple[dict, str, int]:
     assert all_dates and max(all_dates) < HOLDOUT_START, "holdout 泄漏(读面实测)"
     result = runner.run_study(vr, PAP_STUB, benchmark_mode="market", events=subset,
                               strata_enabled=True, st_mode="event_day")
-    result["audit"]["study_snapshot"] = vr.snapshot_info()   # driver 同款记账(§2 硬化)
+    si = vr.snapshot_info
+    result["audit"]["study_snapshot"] = si() if callable(si) else si   # driver 同款记账(§2 硬化)
     rendered = report.render(result)
     return result, rendered, len(subset)
 
