@@ -15,7 +15,7 @@
 **主序纪律(补充令)**:①②(可并行)→ ③ → ④ → ⑥集成回归;每项验收实物过架构窗口后进下一项;**严禁 ④ 先于 ③**(④ 验收基线=③ 产物 post-ST 新基线);**③ 的全量 diff 必须在 ①② 已焊死环境下跑**(manifest 路由+新触发器生效),否则新基线不满足可复现要求。⑤ 拆两半:建表+附注(a) 随时可做,附注(b) 待 ③ 出数补录,⑤ 整体关闭在 ③ 后。⑥ Python 钉版+锁文件即刻可做,端到端集成回归留末位(消费 ②④ 终态)。每项完成 STATE 记档,验收逐项来,不攒总账。
 
 **六项状态看板**:
-- ① 台账状态机焊死(反向+正向双控):⏳ 开工中(字段变更绑定唯一合法迁移;验收 a 非法路径全拒 + b 正向全程走通;用例固化入自检)
+- ① 台账状态机焊死(反向+正向双控):**✅ 施工+自检完毕,待架构窗口验收**(2026-07-12)。005 迁移已 apply(字段变更绑定唯一合法迁移+出生焊死+closure_reason 列);**人拍A(施工中裁决)**=closed 关闭原因载体改 `closure_reason` 新列、close() 停写 result_json、exp2 历史行原样保留;自检 `taosha/experiment/verify_state_machine.py` **44/44 PASS**(taosha_app 实测,a 反向 30 拒+b 正向 10 通,事务回滚零残留);验收档 `taosha/docs/hardening-item1-statemachine-acceptance-2026-07-12.md`(§5 出生焊死加固上报/§6 探针 now() 缺陷留痕/§7 identity 序号空洞登记)。台账 25 行未受扰。
 - ② StudySnapshot 快照锁定(fail-closed):⏳ 开工中(受权角色生成不可变 manifest〔qbase 源批次向量+taosha 派生批次〕;引擎按 manifest 路由受限视图,不扩底表权限;无 manifest 拒跑禁静默回退 *_current;result.audit 记 manifest ID+digest)
 - ③ 事件日 ST 修复+全量受控 diff:⛔ 待 ①② 过架构窗口(cleaning ST 剔除改按事件日行 is_st〔现 rows[0]〕;#4/#2b 全量重算清洗段受控语义 diff;**禁止以修复前计数预判影响**;diff 产物=post-ST 新基线 sha 登记;旧闭卷 sha 永久保留;已闭卷两案走 ⑤ 附注不重跑不改判)
 - ④ 共享存活样本主干(宪章第5条实质验收):⛔ 待 ③(clean_event→sim_fit→coverage→robust 边界单一主干,runner 与策略版共同调用;验收=与 ③ 新基线三份逐字节一致+平行链消失〔单一调用点〕;#3 检验接入前置)
