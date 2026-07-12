@@ -1,0 +1,7 @@
+3.14
+# 硬化⑥ 环境钉死(人批 2026-07-12,"以两台实况为准"):
+# 生产 Python minor = 3.14(实测两台一致 3.14.4,2026-07-12:AWS python3 / aliyun /opt/venvs/qbase-ingest)
+# 施工单括注 3.11.x/3.12.x 与实况不符,按人令"以两台实况为准"条款钉 3.14.x,验收档登记。
+# 依赖锁 = ops/runtime/requirements-qbase-ingest.lock(pip freeze 2026-07-12)
+# 参照环境(登记非钉死): PostgreSQL 18.4 / R 4.5.2(estudy2 0.10.0 vendor 钉死见附录D)
+# 校验件: python -m ops.verify_runtime(常设自检;集成回归⑥末位并入)
