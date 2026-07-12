@@ -42,7 +42,7 @@ def _manifest_idempotent() -> tuple[int, str, bool]:
     """S1 manifest 生成(幂等):批次向量同现值已有 manifest → 复用;否则真实生成新行。"""
     content = snapshot.collect_content()
     with psycopg.connect(os.environ["TAOSHA_APP_DSN"]) as conn, conn.cursor() as cur:
-        cur.execute("SELECT snapshot_id, digest FROM study_snapshot WHERE content = %s "
+        cur.execute("SELECT snapshot_id, digest FROM study_snapshot WHERE content = %s::jsonb "
                     "ORDER BY snapshot_id LIMIT 1", (Json(content),))
         row = cur.fetchone()
     if row:
