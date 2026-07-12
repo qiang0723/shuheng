@@ -38,9 +38,11 @@ def main():
     ap.add_argument("--prices", required=True)
     ap.add_argument("--events", required=True)
     ap.add_argument("--json", default=None)
+    ap.add_argument("--st-mode", choices=("event_day", "legacy_row0"), default="event_day",
+                    help="ST 判定源(硬化③;legacy_row0 仅供旧基线复现/诊断 diff)")
     a = ap.parse_args()
     reader = SyntheticReader(a.prices, a.events)
-    result = runner.run_study(reader, synth_pap(), benchmark_mode="market")
+    result = runner.run_study(reader, synth_pap(), benchmark_mode="market", st_mode=a.st_mode)
     print(report.render(result))
     if a.json:
         with open(a.json, "w") as fh:

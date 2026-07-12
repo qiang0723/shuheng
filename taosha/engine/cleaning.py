@@ -5,6 +5,8 @@
   - 事件落停牌期 → 剔除(item 7);剔除原因 + 年份记账。
   - ST → 剔除(spec §5"ST 剔除");板块分层报告仍计其为"ST 层(已剔除)"(item 8;
     与 item 8"ST 分层"的调和:ST 从检验样本剔除、在板块分层里作已剔除层留痕、不进池化检验)。
+    **ST 判定源=事件日行 is_st(硬化③修法,人批 2026-07-12;旧 rows[0] 缺陷保留为
+    'legacy_row0' 仅供只读诊断 diff,验收档 hardening-item3-*)。**
   - 一字板 T+1 → 事件窗顺延(item 8;τ=0 移到首个可成交日)。
   - τ 轴:τ=0 := 首个可交易日 = T+1(S2-DEC3);盘后披露前视规避。
 
@@ -60,11 +62,19 @@ def _est_window_idx(t_idx: int) -> tuple[int, int]:
     return t_idx + fc.EST_WINDOW_OFFSET_START, t_idx + fc.EST_WINDOW_OFFSET_END
 
 
-def clean_event(rows: list[PriceRow], event, date_index: dict) -> CleanedEvent:
+def clean_event(rows: list[PriceRow], event, date_index: dict,
+                st_mode: str = "event_day") -> CleanedEvent:
     """对一个事件做清洗几何 + 前置剔除(停牌/ST/顺延)。覆盖门槛留 compute 回填。
 
     rows: 该证券按 trade_date 升序的全期 PriceRow;event: EventRow;date_index: {date: idx}。
+    st_mode(硬化③,人批 2026-07-12):ST 判定源——
+      'event_day'(生产默认)= 事件日行 is_st(修法原文:cleaning 的 ST 剔除改按事件日行 is_st 判定);
+        事件日行缺失(停牌缺行)→ ST 判定不可得,is_st=False 留注,事件走停牌剔除路径。
+      'legacy_row0'(仅只读诊断 diff 用,driver --diagnostic 域)= 旧实现 rows[0].is_st(缺陷原样),
+        供硬化③ 旧 vs 新受控语义 diff;生产路径禁用。
     """
+    if st_mode not in ("event_day", "legacy_row0"):
+        raise ValueError(f"st_mode 非法: {st_mode}")
     yr = event.first_ann_date.year
     layer = getattr(event, "event_type_layer", "unknown")   # 层维度(合成自检 _Ev 无此属性 → unknown)
 
@@ -82,12 +92,22 @@ def clean_event(rows: list[PriceRow], event, date_index: dict) -> CleanedEvent:
 
     t_idx = date_index.get(event.first_ann_date)
     r0 = rows[0]
+    by_idx = {date_index[r.trade_date]: r for r in rows}
+    # ST 判定源(硬化③):事件日行(生产)/ rows[0](legacy 诊断)。board/industry 仍取 r0
+    # (board=ts_code 前缀恒定、industry=entity_master 快照恒定,不随行变,不在修法范围)。
+    event_row = by_idx.get(t_idx) if t_idx is not None else None
+    if st_mode == "legacy_row0":
+        is_st_val = r0.is_st
+    else:
+        is_st_val = event_row.is_st if event_row is not None else False
     ce = CleanedEvent(
         ts_code=event.ts_code, event_id=event.event_id,
-        first_ann_date=event.first_ann_date, board=r0.board, is_st=r0.is_st,
+        first_ann_date=event.first_ann_date, board=r0.board, is_st=is_st_val,
         industry=_norm_industry(r0.industry), regime_segment=fa.regime_segment(event.first_ann_date),
         t_idx=t_idx if t_idx is not None else -1, event_type_layer=layer,
     )
+    if st_mode == "event_day" and t_idx is not None and event_row is None:
+        ce.notes.append("事件日行缺失(停牌缺行)→ ST 判定不可得,is_st=False 留注,走停牌剔除路径(硬化③)")
 
     # 事件日不在交易轴(不应发生于合成域)→ 剔除
     if t_idx is None:
@@ -102,7 +122,6 @@ def clean_event(rows: list[PriceRow], event, date_index: dict) -> CleanedEvent:
         ce.notes.append(f"估计窗左端越界(需 ≥250 日历史,T_idx={t_idx})")
         return ce
 
-    by_idx = {date_index[r.trade_date]: r for r in rows}
     n_dates = len(date_index)
 
     # 停牌判据(约束② 2026-07-07,原文即口径):停牌 = 轴内缺行(calendar 断档,真实数据)
@@ -248,5 +267,35 @@ if __name__ == "__main__":
     assert _norm_industry("nan") == "unknown" and _norm_industry(None) == "unknown"
     assert _norm_industry("") == "unknown" and _norm_industry(" NaN ") == "unknown" and _norm_industry("null") == "unknown"
     assert _norm_industry("银行") == "银行"
+
+    # ── 硬化③ ST 判定源固化回归(人批 2026-07-12;event_day 生产 / legacy_row0 诊断)──
+    def _mk_st(d, st=False, susp=False):
+        return PriceRow("A", d, (None if susp else 10.0), susp, "none", "main", st, "I")
+    # 7) 首行非ST、事件日行 ST → event_day 拒 'st';legacy(rows[0])不拒(旧缺陷=漏剔)
+    _r7 = [_mk_st(_ds[i], st=(i == _t)) for i in range(320)]
+    _c = clean_event(_r7, _ev, _di)
+    assert _c.rejected and _c.reject_reason == "st" and _c.is_st, "7a 事件日ST须剔(event_day)"
+    _c = clean_event(_r7, _ev, _di, st_mode="legacy_row0")
+    assert not _c.rejected and not _c.is_st, "7b legacy 按 rows[0] 漏剔(缺陷原样保真)"
+    # 8) 首行 ST、事件日行非ST → event_day 不拒;legacy 误剔(旧缺陷=错杀)
+    _r8 = [_mk_st(_ds[i], st=(i == 0)) for i in range(320)]
+    _c = clean_event(_r8, _ev, _di)
+    assert not _c.rejected and not _c.is_st, "8a 事件日非ST不剔(event_day)"
+    _c = clean_event(_r8, _ev, _di, st_mode="legacy_row0")
+    assert _c.rejected and _c.reject_reason == "st", "8b legacy 按 rows[0] 误剔(缺陷原样保真)"
+    # 9) 事件日行缺失(停牌)且 rows[0] ST → event_day 判定不可得走 suspension+留注;legacy 判 st
+    _r9 = [_mk_st(_ds[i], st=(i == 0)) for i in range(320) if i != _t]
+    _c = clean_event(_r9, _ev, _di)
+    assert _c.rejected and _c.reject_reason == "suspension" and not _c.is_st \
+        and any("ST 判定不可得" in n for n in _c.notes), "9a 事件日行缺失→suspension+留注"
+    _c = clean_event(_r9, _ev, _di, st_mode="legacy_row0")
+    assert _c.rejected and _c.reject_reason == "st", "9b legacy 事件日缺行仍按 rows[0] 判 st"
+    # 10) st_mode 非法值拒
+    try:
+        clean_event(_r7, _ev, _di, st_mode="bogus")
+        raise AssertionError("10 st_mode 非法值须拒")
+    except ValueError:
+        pass
     print("cleaning.py 自检 OK:缺行=停牌 / flag兼容 / 判据分离顺延跨缺行 / 杂交上报(约束②) / "
-          "无价行=no_price剔除 / industry缺失→unknown(人批2026-07-08)")
+          "无价行=no_price剔除 / industry缺失→unknown(人批2026-07-08) / "
+          "硬化③ ST判定源=事件日行(event_day生产/legacy_row0诊断,新旧对照固化)")

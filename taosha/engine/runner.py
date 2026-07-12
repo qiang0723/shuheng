@@ -196,7 +196,7 @@ def _tradeable(valid_events: list, cost: Optional[dict], main_len: int, robust_l
 
 def run_study(reader, pap: dict, *, benchmark_mode: str = "market",
               pool: Optional[set] = None, events: Optional[list] = None,
-              strata_enabled: bool = True) -> dict:
+              strata_enabled: bool = True, st_mode: str = "event_day") -> dict:
     """跑一条已冻结假设的事件研究,返回 result 字典(供 report + 落库)。
 
     benchmark_mode: 'market'(全市场等权)/'pool'(静态池等权)/'pool_pit'(#2b b1池等权PIT活基准,
@@ -204,6 +204,7 @@ def run_study(reader, pap: dict, *, benchmark_mode: str = "market",
     pool: benchmark_mode='pool' 时的静态池成员 ts_code 集合。
     events: 显式事件源(#2b=价格模式生成的 DrawdownEventRow 列表);None → reader.events()(#4 台账事件)。
     strata_enabled: 三层(预喜/预亏/扭亏)分解开关;#2b 单信号事件 → False(三层不适用)。
+    st_mode: ST 判定源(硬化③;'event_day' 生产默认 / 'legacy_row0' 仅只读诊断 diff)。
     """
     # ── 检验窗从 pap 读(裁定 2026-07-07):main/robust = 首/末检验窗点数(#4/#2b=(20,60))──
     test_win = parse_test_windows(pap)
@@ -248,7 +249,7 @@ def run_study(reader, pap: dict, *, benchmark_mode: str = "market",
     _ret_cache: dict = {}   # 真实域惰性收益单键缓存(events 按 ts_code 有序→免同票重算、内存 O(1票))
     for ev in event_src:
         rows = by_sec.get(ev.ts_code, [])
-        ce = clean_event(rows, ev, date_index)
+        ce = clean_event(rows, ev, date_index, st_mode=st_mode)
         if ce.rejected:
             cleaned.append(ce)
             continue

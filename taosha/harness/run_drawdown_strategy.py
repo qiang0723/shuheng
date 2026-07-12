@@ -27,6 +27,12 @@ def main():
     ap.add_argument("--exp-id", type=int, default=3)
     ap.add_argument("--snapshot-id", type=int, required=True,
                     help="StudySnapshot manifest ID(硬化② fail-closed,无 manifest 拒运行)")
+    ap.add_argument("--diagnostic", action="store_true",
+                    help="只读诊断模式(通路预裁 2026-07-12):放行非 frozen 态;零台账写入;不产判决")
+    ap.add_argument("--reason", default=None,
+                    help="诊断事由(--diagnostic 必填;入产物 JSON 并 STATE 登记)")
+    ap.add_argument("--st-mode", choices=("event_day", "legacy_row0"), default="event_day",
+                    help="ST 判定源(硬化③;legacy_row0 仅 --diagnostic 域可用)")
     ap.add_argument("--json", default=None)
     ap.add_argument("--report", default=None)
     a = ap.parse_args()
@@ -34,12 +40,22 @@ def main():
     row = ledger.get(a.exp_id)
     if row is None:
         raise SystemExit(f"exp_id={a.exp_id} 不存在")
-    if row["status"] != "frozen":
-        raise SystemExit(f"铁律③:引擎拒执行 status={row['status']}≠frozen(exp_id={a.exp_id})")
+    if a.diagnostic and not a.reason:
+        raise SystemExit("诊断跑必须给 --reason(事由,STATE 登记;通路预裁 2026-07-12)")
+    if a.st_mode == "legacy_row0" and not a.diagnostic:
+        raise SystemExit("st_mode=legacy_row0 仅限 --diagnostic 只读诊断域(生产禁用旧缺陷口径)")
+    if a.diagnostic:
+        print("=" * 72)
+        print("=== DIAGNOSTIC 只读诊断(不产判决,零台账写入;通路预裁 2026-07-12)===")
+        print(f"=== 事由: {a.reason} | st_mode={a.st_mode} | exp_id={a.exp_id} status={row['status']} ===")
+        print("=" * 72, flush=True)
+    elif row["status"] != "frozen":
+        raise SystemExit(f"铁律③:引擎拒执行 status={row['status']}≠frozen(exp_id={a.exp_id})"
+                         "(诊断重跑走 --diagnostic 只读通路,通路预裁 2026-07-12)")
     pap = dict(row["pap_json"])
     pap["_family_trial"] = row["family_trial"]
     print(f"exp_id={a.exp_id} {row['family']}/{row['title']} "
-          f"status=frozen family_trial={row['family_trial']} verdict_power={row['verdict_power']}",
+          f"status={row['status']} family_trial={row['family_trial']} verdict_power={row['verdict_power']}",
           flush=True)
     print("策略版(附录B B1+附录G;判决权归事件版) benchmark=pool_pit(b1 池同跨度买入持有)", flush=True)
 
@@ -62,11 +78,15 @@ def main():
     snap = pap.get("snapshot_batch_req", "SYNTH")
     event_rows = to_event_rows(events, snapshot_batch=snap if isinstance(snap, str) else "b1_pool")
 
-    result = run_strategy(reader, pap, event_rows)
+    result = run_strategy(reader, pap, event_rows, st_mode=a.st_mode)
 
     # 复现留痕(spec §9;硬化②: 批次=manifest 指定,audit 同记 manifest ID 与 digest)
     snap_info = reader.snapshot_info
     result["audit"]["study_snapshot"] = snap_info
+    if a.diagnostic:
+        result["diagnostic"] = {"diagnostic": True, "reason": a.reason, "st_mode": a.st_mode,
+                                "exp_status_at_run": row["status"],
+                                "note": "只读诊断: 零台账写入、不产判决(通路预裁 2026-07-12);产物不得作 result 槽载荷"}
     result["audit"]["pool_snapshot"] = {
         "pool_b1_batch": snap_info["content"]["taosha"]["pool_b1"],
         "pool_return_batch": snap_info["content"]["taosha"]["pool_b1_return"],

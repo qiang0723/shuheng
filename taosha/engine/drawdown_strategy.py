@@ -55,7 +55,7 @@ def _dist(xs: list) -> Optional[dict]:
     return {"n": n, "min": s[0], "max": s[-1], "mean": sum(s) / n, "median": med}
 
 
-def run_strategy(reader, pap: dict, events: list) -> dict:
+def run_strategy(reader, pap: dict, events: list, *, st_mode: str = "event_day") -> dict:
     """跑 #2b 策略版(附录B B1+G)。events=事件版同源事件行(DrawdownEventRow,价格模式生成)。
 
     返回 result 字典(策略版块;判决权归事件版,不产 verdict 终态)。"""
@@ -80,7 +80,7 @@ def run_strategy(reader, pap: dict, events: list) -> dict:
     _ret_cache: dict = {}
     for ev in events:
         rows = by_sec.get(ev.ts_code, [])
-        ce = clean_event(rows, ev, date_index)
+        ce = clean_event(rows, ev, date_index, st_mode=st_mode)
         if ce.rejected:
             cleaned.append(ce)
             continue
