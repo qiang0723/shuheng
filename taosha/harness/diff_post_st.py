@@ -18,14 +18,7 @@ import sys
 
 def _focus_event(r: dict) -> dict:
     """事件研究 result → 受控 diff 焦点面(剔除 audit/diagnostic/报告性文案)。"""
-    rej = r.get("rejections", {})
-    by_year = {str(y): {"total": d.get("total"), "rejected": d.get("rejected"),
-                        "by_reason": dict(sorted((d.get("by_reason") or {}).items()))}
-               for y, d in (rej.get("by_year") or {}).items()}
-    by_reason_total: dict = {}
-    for d in (rej.get("by_year") or {}).values():
-        for k, v in (d.get("by_reason") or {}).items():
-            by_reason_total[k] = by_reason_total.get(k, 0) + v
+    rej_c = _rej_condense(r.get("rejections")) or {}
     strata = {k: v for k, v in (r.get("board_strata") or {}).items() if not k.startswith("_st_note")}
     ts = r.get("type_strata")
     type_strata = None
@@ -40,9 +33,9 @@ def _focus_event(r: dict) -> dict:
     return {
         "n_events_total": r.get("n_events_total"),
         "n_valid": r.get("n_valid"),
-        "reject_total": rej.get("rejected"), "reject_ratio": rej.get("reject_ratio"),
-        "reject_by_reason_total": dict(sorted(by_reason_total.items())),
-        "reject_by_year": by_year,
+        "reject_total": rej_c.get("rejected"), "reject_ratio": rej_c.get("reject_ratio"),
+        "reject_by_reason_total": rej_c.get("by_reason_total"),
+        "reject_by_year": rej_c.get("by_year"),
         "board_strata": strata,
         "type_strata": type_strata,
         "verdict": r.get("verdict"),
@@ -51,22 +44,48 @@ def _focus_event(r: dict) -> dict:
     }
 
 
+def _rej_condense(rej) -> dict | None:
+    """rejections 块 → {total, rejected, by_reason_total, by_year 摘要}。"""
+    if not rej:
+        return None
+    by_reason_total: dict = {}
+    for d in (rej.get("by_year") or {}).values():
+        for k, v in (d.get("by_reason") or {}).items():
+            by_reason_total[k] = by_reason_total.get(k, 0) + v
+    return {"total": rej.get("total"), "rejected": rej.get("rejected"),
+            "reject_ratio": rej.get("reject_ratio"),
+            "by_reason_total": dict(sorted(by_reason_total.items())),
+            "by_year": {str(y): {"total": d.get("total"), "rejected": d.get("rejected"),
+                                 "by_reason": dict(sorted((d.get("by_reason") or {}).items()))}
+                        for y, d in (rej.get("by_year") or {}).items()}}
+
+
 def _focus_strategy(r: dict) -> dict:
     """策略版 result → 焦点面(strategy_version 块)。"""
     sv = r.get("strategy_version") or {}
     def _m(key):
         d = sv.get(key) or {}
-        return {k: d.get(k) for k in ("mean", "adj_z", "sig_state", "t_sa") if k in d}
+        return {k: d.get(k) for k in ("n", "mean", "median", "pos_frac", "adj_z", "sig_state", "t_sa")
+                if k in d}
+    diag = sv.get("diagnostics") or {}
+    sc = sv.get("source_consistency") or {}
     return {
-        "n_consumed": sv.get("n_consumed"),
+        "n_events_input": sv.get("n_events_input"),
         "n_survivors_sourced": sv.get("n_survivors_sourced"),
-        "sourcing_diff": sv.get("sourcing_diff") or sv.get("source_set_diff"),
-        "net": _m("net"), "bhar": _m("bhar"), "bhar_gross": _m("bhar_gross"),
+        "n_consumed": sv.get("n_consumed"),
+        "rejections_sourced": _rej_condense(sv.get("rejections_sourced")),
+        "source_consistency": {k: sc.get(k) for k in
+                               ("excluded_no_entry_open", "excluded_bench_gap", "excluded_sbhar_none")},
+        "net": _m("net"), "gross": _m("gross"), "bhar": _m("bhar"), "bhar_gross": _m("bhar_gross"),
+        "benchmark_bh": _m("benchmark_bh"),
         "adj_bmp_bhar_gross": _m("adj_bmp_bhar_gross"), "adj_bmp_bhar": _m("adj_bmp_bhar"),
         "skew_adjusted_t_gross": _m("skew_adjusted_t_gross"),
-        "exits": sv.get("exits") or sv.get("exit_breakdown"),
-        "censored": sv.get("censored") or (sv.get("g5_censor") or {}).get("n"),
+        "exit_reasons": diag.get("exit_reasons"),
+        "dual_trigger": diag.get("dual_trigger"),
+        "right_censored": diag.get("right_censored"),
+        "postpone": diag.get("postpone"),
         "dsr": (sv.get("dsr") or {}).get("dsr"),
+        "anchor_menu": sv.get("anchor_menu"),
         "sample_gate": (sv.get("sample_gate") or {}).get("state"),
     }
 
