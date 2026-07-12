@@ -11,9 +11,9 @@
   ④ **判决权归事件版**:本模块统计量为体检对照(附录B B2 互为体检),不产/不改台账 verdict。
 + DSR 常设报告项(compute.dsr,v_mode='proxy' 人裁 2026-07-10;N=族内 trial 计数;不进 verdict)。
 
-同源一致性(步④验收硬项):清洗流水线与 runner 事件循环**逐步同构**(clean_event→sim_fit→coverage
-→robust 窗右端越界,同序同判据)→ 存活集 == 事件版 N_valid 同构造;策略版自身不可消费项
-(建仓 open 缺/基准缺)单列差集逐项归因(consumed ⊆ N_valid)。
+同源一致性(步④验收硬项;硬化④升级):存活样本构造=engine/survivors.iter_survivors **单一主干**
+(与事件版 runner 同一实现,平行链已消灭,宪章第5条)→ 存活集 == 事件版 N_valid 同构造;
+策略版自身不可消费项(建仓 open 缺/基准缺)单列差集逐项归因(consumed ⊆ N_valid)。
 
 已知口径特征(附录G 登记,报告须显式、不藏):G1 收盘确认=盘中硬止损频率被低估、方向保守;
 G3 P1 收盘确认+P5 收盘成交=同刻口径含轻微前视/乐观,与进场"τ=0 后复权 open"不对称
@@ -34,10 +34,9 @@ from taosha.compute import frozen_config as fc
 from taosha.compute.abnormal_tests import SecurityEvent, kp2010_factor, rho_bar_within_industry
 from taosha.compute.dsr import deflated_sharpe
 from taosha.compute.holding_path import POSTPONE_EXTREME_DAYS, simulate_holding_path
-from taosha.compute.market_model import sim_fit
-from taosha.engine import benchmark as bench
 from taosha.engine import execution as execu
-from taosha.engine.cleaning import clean_event, year_breakdown
+from taosha.engine.cleaning import year_breakdown
+from taosha.engine.survivors import iter_survivors
 from taosha.experiment import gates
 from taosha.experiment.pap import parse_test_windows
 
@@ -71,45 +70,16 @@ def run_strategy(reader, pap: dict, events: list, *, st_mode: str = "event_day")
     by_sec = reader.prices_by_security()
     all_dates = [c.trade_date for c in reader.calendar()]
     date_index = {d: j for j, d in enumerate(all_dates)}
-    n_dates = len(all_dates)
     mkt = reader.pool_return(all_dates)           # b1 池等权 PIT 活基准(对数日收益;004 预计算)
 
-    # ── 同源清洗(与 runner 事件循环逐步同构:clean→sim_fit→coverage→robust 窗越界)────
+    # ── 同源清洗(硬化④:存活样本构造=survivors.iter_survivors 单一主干,与事件版同一实现)──
     cleaned = []
     survivors = []          # 与事件版 N_valid 同构造的存活事件
-    _ret_cache: dict = {}
-    for ev in events:
-        rows = by_sec.get(ev.ts_code, [])
-        ce = clean_event(rows, ev, date_index, st_mode=st_mode)
-        if ce.rejected:
-            cleaned.append(ce)
-            continue
-        est_lo = ce.t_idx + fc.EST_WINDOW_OFFSET_START
-        est_hi = ce.t_idx + fc.EST_WINDOW_OFFSET_END
-        est_mask = [est_lo <= j <= est_hi for j in range(n_dates)]
-        if ev.ts_code not in _ret_cache:          # 惰性单键缓存(events 按 ts_code 有序,同 runner)
-            _ret_cache.clear()
-            _ret_cache[ev.ts_code] = bench.returns_by_date(rows, all_dates)
-        try:
-            fit = sim_fit(_ret_cache[ev.ts_code], mkt, est_mask)
-        except ValueError:
-            ce.rejected, ce.reject_reason, ce.reject_year = True, "coverage", ce.first_ann_date.year
-            cleaned.append(ce)
-            continue
-        ce.coverage_valid_days = fit.delta
-        ce.coverage_ok = fc.coverage_ok(fit.delta)
-        if not ce.coverage_ok:
-            ce.rejected, ce.reject_reason, ce.reject_year = True, "coverage", ce.first_ann_date.year
-            cleaned.append(ce)
-            continue
-        if ce.tau0_idx + robust_len - 1 >= n_dates:   # 事件版 robust 窗右端越界(同源同判据)
-            ce.rejected, ce.reject_reason, ce.reject_year = True, "history", ce.first_ann_date.year
-            cleaned.append(ce)
-            continue
-        est_ar_by_date = {all_dates[j]: fit.abnormal[j]
-                          for j in range(est_lo, est_hi + 1) if fit.abnormal[j] is not None}
-        survivors.append((ev, ce, fit, est_ar_by_date, rows))
+    for ce, sv in iter_survivors(events, by_sec, all_dates, date_index, mkt, robust_len,
+                                 st_mode=st_mode):
         cleaned.append(ce)
+        if sv is not None:
+            survivors.append(sv)
 
     # ── 逐存活事件跑持有路径(附录G)+ BHAR(四件套①②)────────────────────────────
     paths = []              # (ev, ce, path, net, gross, bench_bh, bhar, sbh, h_days)

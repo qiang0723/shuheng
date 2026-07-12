@@ -18,14 +18,14 @@ from taosha.compute.abnormal_tests import (
     SecurityEvent, adj_bmp_by_tau, kp2010_factor, standardized_ar,
 )
 from taosha.compute.calendar_pf import CalEvent, calendar_time
-from taosha.compute.market_model import sim_fit
 from taosha.compute.rank_test import RankSecurity, corrado_rank
 from taosha.engine import benchmark as bench
 from taosha.engine import drawdown_events as dde
 from taosha.engine import execution as execu
 from taosha.engine.cleaning import (
-    CleanedEvent, clean_event, layer_year_breakdown, year_breakdown,
+    CleanedEvent, layer_year_breakdown, year_breakdown,
 )
+from taosha.engine.survivors import iter_survivors
 from taosha.experiment import gates
 from taosha.experiment.pap import parse_test_windows
 
@@ -243,50 +243,19 @@ def run_study(reader, pap: dict, *, benchmark_mode: str = "market",
         sec_returns = {ts: bench.returns_by_date(rows, all_dates) for ts, rows in by_sec.items()}
         mkt = bench.equal_weight_market(sec_returns, n_dates)   # 合成域:现算(路径不变,约束③零回归)
 
-    # ── 逐事件清洗 + compute ──────────────────────────────────────────────────
+    # ── 逐事件清洗 + compute(存活样本构造=survivors.iter_survivors 单一主干,硬化④)──────
     cleaned: list[CleanedEvent] = []
     valid_events: list[SecurityEvent] = []
-    _ret_cache: dict = {}   # 真实域惰性收益单键缓存(events 按 ts_code 有序→免同票重算、内存 O(1票))
-    for ev in event_src:
-        rows = by_sec.get(ev.ts_code, [])
-        ce = clean_event(rows, ev, date_index, st_mode=st_mode)
-        if ce.rejected:
-            cleaned.append(ce)
+    for ce, sv in iter_survivors(event_src, by_sec, all_dates, date_index, mkt, robust_len,
+                                 st_mode=st_mode, sec_returns=sec_returns, reject_notes=True):
+        cleaned.append(ce)
+        if sv is None:
             continue
-        # SIM 拟合(估计窗覆盖 = SimFit.delta)
+        ev, ce, fit, est_ar_by_date, rows = sv
         est_lo = ce.t_idx + fc.EST_WINDOW_OFFSET_START
         est_hi = ce.t_idx + fc.EST_WINDOW_OFFSET_END
-        est_mask = [est_lo <= j <= est_hi for j in range(n_dates)]
-        if sec_returns is not None:
-            sret = sec_returns[ev.ts_code]           # pool/合成域:全量预物化
-        else:                                        # 真实 market 域:按票现算(单键缓存,与预物化等价)
-            if ev.ts_code not in _ret_cache:
-                _ret_cache.clear()
-                _ret_cache[ev.ts_code] = bench.returns_by_date(rows, all_dates)
-            sret = _ret_cache[ev.ts_code]
-        try:
-            fit = sim_fit(sret, mkt, est_mask)
-        except ValueError:
-            ce.rejected, ce.reject_reason, ce.reject_year = True, "coverage", ce.first_ann_date.year
-            ce.notes.append("估计样本不足,OLS 无法估计 → 剔除")
-            cleaned.append(ce)
-            continue
-        ce.coverage_valid_days = fit.delta
-        ce.coverage_ok = fc.coverage_ok(fit.delta)
-        if not ce.coverage_ok:
-            ce.rejected, ce.reject_reason, ce.reject_year = True, "coverage", ce.first_ann_date.year
-            ce.notes.append(f"估计窗有效交易日 {fit.delta} < {fc.COVERAGE_MIN_VALID}(70%×160)→ 剔除(item 6)")
-            cleaned.append(ce)
-            continue
         # 事件窗 τ=0..robust_len-1(检验窗,τ=0=tau0_idx=T+1,含一字板顺延)
         w_idx = [ce.tau0_idx + k for k in range(robust_len)]
-        if w_idx[-1] >= n_dates:
-            ce.rejected, ce.reject_reason, ce.reject_year = True, "history", ce.first_ann_date.year
-            ce.notes.append("事件窗右端越界(尾部数据不足)→ 剔除")
-            cleaned.append(ce)
-            continue
-        est_ar_by_date = {all_dates[j]: fit.abnormal[j]
-                          for j in range(est_lo, est_hi + 1) if fit.abnormal[j] is not None}
         se = SecurityEvent(
             est_ar_sd=fit.est_ar_sd, L=fit.delta, x_bar=fit.x_bar, sxx=fit.sxx,
             event_market=[mkt[j] for j in w_idx],
@@ -346,7 +315,6 @@ def run_study(reader, pap: dict, *, benchmark_mode: str = "market",
         rank_sec = RankSecurity(est_ar_seq, se.event_abnormal)
         cal_ev = CalEvent(w_dates, se.event_abnormal)
         valid_events.append((se, se_meta, rank_sec, cal_ev))
-        cleaned.append(ce)
 
     return _assemble(pap, cleaned, valid_events, benchmark_mode, main_len, robust_len,
                      strata_enabled=strata_enabled,
