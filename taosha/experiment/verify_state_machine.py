@@ -117,8 +117,9 @@ def _suite(cur) -> None:
 
     _reject(cur, "R10 (a) pap_json 冻结后被改(铁律④)",
             "UPDATE experiment SET pap_json=%s::jsonb WHERE exp_id=%s", (PAP, a))
+    # ⚠ now() 同事务内恒定,二次写探针必须用可区分值(否则 IS DISTINCT FROM 判无变更=无害 no-op)
     _reject(cur, "R11 (a) frozen_at 二次写",
-            "UPDATE experiment SET frozen_at=now() WHERE exp_id=%s", (a,))
+            "UPDATE experiment SET frozen_at=now()+interval '1 day' WHERE exp_id=%s", (a,))
     _reject(cur, "R12 (a) 跳态迁移 frozen→done",
             "UPDATE experiment SET status='done', result_json=%s::jsonb, done_at=now() WHERE exp_id=%s",
             (RESULT, a))
@@ -147,7 +148,7 @@ def _suite(cur) -> None:
     _reject(cur, "R19 (b硬项) 合法完成后 result 拒二次写",
             "UPDATE experiment SET result_json='{\"x\":1}'::jsonb WHERE exp_id=%s", (a,))
     _reject(cur, "R20 (a) done_at 二次写",
-            "UPDATE experiment SET done_at=now() WHERE exp_id=%s", (a,))
+            "UPDATE experiment SET done_at=now()+interval '1 day' WHERE exp_id=%s", (a,))
     _allow(cur, "F8 (b) set_meta 类不误伤(done 终态)",
            "UPDATE experiment SET crowding_prior='低' WHERE exp_id=%s", (a,))
 
