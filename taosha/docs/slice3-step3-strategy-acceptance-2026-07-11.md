@@ -134,11 +134,30 @@ PBO(Probability of Backtest Overfitting,BLdP CSCV 框架)需要**可排序的试
 
 ## 11. 携带项
 
-- `report.py:36` 标题"切片2合成验收"硬编码残留(旧 carry-item,不在本轮动)。
-- 策略版 result 落台账 exp_id=3 的 persist 终态:**事件版+策略版两份结果一并写入**,待人验收
-  开卡后走 persist 状态机(本 driver 不抢跑,与 #4 先例一致)。
+- `report.py:36` 标题"切片2合成验收"硬编码残留(旧 carry-item,闭卷不阻,不在本轮动)。
+- ~~策略版 result 落台账 exp_id=3 的 persist 终态待开卡令~~ → 已执行,见 §12。
 
-## 12. 下一动作
+## 12. 闭卷 —— ✅ #2b(drawdown_rebuy#2,exp_id=3)闭卷(2026-07-12 11:53:31+08)
 
-交人验收(事件版 NOT_SIG + 策略版体检对照两封数;**不解读** = 开工令⑥)。人验收+开卡后:
-result_json(事件版+策略版)walk persist 状态机写台账终态 → #2b 闭卷。
+- **✅ 开卡毕(人 2026-07-12,结果与工地无关)**;persist 令下达(裁决留痕 commit `dcc7526`,
+  随令一并送达代码宪章九条,原文 `docs/code-charter-nine-2026-07-12.md`)。
+- **✅ 台账 `exp_id=3` result 槽已写终态**(persist 状态机 `frozen→running→done`,单连接单事务
+  一次 COMMIT、触发器一次性写入,#4 exp_id=5 先例同路):`status=done` / `done_at=2026-07-12
+  11:53:31.242558+08` / `has_result=True`。**二次 finish 实测被拒**(非 running 态;result 一次性)。
+- **载荷 composition(工程侧记)**:事件版 result 全量为顶层(判决权归事件版,顶层 `verdict`)+
+  `strategy_version` 键并入(=补正终签跑 strategy_version 块,内嵌其自带 audit;两 audit 仅
+  `pool_snapshot.note` 措辞异,digest 全同)。
+- **源产物**:事件版 `drawdown_result.json` sha256=`0565b11520672acb…`(2026-07-09 跑,验收档
+  slice3-step2);策略版 `gross_strategy_result.json` sha256=`fbf4d829222b2e44…`(补正跑,代码
+  `7d9f870`,§10 受控 diff vs 基线 `918fda40` 断言过)。持久备份 `/root/s3close_exp3/`(载荷+两源)。
+- **库回执(统计事实,不解读)**:`verdict=NOT_SIG` / `n_valid=17929` / `n_events_total=19638` /
+  reject_ratio 0.0870;主窗[0,+19] CAAR −0.03104 ADJ-BMP −0.411、稳健[0,+59] CAAR −0.08170
+  ADJ-BMP −0.587(临界±2.241);三法 dir=−1(朴素 −34.10/秩 主 −8.15 稳 −10.79/日历 主 −13.03
+  稳 −16.59);ρ̄=0.2197;策略版 adj_z(毛主检验)=−0.553 `NOT_SIG` 标注(authority=event_version);
+  开卡四数(毛超额 −0.005610/净原始 −0.008610/净超额 −0.009088/胜率净 0.2503);DSR 报告项
+  (proxy,SR̂ −0.0749/PSR 5.8e-17/DSR 6.5e-19);附录 G 诊断全量(强平18/破线17910/右删失1
+  不剔除/双触发12/顺延920 中位1 max64 极端4 单列);同源 19638→17929==N_valid、消费差集 0;
+  audit `b88a43ef…`/`c795b21e…`/pool_b1 batch1/pool_return batch1。
+
+**→ #2b(回撤反抽·b1 全市场流动性池版)就此闭卷:事件版判决 NOT_SIG(聚集假阳性以 ADJ-BMP 为准)+
+策略版体检并档(判决权归事件版)+ 剔除分解在案 + 台账终态一次性落库。**
