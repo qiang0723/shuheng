@@ -1,5 +1,9 @@
 """淘沙 · 台账 ledger 接口(切片1)。
 
+职责: experiment 台账唯一写入通道(登记/冻结/启动/收尾/关闭/元数据)。
+口径依据: spec §2/§4 + 硬化窗口① 状态机焊死(docs/hardening-window-order-2026-07-12.md)。
+验收档: taosha/docs/slice1-ledger-acceptance-2026-07-07.md + hardening-item1-statemachine-acceptance-2026-07-12.md。
+
 唯一写入对象 = experiment 台账(spec §2)。app 角色 taosha_app 仅 SELECT/INSERT/UPDATE,
 无 DELETE/TRUNCATE/属主 → 触发器禁不掉(真焊死)。本模块 app 侧也做前置校验,
 但**权威 enforcement 在数据库触发器**(pap 冻结不可改 / status 单向推进 / result 一次性 /
@@ -86,16 +90,19 @@ def freeze(exp_id: int, *, conn=None) -> None:
 
 
 def close(exp_id: int, reason: str, *, conn=None) -> None:
-    """关闭(被后续变体取代,不跑):→closed,result_json 记关闭原因(一次性),done_at 置。"""
+    """关闭(被后续变体取代,不跑):→closed,closure_reason 记关闭原因(一次性),done_at 置。
+
+    硬化①人拍A(2026-07-12):result_json 仅可随 running→done 首写(触发器焊死),
+    关闭原因改走 closure_reason 列;exp2 历史行(result_json 装 closure)原样保留。"""
     own = conn is None
     conn = conn or connect()
     try:
         with conn.cursor() as cur:
             cur.execute(
                 """UPDATE experiment
-                     SET status='closed', result_json=%s, done_at=now()
+                     SET status='closed', closure_reason=%s, done_at=now()
                    WHERE exp_id=%s AND status IN ('registered','frozen')""",
-                (Json({"closure": reason}), exp_id))
+                (reason, exp_id))
             if cur.rowcount != 1:
                 raise RuntimeError(f"exp {exp_id} 关闭失败(态非 registered/frozen 或不存在)")
         if own:
