@@ -9,7 +9,8 @@
 红线(taosha CLAUDE.md):一个数不改 pap(铁律④);报告只陈述统计事实、无建议口吻(铁律⑤)。
 用法:
   set -a; . /opt/quant/.env; set +a   # TAOSHA_APP_DSN(ledger 读 pap);ViewReader 另从 .env 取引擎 DSN
-  python -m taosha.harness.run_forecast_study --exp-id 5 [--json OUT] [--report OUT]
+  python -m taosha.harness.run_forecast_study --exp-id 5 --snapshot-id N [--json OUT] [--report OUT]
+硬化②: 取数全按 StudySnapshot manifest 路由(先 python -m taosha.experiment.snapshot --create)。
 """
 from __future__ import annotations
 
@@ -24,6 +25,8 @@ from taosha.reader.view import ViewReader
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--exp-id", type=int, required=True)
+    ap.add_argument("--snapshot-id", type=int, required=True,
+                    help="StudySnapshot manifest ID(硬化② fail-closed,无 manifest 拒运行)")
     ap.add_argument("--json", default=None)
     ap.add_argument("--report", default=None)
     a = ap.parse_args()
@@ -40,8 +43,10 @@ def main():
           flush=True)
     print(f"pap window={pap.get('window')!r} benchmark=market(全市场等权,#4 单跑)", flush=True)
 
-    reader = ViewReader()
+    reader = ViewReader(snapshot_id=a.snapshot_id)
     result = runner.run_study(reader, pap, benchmark_mode="market")
+    # 硬化②: result.audit 同记 manifest ID 与 digest(+批次向量)
+    result["audit"]["study_snapshot"] = reader.snapshot_info
     rendered = report.render(result)
     print("\n" + rendered)
 

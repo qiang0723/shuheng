@@ -14,7 +14,7 @@
 红线(taosha CLAUDE.md):一个数不改 pap(铁律④);报告只陈述统计事实、无建议口吻(铁律⑤)。
 用法:
   set -a; . /opt/quant/.env; set +a
-  python -m taosha.harness.run_drawdown_study --exp-id 3 [--json OUT] [--report OUT]
+  python -m taosha.harness.run_drawdown_study --exp-id 3 --snapshot-id N [--json OUT] [--report OUT]
 """
 from __future__ import annotations
 
@@ -30,6 +30,8 @@ from taosha.reader.view import ViewReader
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--exp-id", type=int, default=3)
+    ap.add_argument("--snapshot-id", type=int, required=True,
+                    help="StudySnapshot manifest ID(硬化② fail-closed,无 manifest 拒运行)")
     ap.add_argument("--json", default=None)
     ap.add_argument("--report", default=None)
     a = ap.parse_args()
@@ -47,9 +49,9 @@ def main():
     print(f"pap window={pap.get('window')!r} benchmark=pool_pit(b1 池等权 PIT 活基准,#2b)", flush=True)
 
     # ── b1 池成员快照(PIT)+ 池宇宙(全期成员并集=事件生成取数样本)────────────────
-    membership = ViewReader().pool_membership()   # {trade_date: frozenset(ts_code)}(pool_b1_current)
+    membership = ViewReader(snapshot_id=a.snapshot_id).pool_membership()   # {trade_date: frozenset(ts_code)}(pool_b1_current)
     if not membership:
-        raise SystemExit("pool_b1_current 空:先跑 seed_pool_b1(003)预计算池成员")
+        raise SystemExit("pool_b1_snap 空:核对 manifest 批次向量/先跑 seed_pool_b1(003)预计算池成员")
     universe = set().union(*membership.values())
     print(f"b1 池:评估日 {len(membership)} 天,池宇宙(全期成员并集)={len(universe)} 票", flush=True)
 
@@ -57,7 +59,7 @@ def main():
         return ts in membership.get(d, ())
 
     # ── ViewReader(sample=池宇宙:只拉池宇宙票的价,非全市场 15M 行)────────────────
-    reader = ViewReader(sample=universe)
+    reader = ViewReader(snapshot_id=a.snapshot_id, sample=universe)
 
     # ── 事件生成(附录F-rev1 PIT 状态机)+ b1 池 PIT 过滤(进场日在当日池快照)──────
     events = generate_events(reader, in_pool=in_pool)
@@ -72,12 +74,13 @@ def main():
     result = runner.run_study(reader, pap, benchmark_mode="pool_pit",
                               events=event_rows, strata_enabled=False)
 
-    # 复现留痕(spec §9):记池成员批次 + 池等权基准批次(引擎读表不现算,批次可溯源)。
-    #   批次号从引擎可读的数据表(membership/return,带 batch_id 列)取 max,不读 *_batch 元表(不扩权)。
+    # 复现留痕(spec §9;硬化②: 批次=manifest 指定,audit 同记 manifest ID 与 digest)
+    snap_info = reader.snapshot_info
+    result["audit"]["study_snapshot"] = snap_info
     result["audit"]["pool_snapshot"] = {
-        "pool_b1_batch": _batch_id(reader, "pool_b1_membership"),
-        "pool_return_batch": _batch_id(reader, "pool_b1_return"),
-        "note": "b1 池成员=pool_b1_current(max batch);池等权基准=pool_b1_return_current(max batch);"
+        "pool_b1_batch": snap_info["content"]["taosha"]["pool_b1"],
+        "pool_return_batch": snap_info["content"]["taosha"]["pool_b1_return"],
+        "note": "b1 池成员=pool_b1_snap(manifest 路由);池等权基准=pool_b1_return_snap(manifest 路由);"
                 "基准成分逐日=当日池快照(验收硬项:seed_pool_b1_return --verify)。",
     }
 
@@ -92,16 +95,6 @@ def main():
         with open(a.report, "w") as fh:
             fh.write(rendered)
         print(f"report → {a.report}", flush=True)
-
-
-def _batch_id(reader, table):
-    """读 taosha 表的 max batch_id(复现留痕;失败不阻断报告,记 None)。"""
-    try:
-        with reader._connect(reader._tdsn) as c, c.cursor() as cur:
-            cur.execute(f"SELECT max(batch_id) FROM {table}")
-            return cur.fetchone()[0]
-    except Exception:
-        return None
 
 
 if __name__ == "__main__":

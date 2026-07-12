@@ -1,9 +1,15 @@
-"""淘沙 · reader · ViewReader(切片3 步4:真实 explore_reader 视图 + 市场基准表)。
+"""淘沙 · reader · ViewReader(真实视图 + 市场基准表;硬化② StudySnapshot 路由)。
 
-契约实现之二(承 SyntheticReader 同签名:prices()/prices_by_security()/events()/calendar()):
-数据源 = qbase `explore_reader` 三视图(role `taosha_engine` 只读、物理隔离)+ taosha
-`market_return_current`(全市场等权基准,步3 预计算)。engine 侧零改造——runner 经 calendar()/
-market_return() 消费,与合成同签名(合成回退 equal_weight_market,ViewReader 读表不现算)。
+职责: 契约实现之二(承 SyntheticReader 同签名),真实数据唯一读径。
+口径依据: docs/hardening-window-order-2026-07-12.md ②(StudySnapshot fail-closed)+ 008/010 视图口径。
+验收档: slice3-step4-viewreader-acceptance-2026-07-08.md + hardening-item2-studysnapshot-acceptance-2026-07-12.md。
+
+数据源(硬化② 改造)= qbase `explore_reader_*_snap` 三视图 + taosha `market_return_snap`/
+`pool_b1_snap`/`pool_b1_return_snap`——**全部按 StudySnapshot manifest 路由**:构造时必须给
+snapshot_id(缺 → 直接拒,fail-closed,禁静默回退 *_current);每个连接注入会话 GUC
+(qbase 侧 `shuheng.study_batches`=manifest 的 qbase 批次向量 JSON;taosha 侧
+`shuheng.study_snapshot_id`),视图层严格函数缺键/缺 manifest 一律 RAISE。
+result.audit 记账用 `snapshot_info`(manifest ID + digest + content)。
 
 红线(taosha CLAUDE.md §2):不 import 兄弟目录;数据入口 = qbase 归一视图(只读账号 taosha_engine)。
   · holdout(<2024-07-01)/北交所.BJ排除/后复权 close 由视图定义**结构性保证**;reader 侧
@@ -47,8 +53,13 @@ class ViewReader:
     sample: 可选限定 ts_code 集合;缺省=events 视图的证券全集(事件票取数)。
     """
 
-    def __init__(self, qbase_dsn: Optional[str] = None, taosha_dsn: Optional[str] = None,
+    def __init__(self, snapshot_id: Optional[int] = None,
+                 qbase_dsn: Optional[str] = None, taosha_dsn: Optional[str] = None,
                  env_path: Optional[str] = None, sample: Optional[set] = None):
+        if snapshot_id is None:
+            raise RuntimeError(
+                "StudySnapshot fail-closed(硬化②): ViewReader 必须显式给 snapshot_id "
+                "(先 python -m taosha.experiment.snapshot --create),禁静默回退 *_current")
         if qbase_dsn is None or taosha_dsn is None:
             root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
             env = _load_env(env_path or os.path.join(root, ".env"))
@@ -60,17 +71,50 @@ class ViewReader:
         self._tdsn = taosha_dsn
         self._sample = sample
         self._sample_cache: Optional[list] = None
+        self._snapshot_id = int(snapshot_id)
+        self._manifest = self._load_manifest()   # {'digest':…, 'content':…};不存在→拒
+        import json as _json
+        self._qbase_payload = _json.dumps(self._manifest["content"]["qbase"], sort_keys=True)
+
+    def _load_manifest(self) -> dict:
+        """读 manifest(引擎对 study_snapshot 只读);不存在 → 直接拒(fail-closed)。"""
+        import psycopg
+        with psycopg.connect(self._tdsn) as c, c.cursor() as cur:
+            cur.execute("SELECT content, digest FROM study_snapshot WHERE snapshot_id=%s",
+                        (self._snapshot_id,))
+            row = cur.fetchone()
+        if row is None:
+            raise RuntimeError(f"StudySnapshot fail-closed: manifest {self._snapshot_id} 不存在")
+        content, digest = row
+        if "qbase" not in content or "taosha" not in content:
+            raise RuntimeError(f"StudySnapshot manifest {self._snapshot_id} 缺 qbase/taosha 批次向量")
+        return {"content": content, "digest": digest}
+
+    @property
+    def snapshot_info(self) -> dict:
+        """audit 记账用: manifest ID + digest + 批次向量(result.audit 同记,硬化②)。"""
+        return {"snapshot_id": self._snapshot_id, "digest": self._manifest["digest"],
+                "content": self._manifest["content"]}
 
     def _connect(self, dsn):
+        """连接工厂: 每连接注入 manifest 路由 GUC(视图层 fail-closed 依赖此会话变量)。"""
         import psycopg
-        return psycopg.connect(dsn)
+        conn = psycopg.connect(dsn)
+        with conn.cursor() as cur:
+            if dsn == self._qdsn:
+                cur.execute("SELECT set_config('shuheng.study_batches', %s, false)",
+                            (self._qbase_payload,))
+            else:
+                cur.execute("SELECT set_config('shuheng.study_snapshot_id', %s, false)",
+                            (str(self._snapshot_id),))
+        return conn
 
     # ── events(holdout 焊死;再挡一道)──────────────────────────────────────────
     def _raw_events(self) -> Iterator[EventRow]:
         with self._connect(self._qdsn) as c, c.cursor() as cur:
             cur.execute(
                 "SELECT ts_code, event_id, first_ann_date, event_type_layer, snapshot_batch "
-                "FROM explore_reader_events ORDER BY ts_code, event_id")
+                "FROM explore_reader_events_snap ORDER BY ts_code, event_id")
             for ts, eid, fad, layer, batch in cur.fetchall():
                 yield EventRow(ts_code=ts, event_id=str(eid), first_ann_date=fad,
                                event_type_layer=layer, snapshot_batch=str(batch))
@@ -97,8 +141,8 @@ class ViewReader:
                 cur.execute(
                     "SELECT p.ts_code, p.trade_date, p.close, p.is_suspended, p.limit_status, "
                     '       p.board, p.is_st, p.industry, p."open" '            # open=视图末列(010 增)
-                    "FROM explore_reader_prices p "
-                    "JOIN explore_reader_calendar cal USING (trade_date) "   # 轴=日历(约束②)
+                    "FROM explore_reader_prices_snap p "
+                    "JOIN explore_reader_calendar_snap cal USING (trade_date) "   # 轴=日历(约束②)
                     "WHERE p.ts_code = ANY(%s) "
                     "ORDER BY p.ts_code, p.trade_date", (codes,))
                 for ts, td, close, susp, lim, board, is_st, ind, opn in cur:
@@ -124,18 +168,18 @@ class ViewReader:
     # ── calendar(视图权威交易日轴;holdout 焊死)────────────────────────────────
     def calendar(self) -> Iterator[CalendarRow]:
         with self._connect(self._qdsn) as c, c.cursor() as cur:
-            cur.execute("SELECT trade_date, pretrade_date FROM explore_reader_calendar "
+            cur.execute("SELECT trade_date, pretrade_date FROM explore_reader_calendar_snap "
                         "ORDER BY trade_date")
             rows = [CalendarRow(trade_date=d, pretrade_date=p) for d, p in cur.fetchall()]
         return enforce_holdout_calendar(rows)
 
     # ── b1 池成员(#2b;预计算 pool_b1_current;引擎读表不现算全市场 amount)──────────
     def pool_membership(self) -> dict:
-        """{trade_date: frozenset(ts_code)} 从 taosha `pool_b1_current`(max batch 路由)读 b1 池成员。
+        """{trade_date: frozenset(ts_code)} 从 taosha `pool_b1_snap`(manifest 路由,硬化②)读 b1 池成员。
         供 #2b 事件生成的 PIT 过滤(进场日在池)。口径=liquidity_pool(003 预计算,frozen_digest 在 batch)。"""
         out: dict = {}
         with self._connect(self._tdsn) as c, c.cursor() as cur:
-            cur.execute("SELECT trade_date, ts_code FROM pool_b1_current")
+            cur.execute("SELECT trade_date, ts_code FROM pool_b1_snap")
             for d, ts in cur.fetchall():
                 out.setdefault(d, set()).add(ts)
         return {d: frozenset(s) for d, s in out.items()}
@@ -143,27 +187,31 @@ class ViewReader:
     # ── 市场基准(步3 预计算全市场等权;引擎读表不现算)────────────────────────
     def market_return(self, dates: list) -> list:
         """按给定 date 轴返回全市场等权连续(对数)日收益;轴上无该日(如首日/表未覆盖)→ None。
-        读 taosha `market_return_current`(max batch 路由视图)。"""
+        读 taosha `market_return_snap`(manifest 路由视图,硬化②)。"""
         with self._connect(self._tdsn) as c, c.cursor() as cur:
-            cur.execute("SELECT trade_date, ret_eqw FROM market_return_current")
+            cur.execute("SELECT trade_date, ret_eqw FROM market_return_snap")
             m = {d: float(r) for d, r in cur.fetchall()}
         return [m.get(d) for d in dates]
 
     # ── #2b b1 池等权 PIT 活基准(004 预计算;基准成分逐日=当日池快照;引擎读表不现算)────
     def pool_return(self, dates: list) -> list:
         """按给定 date 轴返回 b1 池等权连续(对数)日收益;轴上无该日(首日/表未覆盖/池空)→ None。
-        读 taosha `pool_b1_return_current`(max batch 路由视图)。逐日 ret = 当日池快照成员
+        读 taosha `pool_b1_return_snap`(manifest 路由视图,硬化②)。逐日 ret = 当日池快照成员
         (pool_b1_current[d])中有present bar且有前序present bar的票 log(close_d/close_前序)的等权平均
         (004 seed 落库,验收硬项=抽日成分==当日池快照)。#2b SIM regressor rm(口径②池内假设=池等权)。"""
         with self._connect(self._tdsn) as c, c.cursor() as cur:
-            cur.execute("SELECT trade_date, ret_pool_eqw FROM pool_b1_return_current")
+            cur.execute("SELECT trade_date, ret_pool_eqw FROM pool_b1_return_snap")
             m = {d: float(r) for d, r in cur.fetchall()}
         return [m.get(d) for d in dates]
 
 
 if __name__ == "__main__":
-    # 冒烟(需 .env 引擎 DSN + 真视图/表):证契约可读、样本取自事件票、市场基准对齐。
-    rd = ViewReader()
+    # 冒烟(需 .env 引擎 DSN + 真视图/表 + manifest):证契约可读、样本取自事件票、市场基准对齐。
+    import sys
+    if len(sys.argv) < 2:
+        raise SystemExit("用法: python -m taosha.reader.view <snapshot_id>(硬化② fail-closed,无 manifest 不跑)")
+    rd = ViewReader(snapshot_id=int(sys.argv[1]))
+    print(f"StudySnapshot: id={rd.snapshot_info['snapshot_id']} digest={rd.snapshot_info['digest'][:16]}…")
     codes = rd._sample_codes()
     cal = list(rd.calendar())
     mkt = rd.market_return([c.trade_date for c in cal])

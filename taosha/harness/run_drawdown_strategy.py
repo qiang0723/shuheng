@@ -9,7 +9,7 @@
 红线:一个数不改 pap(铁律④);输出只陈述统计事实、无建议口吻(铁律⑤)。
 用法:
   set -a; . /opt/quant/.env; set +a
-  python -m taosha.harness.run_drawdown_strategy --exp-id 3 [--json OUT]
+  python -m taosha.harness.run_drawdown_strategy --exp-id 3 --snapshot-id N [--json OUT]
 """
 from __future__ import annotations
 
@@ -25,6 +25,8 @@ from taosha.reader.view import ViewReader
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--exp-id", type=int, default=3)
+    ap.add_argument("--snapshot-id", type=int, required=True,
+                    help="StudySnapshot manifest ID(硬化② fail-closed,无 manifest 拒运行)")
     ap.add_argument("--json", default=None)
     ap.add_argument("--report", default=None)
     a = ap.parse_args()
@@ -42,16 +44,16 @@ def main():
     print("策略版(附录B B1+附录G;判决权归事件版) benchmark=pool_pit(b1 池同跨度买入持有)", flush=True)
 
     # ── 事件源 = 与事件版完全同一代码路径(同源硬项):池成员 PIT → 生成 → 池过滤 ────────
-    membership = ViewReader().pool_membership()
+    membership = ViewReader(snapshot_id=a.snapshot_id).pool_membership()
     if not membership:
-        raise SystemExit("pool_b1_current 空:先跑 seed_pool_b1(003)预计算池成员")
+        raise SystemExit("pool_b1_snap 空:核对 manifest 批次向量/先跑 seed_pool_b1(003)预计算池成员")
     universe = set().union(*membership.values())
     print(f"b1 池:评估日 {len(membership)} 天,池宇宙={len(universe)} 票", flush=True)
 
     def in_pool(ts, d):
         return ts in membership.get(d, ())
 
-    reader = ViewReader(sample=universe)
+    reader = ViewReader(snapshot_id=a.snapshot_id, sample=universe)
     events = generate_events(reader, in_pool=in_pool)
     print(f"#2b 进场事件(池内)= {len(events)} 条(与事件版同一生成路径)", flush=True)
     if not events:
@@ -62,11 +64,13 @@ def main():
 
     result = run_strategy(reader, pap, event_rows)
 
-    # 复现留痕(spec §9;同事件版 _batch_id 口径:读数据表 max(batch_id),不读 *_batch 元表)
+    # 复现留痕(spec §9;硬化②: 批次=manifest 指定,audit 同记 manifest ID 与 digest)
+    snap_info = reader.snapshot_info
+    result["audit"]["study_snapshot"] = snap_info
     result["audit"]["pool_snapshot"] = {
-        "pool_b1_batch": _batch_id(reader, "pool_b1_membership"),
-        "pool_return_batch": _batch_id(reader, "pool_b1_return"),
-        "note": "b1 池成员=pool_b1_current(max batch);池等权基准=pool_b1_return_current(max batch)。",
+        "pool_b1_batch": snap_info["content"]["taosha"]["pool_b1"],
+        "pool_return_batch": snap_info["content"]["taosha"]["pool_b1_return"],
+        "note": "b1 池成员=pool_b1_snap(manifest 路由);池等权基准=pool_b1_return_snap(manifest 路由)。",
     }
 
     sv = result["strategy_version"]
@@ -93,16 +97,6 @@ def main():
 
 def _f(x):
     return "NA" if x is None else f"{x:.6f}"
-
-
-def _batch_id(reader, table):
-    """读 taosha 表的 max batch_id(复现留痕;失败不阻断,记 None)。"""
-    try:
-        with reader._connect(reader._tdsn) as c, c.cursor() as cur:
-            cur.execute(f"SELECT max(batch_id) FROM {table}")
-            return cur.fetchone()[0]
-    except Exception:
-        return None
 
 
 if __name__ == "__main__":
