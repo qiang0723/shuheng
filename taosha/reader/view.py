@@ -7,8 +7,9 @@
 数据源(硬化② 改造)= qbase `explore_reader_*_snap` 三视图 + taosha `market_return_snap`/
 `pool_b1_snap`/`pool_b1_return_snap`——**全部按 StudySnapshot manifest 路由**:构造时必须给
 snapshot_id(缺 → 直接拒,fail-closed,禁静默回退 *_current);每个连接注入会话 GUC
-(qbase 侧 `shuheng.study_batches`=manifest 的 qbase 批次向量 JSON;taosha 侧
-`shuheng.study_snapshot_id`),视图层严格函数缺键/缺 manifest 一律 RAISE。
+`shuheng.study_snapshot_id`(修法#2: 两库统一,qbase 侧经权威镜像+发布凭证路由,
+引擎不自报批次向量;作废旧 qbase 侧 `shuheng.study_batches` 自报 JSON),
+视图层严格函数缺键/缺 manifest/无发布凭证一律 RAISE。
 result.audit 记账用 `snapshot_info`(manifest ID + digest + content)。
 
 红线(taosha CLAUDE.md §2):不 import 兄弟目录;数据入口 = qbase 归一视图(只读账号 taosha_engine)。
@@ -73,8 +74,6 @@ class ViewReader:
         self._sample_cache: Optional[list] = None
         self._snapshot_id = int(snapshot_id)
         self._manifest = self._load_manifest()   # {'digest':…, 'content':…};不存在→拒
-        import json as _json
-        self._qbase_payload = _json.dumps(self._manifest["content"]["qbase"], sort_keys=True)
 
     def _load_manifest(self) -> dict:
         """读 manifest(引擎对 study_snapshot 只读);不存在 → 直接拒(fail-closed)。"""
@@ -97,16 +96,14 @@ class ViewReader:
                 "content": self._manifest["content"]}
 
     def _connect(self, dsn):
-        """连接工厂: 每连接注入 manifest 路由 GUC(视图层 fail-closed 依赖此会话变量)。"""
+        """连接工厂: 每连接注入 manifest 路由 GUC(视图层 fail-closed 依赖此会话变量)。
+        修法#2: 两库统一只传 snapshot_id——qbase 侧路由改经受权角色落库的权威镜像+发布凭证,
+        引擎不再自报任何批次向量(作废: 旧 GUC shuheng.study_batches 自报 JSON)。"""
         import psycopg
         conn = psycopg.connect(dsn)
         with conn.cursor() as cur:
-            if dsn == self._qdsn:
-                cur.execute("SELECT set_config('shuheng.study_batches', %s, false)",
-                            (self._qbase_payload,))
-            else:
-                cur.execute("SELECT set_config('shuheng.study_snapshot_id', %s, false)",
-                            (str(self._snapshot_id),))
+            cur.execute("SELECT set_config('shuheng.study_snapshot_id', %s, false)",
+                        (str(self._snapshot_id),))
         return conn
 
     # ── events(holdout 焊死;再挡一道)──────────────────────────────────────────

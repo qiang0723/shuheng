@@ -70,7 +70,8 @@ def collect_content() -> dict:
 
 
 def create(note: str | None = None) -> tuple[int, str, dict]:
-    """生成 manifest(单事务;digest 由库触发器权威计算)。返回 (snapshot_id, digest, content)。"""
+    """生成 manifest(单事务;digest 由库触发器权威计算)+ 发布到 qbase(修法#2 流程①→②③)。
+    返回 (snapshot_id, digest, content)。"""
     content = collect_content()
     with psycopg.connect(_dsn("TAOSHA_APP_DSN")) as conn, conn.cursor() as cur:
         cur.execute(
@@ -78,7 +79,45 @@ def create(note: str | None = None) -> tuple[int, str, dict]:
             "RETURNING snapshot_id, digest", (Json(content), note))
         sid, digest = cur.fetchone()
         conn.commit()
+    publish(sid)
     return sid, digest, content
+
+
+def publish(snapshot_id: int) -> str:
+    """修法#2 发布流程②③(受权角色专责,append-only,不 UPDATE):
+    ② qbase 落相同 snapshot_id/content 的不可变镜像(digest 由 qbase 触发器同式库算);
+    ③ 校验两库 content/digest 一致后另行 INSERT publication attestation。
+    幂等: 镜像/凭证已在且 digest 一致 → 跳过;镜像在而 digest 不一致 → RAISE(半成品/
+    错镜像留审计不改不删,须另起新 manifest)。返回 attested digest。"""
+    row = get(snapshot_id)
+    if row is None:
+        raise RuntimeError(f"taosha manifest {snapshot_id} 不存在,无从发布")
+    t_content, t_digest = row["content"], row["digest"]
+    with psycopg.connect(_dsn("QBASE_APP_DSN")) as qc, qc.cursor() as cur:
+        cur.execute("SELECT content, digest FROM study_snapshot_mirror WHERE snapshot_id=%s",
+                    (snapshot_id,))
+        m = cur.fetchone()
+        if m is None:
+            cur.execute("INSERT INTO study_snapshot_mirror (snapshot_id, content) "
+                        "VALUES (%s, %s) RETURNING digest", (snapshot_id, Json(t_content)))
+            m_digest = cur.fetchone()[0]
+        else:
+            m_content, m_digest = m
+            if m_content != t_content:
+                raise RuntimeError(
+                    f"snapshot {snapshot_id} 镜像 content 与 taosha 不一致(半成品留审计,"
+                    f"不改不删;须另起新 manifest)")
+        if m_digest != t_digest:   # 两库 canonical digest 同式 → content 同则必同;不同即中止
+            raise RuntimeError(
+                f"snapshot {snapshot_id} 两库 digest 不一致(taosha {t_digest[:12]}… / "
+                f"qbase {m_digest[:12]}…),拒发布")
+        cur.execute("SELECT count(*) FROM study_snapshot_publication "
+                    "WHERE snapshot_id=%s AND attested_digest=%s", (snapshot_id, t_digest))
+        if cur.fetchone()[0] == 0:
+            cur.execute("INSERT INTO study_snapshot_publication (snapshot_id, attested_digest) "
+                        "VALUES (%s, %s)", (snapshot_id, t_digest))
+        qc.commit()
+    return t_digest
 
 
 def get(snapshot_id: int | None = None) -> dict | None:
@@ -98,13 +137,19 @@ def main() -> int:
     g.add_argument("--create", action="store_true")
     g.add_argument("--show", type=int)
     g.add_argument("--latest", action="store_true")
+    g.add_argument("--publish", type=int, metavar="N",
+                   help="修法#2: 对既有 manifest N 执行 qbase 镜像+attestation 发布(幂等)")
     ap.add_argument("--note", default=None)
     a = ap.parse_args()
 
     if a.create:
         sid, digest, content = create(a.note)
-        print(f"StudySnapshot 已生成: snapshot_id={sid} digest={digest}")
+        print(f"StudySnapshot 已生成并发布: snapshot_id={sid} digest={digest}")
         print(json.dumps(content, ensure_ascii=False, indent=2, sort_keys=True))
+        return 0
+    if a.publish is not None:
+        d = publish(a.publish)
+        print(f"StudySnapshot 已发布(镜像+attestation,幂等): snapshot_id={a.publish} digest={d}")
         return 0
     row = get(a.show if a.show is not None else None)
     if row is None:

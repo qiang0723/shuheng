@@ -58,9 +58,22 @@ def probes() -> None:
             _expect_reject(qc, f"P-q1 引擎读 {v}(current 路由)拒", f"SELECT count(*) FROM {v}")
         _expect_reject(qc, "P-q2 snap 视图无 GUC(无 manifest)拒",
                        "SELECT count(*) FROM explore_reader_calendar_snap")
-        _expect_reject(qc, "P-q3 批次向量缺键拒(仅给 daily)",
+        # 修法#2(外审 2026-07-13): 引擎自报完整伪造 JSON 批次向量必须失效(旧 study_batches
+        # 路由作废,路由只认受权角色落库的镜像+发布凭证;此探针在 014 前=可穿透的攻击原型)
+        _expect_reject(qc, "P-q3 完整伪造批次向量 JSON 自报拒(修法#2,旧 shuheng.study_batches 失效)",
                        "SELECT count(*) FROM explore_reader_calendar_snap",
-                       setup=("SELECT set_config('shuheng.study_batches', %s, false)", ('{"daily":1}',)))
+                       setup=("SELECT set_config('shuheng.study_batches', %s, false)",
+                              ('{"stock_basic":999,"namechange":999,"trade_cal":999,"daily":999,'
+                               '"adj_factor":999,"forecast":999,"stk_holdertrade":999}',)))
+        _expect_reject(qc, "P-q4 不存在 snapshot_id 拒(qbase 侧无镜像/凭证)",
+                       "SELECT count(*) FROM explore_reader_calendar_snap",
+                       setup=("SELECT set_config('shuheng.study_snapshot_id','999999', false)", ()))
+        _expect_reject(qc, "P-q5 引擎写权威镜像拒(受权角色专责)",
+                       "INSERT INTO study_snapshot_mirror (snapshot_id, content) "
+                       "VALUES (999999, '{\"qbase\":{},\"taosha\":{}}'::jsonb)")
+        _expect_reject(qc, "P-q6 引擎写发布凭证拒(受权角色专责)",
+                       "INSERT INTO study_snapshot_publication (snapshot_id, attested_digest) "
+                       "VALUES (1, repeat('0',64))")
     with psycopg.connect(tdsn) as tc:
         for v in ("market_return_current", "pool_b1_current", "pool_b1_return_current",
                   "market_eqw_return", "pool_b1_membership", "pool_b1_return"):
