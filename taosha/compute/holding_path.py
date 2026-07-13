@@ -118,14 +118,24 @@ def simulate_holding_path(
     ma_long: int = MA_LONG,
     stop_frac: float = STOP_FRAC,
     trade_day_idx: Optional[list] = None,
+    fill_mode: str = "same_close",
 ) -> Optional[HoldingPath]:
     """给定建仓 bar(τ=0,事件版同源进场已定位的可成交进场日),模拟离场路径。纯函数、PIT。
 
     closes/opens/limit_status: present-bar 序列(交易日轴升序,close 已过滤 None;与信号侧同轴)。
     entry_idx: 建仓 present-bar 索引(τ=0);进场价 = opens[entry_idx](后复权;事件版进场口径)。
     trade_day_idx: 各 present-bar 的日历交易日序号(G4 顺延天数口径;None→退化 bar 差)。
+    fill_mode(修法#1 窄补 2026-07-13,离场成交口径;离场**决策**两模式同=附录G 收盘确认判据):
+      · 'same_close' = 附录G 原口径(触发日 close 成交;G3 同刻前视诊断值,addendum_id=1 定性)
+        ——仅 legacy 域语义保留(生产策略驱动对 legacy 一律拒,修法#1 层③);
+      · 'next_open'  = 白名单 close_to_next_open:收盘确认(bar j)→ 次一 present-bar 后复权
+        **open** 成交;该 bar 不可成交(跌停/一字跌/open 缺)→ 顺延至首个可成交 bar 的 open;
+        顺延天数自名义成交 bar(j+1)起计,>20 交易日极端单列(G4 上限条款同式);触发后至样本末
+        无可成交 bar(含触发即末 bar 无次日)→ 末端 close 截断(G5 mark-to-market,非成交)。
     返回 None:建仓越界 / 建仓价缺(open None/≤0 = 不可建仓,engine 记同源差集)。
     """
+    if fill_mode not in ("same_close", "next_open"):
+        raise ValueError(f"fill_mode 非法: {fill_mode!r}(合法={{'same_close','next_open'}},不默认不猜)")
     n = len(closes)
     if not (0 <= entry_idx < n):
         return None
@@ -143,6 +153,24 @@ def simulate_holding_path(
         if not (stop or brk):
             continue
         reason = "stop_loss" if stop else "break_ma20"   # G2:同日双触发 → 主因归强平
+        if fill_mode == "next_open":
+            # 修法#1(窄补): close_to_next_open——决策=收盘确认(bar j),成交=次一可成交
+            # present-bar 的后复权 open(fill_price=next_adjusted_open,白名单冻结值);
+            # 不可成交(跌停/一字跌/open 缺)顺延至首个可成交 bar 的 open,顺延自名义成交
+            # bar(j+1)起计;至末端仍无 → G5 末端 close 截断(mark-to-market,非成交)。
+            for k in range(j + 1, n):
+                if (_sellable(limit_status[k], closes[k], closes[k - 1])
+                        and opens[k] is not None and opens[k] > 0):
+                    pd = _postpone_days(trade_day_idx, k, j + 1)
+                    return HoldingPath(entry_idx, entry_price, k, opens[k], reason, stop, brk,
+                                       k - entry_idx, k - (j + 1), pd,
+                                       pd > POSTPONE_EXTREME_DAYS, False)
+            last = n - 1
+            nominal = min(j + 1, last)
+            pd = _postpone_days(trade_day_idx, last, nominal)
+            return HoldingPath(entry_idx, entry_price, last, closes[last], reason, stop, brk,
+                               last - entry_idx, last - nominal, pd,
+                               pd > POSTPONE_EXTREME_DAYS, True)
         # 触发日 j:G3 收盘成交(若可卖);否则 G4 顺延至下一可成交 bar 按其 close 成交
         prev_c = closes[j - 1] if j > 0 else None
         if _sellable(limit_status[j], c, prev_c):
@@ -260,7 +288,60 @@ if __name__ == "__main__":
     p7 = simulate_holding_path(c7, o7, NS[:31], entry_idx=30)
     assert p7.exit_reason == "stop_loss" and p7.holding_bars == 0 and p7.exit_idx == 30
 
+    # ══ 修法#1 窄补(2026-07-13):fill_mode='next_open'(close_to_next_open 白名单) ══
+    # ── N1 正常路径:触发日 j 收盘确认 → 次日 open 成交(非同刻 close) ─────────────
+    #   建仓 idx30(open100);idx31 close 96<ma20 触发;idx32 open=97.5 成交。
+    cn1 = [100.0] * 31 + [96.0, 98.0]
+    on1 = [100.0] * 31 + [96.5, 97.5]
+    pn1 = simulate_holding_path(cn1, on1, NS[:33], entry_idx=30, fill_mode="next_open")
+    assert pn1 is not None and pn1.exit_reason == "break_ma20", pn1
+    assert pn1.exit_idx == 32 and pn1.exit_price == 97.5, pn1   # 次日 open(非触发日 close 96.0)
+    assert pn1.postpone_bars == 0 and pn1.postpone_days == 0 and not pn1.right_censored, pn1
+    # 同一序列 same_close 对照:触发日 close 96.0 出(证两口径分流、决策判据同)
+    ps1 = simulate_holding_path(cn1, on1, NS[:33], entry_idx=30)
+    assert ps1.exit_idx == 31 and ps1.exit_price == 96.0
+
+    # ── N2 次日跌停卖不掉 → 顺延至首个可成交 bar 的 open;顺延自名义成交 bar 起计 ──
+    cn2 = [100.0] * 31 + [79.0, 75.0, 74.0]
+    on2 = [100.0] * 31 + [79.0, 74.5, 73.5]
+    ln2 = ["none"] * 32 + ["limit_down", "none"]   # idx32(名义成交日)跌停;idx33 可成交
+    pn2 = simulate_holding_path(cn2, on2, ln2, entry_idx=30, fill_mode="next_open")
+    assert pn2 is not None and pn2.exit_reason == "stop_loss", pn2   # idx31 close79≤80 触发
+    assert pn2.exit_idx == 33 and pn2.exit_price == 73.5, pn2        # 顺延日 open(非 close 74.0)
+    assert pn2.postpone_bars == 1 and pn2.postpone_days == 1 and not pn2.right_censored, pn2
+
+    # ── N3 触发即末 bar(无次日)→ 末端 close 截断(mark-to-market,非成交) ─────────
+    cn3 = [100.0] * 31 + [79.0]
+    on3 = [100.0] * 31 + [79.5]
+    pn3 = simulate_holding_path(cn3, on3, NS[:32], entry_idx=30, fill_mode="next_open")
+    assert pn3 is not None and pn3.right_censored and pn3.exit_idx == 31 and pn3.exit_price == 79.0, pn3
+    assert pn3.trigger_stop and pn3.postpone_bars == 0, pn3
+
+    # ── N4 次日 open 缺(None)→ 不可成交,顺延至有 open 的可成交 bar ────────────────
+    cn4 = [100.0] * 31 + [96.0, 98.0, 99.0]
+    on4 = [100.0] * 31 + [96.5, None, 98.5]
+    pn4 = simulate_holding_path(cn4, on4, NS[:34], entry_idx=30, fill_mode="next_open")
+    assert pn4 is not None and pn4.exit_idx == 33 and pn4.exit_price == 98.5, pn4
+    assert pn4.postpone_bars == 1, pn4
+
+    # ── N5 顺延 >20 交易日极端标注(G4 上限条款同式,自名义成交 bar 起计) ────────────
+    cn5 = [100.0] * 31 + [79.0] + [78.0 - i for i in range(22)] + [55.0]
+    on5 = [100.0] * 31 + [79.0] + [77.5 - i for i in range(22)] + [54.5]
+    ln5 = ["none"] * 32 + ["limit_down"] * 22 + ["none"]
+    pn5 = simulate_holding_path(cn5, on5, ln5, entry_idx=30, fill_mode="next_open")
+    assert pn5 is not None and pn5.exit_idx == 54 and pn5.exit_price == 54.5, pn5   # 可成交日 open
+    assert pn5.postpone_bars == 22 and pn5.postpone_days == 22 and pn5.postpone_extreme, pn5
+
+    # ── fill_mode 非法 → raise(fail-closed,不默认不猜) ────────────────────────────
+    try:
+        simulate_holding_path([100.0], [100.0], ["none"], entry_idx=0, fill_mode="same_close_exec")
+        raise SystemExit("fill_mode 非法未拒")
+    except ValueError:
+        pass
+
     print("holding_path.py 自检 OK(附录G):G1收盘确认/G2双flag主因强平/G3触发日close/"
           "G4顺延日close+>20交易日极端标注(bar口径+停牌trade_day_idx口径)/G4→G5截断/G5末端mark-to-market/"
-          "G6 one_word判向/越界价缺→None/建仓即末bar;STOP_FRAC=%.2f MA_LONG=%d POSTPONE_EXTREME_DAYS=%d"
+          "G6 one_word判向/越界价缺→None/建仓即末bar;"
+          "next_open(修法#1窄补):次日open成交≠同刻close/顺延open/触发即末bar截断/open缺顺延/极端标注/"
+          "非法fill_mode拒;STOP_FRAC=%.2f MA_LONG=%d POSTPONE_EXTREME_DAYS=%d"
           % (STOP_FRAC, MA_LONG, POSTPONE_EXTREME_DAYS))

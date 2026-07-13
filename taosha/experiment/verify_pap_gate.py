@@ -25,8 +25,10 @@ FAMILY = "_smtest_papgate"
 SE_C2N = {"execution_profile": "close_to_next_open", "decision_time": "close_confirmed",
           "fill_time": "next_open", "fill_price": "next_adjusted_open",
           "slippage_rule": "frozen_cost"}
-SE_PCT = {"execution_profile": "preclose_to_tail", "decision_cutoff": "探针占位(人定)",
-          "decision_price_source": "探针占位(人定)", "fill_window": "探针占位",
+# 窄补(2026-07-13): preclose_to_tail 时间字段结构化(HH:MM;~~自由文本占位~~作废)
+SE_PCT = {"execution_profile": "preclose_to_tail", "decision_cutoff": "14:50",
+          "decision_price_source": "探针占位(人定)",
+          "fill_window": {"start": "14:55", "end": "15:00"},
           "fill_price_rule": "探针占位(人定)", "slippage_rule": "frozen_cost"}
 
 _results: list[tuple[str, bool, str]] = []
@@ -77,6 +79,63 @@ def _freeze_allow(cur, name: str, pap_text: str) -> None:
     except psycopg.Error as err:
         cur.execute("ROLLBACK TO SAVEPOINT c")
         _ok(name, False, f"合法路径被误拒: {str(err).splitlines()[0][:130]}")
+
+
+def _engine_fill_probe(frozen_pap: dict) -> None:
+    """窄补反向测试①(引擎半): 用 DB 冻结后读回的 pap 实跑合成单事件,断言实际成交发生在
+    **次日后复权 open**(而非旧同刻收盘价)。同一合成序列下两口径数值可分辨(95.0 vs 90.0)。
+    附 E2: 结构合法 preclose_to_tail(可冻结)执行 fail-closed 拒(未实现不得旧口径兜底)。"""
+    import datetime as dt
+    import math
+
+    from taosha.engine.drawdown_strategy import run_strategy
+    from taosha.reader.contract import CalendarRow, PriceRow
+
+    base = dt.date(2020, 1, 6)
+    n_days = 400
+    dates = [base + dt.timedelta(days=i) for i in range(n_days)]
+    closes = ([100.0 + 0.5 * math.sin(i) for i in range(330)]
+              + [102.0] * 15 + [90.0] + [95.0] * (n_days - 346))
+
+    def _rows(ts):
+        return [PriceRow(ts_code=ts, trade_date=dates[i], close=closes[i], is_suspended=False,
+                         limit_status="none", board="main", is_st=False, industry="I",
+                         open=closes[i]) for i in range(n_days)]
+
+    class _Ev:
+        ts_code = "A01"; event_id = "A01:E1"; snapshot_batch = "SYNTH"
+        first_ann_date = dates[330]; event_type_layer = None
+        d1_never_broke_ma10 = False; d2_episode_to_entry_days = 3; d3_broke_ma20_before_entry = False
+
+    class _Rd:
+        def prices_by_security(self):
+            return {"A01": _rows("A01")}
+        def calendar(self):
+            return [CalendarRow(trade_date=d, pretrade_date=None) for d in dates]
+        def pool_return(self, ds):
+            return [None] + [(0.001 if i % 2 == 0 else -0.001) for i in range(1, len(ds))]
+
+    pap = dict(frozen_pap)
+    pap["_family_trial"] = 1
+    # idx345 close=90 破 ma20 收盘确认;次日 idx346 open=95。同刻口径 net 用 90、次日开盘用 95。
+    fill_next_open = 95.0 * (1 - 0.00225) / (102.0 * (1 + 0.00125)) - 1
+    fill_same_close = 90.0 * (1 - 0.00225) / (102.0 * (1 + 0.00125)) - 1
+    try:
+        res = run_strategy(_Rd(), pap, [_Ev()])
+        net = res["strategy_version"]["net"]["mean"]
+        ok = (abs(net - fill_next_open) < 1e-12 and abs(net - fill_same_close) > 1e-6
+              and res["strategy_version"]["execution"]["profile"] == "close_to_next_open")
+        _ok("E1 合法 close_to_next_open 冻结后实际成交=次日开盘(非同刻收盘)", ok,
+            f"net={net:.8f}(次日开盘口径 {fill_next_open:.8f} / 旧同刻 {fill_same_close:.8f})")
+    except Exception as err:  # noqa: BLE001 —— 探针如实报错
+        _ok("E1 合法 close_to_next_open 冻结后实际成交=次日开盘(非同刻收盘)", False, str(err)[:130])
+
+    try:
+        run_strategy(_Rd(), dict(pap, strategy_execution=SE_PCT), [_Ev()])
+        _ok("E2 preclose_to_tail 可冻结但执行 fail-closed 拒(未实现不得兜底)", False, "放行=静默兜底")
+    except SystemExit as err:
+        _ok("E2 preclose_to_tail 可冻结但执行 fail-closed 拒(未实现不得兜底)",
+            "未实现" in str(err), str(err)[:130])
 
 
 def main() -> int:
@@ -165,6 +224,37 @@ def main() -> int:
             cur.execute("ROLLBACK TO SAVEPOINT r7")
             _ok("R7 taosha_app 写 legacy registry 拒(权限验证)", True,
                 str(err).splitlines()[0][:120])
+
+        # ── 窄补(外审第二轮 2026-07-13): 结构化时间字段反向 ──
+        _freeze_reject(cur, "R8 反向时间窗口冻结拒: decision_cutoff(15:00) ≥ fill_window.start(14:55)",
+                       _pap(pap_schema_version=2, analysis_type="strategy",
+                            strategy_execution=dict(SE_PCT, decision_cutoff="15:00")))
+        _freeze_reject(cur, "R9 decision_cutoff 自由文本冻结拒(结构化 HH:MM,非字符串非空判断)",
+                       _pap(pap_schema_version=2, analysis_type="strategy",
+                            strategy_execution=dict(SE_PCT, decision_cutoff="尾盘前(自由文本)")))
+        _freeze_reject(cur, "R10 fill_window 非结构化冻结拒(须 {start,end} HH:MM)",
+                       _pap(pap_schema_version=2, analysis_type="strategy",
+                            strategy_execution=dict(SE_PCT, fill_window="尾盘窗占位(字符串)")))
+
+        # ── 窄补 E1(反向测试①): 合法 close_to_next_open 冻结后,实际成交=次日开盘 ──
+        cur.execute("SAVEPOINT e1")
+        e1_pap = None
+        try:
+            e = _insert(cur, "[papgate] E1 冻结→执行探针",
+                        _pap(pap_schema_version=2, analysis_type="strategy",
+                             strategy_execution=SE_C2N,
+                             window="事件版20/60日;策略版按离场",
+                             cost={"commission": 0.00025, "stamp_tax_sell": 0.001,
+                                   "slippage_oneway": 0.001, "limit_up_board_untradeable": True}))
+            cur.execute("UPDATE experiment SET status='frozen', frozen_at=now() WHERE exp_id=%s", (e,))
+            cur.execute("SELECT pap_json FROM experiment WHERE exp_id=%s AND status='frozen'", (e,))
+            e1_pap = cur.fetchone()[0]
+        except psycopg.Error as err:
+            _ok("E1 合法 close_to_next_open 冻结后实际成交=次日开盘(非同刻收盘)", False,
+                f"冻结段失败: {str(err).splitlines()[0][:120]}")
+        cur.execute("ROLLBACK TO SAVEPOINT e1")
+        if e1_pap is not None:
+            _engine_fill_probe(e1_pap)
 
         conn.rollback()
         cur.execute("SELECT count(*) FROM experiment WHERE family=%s", (FAMILY,))

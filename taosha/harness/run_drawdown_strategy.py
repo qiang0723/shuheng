@@ -17,9 +17,8 @@ import argparse
 import json
 
 from taosha.engine.drawdown_events import generate_events, to_event_rows
-from taosha.engine.drawdown_strategy import run_strategy
+from taosha.engine.drawdown_strategy import run_strategy, resolve_execution
 from taosha.experiment import ledger
-from taosha.experiment import pap as pap_mod
 from taosha.reader.view import ViewReader
 
 
@@ -53,7 +52,11 @@ def main():
     if _at not in ("strategy", "event_and_strategy"):
         raise SystemExit(f"修法#1: exp {a.exp_id} analysis_type={_at!r} 不含 strategy,"
                          "策略驱动拒执行(不得靠文本推断是否含策略版)")
-    pap_mod.validate_strategy_execution((row["pap_json"] or {}).get("strategy_execution"))
+    # 修法#1 窄补(2026-07-13): 驱动层显式 fail-closed——校验通过≠可执行,execution_profile
+    # 未实现真实模拟(如 preclose_to_tail)即在此拒,先于一切取数;不得校验后悄悄旧口径兜底。
+    # 单一执行门=engine.drawdown_strategy.resolve_execution(引擎 run_strategy 内再调=双闸同实现)。
+    _prof, _fill = resolve_execution(row["pap_json"] or {})
+    print(f"execution_profile={_prof}(fill_mode={_fill};修法#1 窄补: 引擎消费执行 schema)", flush=True)
 
     if a.diagnostic and not a.reason:
         raise SystemExit("诊断跑必须给 --reason(事由,STATE 登记;通路预裁 2026-07-12)")
