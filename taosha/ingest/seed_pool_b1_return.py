@@ -20,13 +20,19 @@ pool_b1_return_batch + pool_b1_return(004)。
 验收硬项(--verify,步②预置①):落库后任抽 K 日,从 pool_b1_current[d] 独立重算 ret 与库值逐日 <1e-9,
   且门控成分集合==当日池快照(重算直接以 pool_b1_current[d] 成员为准 → ret 吻合即证库值用的就是当日快照)。
 
+修法#3 窄补(外审第二轮,2026-07-13)——seed 绑定已发布快照:
+  qbase 价读径=explore_reader_{prices,calendar}_snap(GUC 路由,镜像+attestation fail-closed);
+  source_anchor={所读快照 qbase 向量, source_manifest{snapshot_id,digest}, taosha_parent{pool_b1}}。
+  ~~旧模式"先记 current 锚后读 current 视图"~~ 作废。taosha 父池批(pool_b1_membership)本就按
+  显式 batch_id 读取(append-only 钉死,无 current 再查询窗口),保持并入锚 taosha_parent。
+
 红线(taosha CLAUDE.md §2):不 import 兄弟目录;价源=qbase 视图(经 DSN,非 import)。
   读=QBASE_APP_DSN(价视图)+ TAOSHA_APP_DSN(池成员);写=TAOSHA_APP_DSN(只 INSERT,触发器焊 append-only)。
   秘钥纪律:DSN 只从 .env 读,不落日志、不回显、不进 git。
 用法:
-  python -m taosha.ingest.seed_pool_b1_return --selftest   # 纯核手算自检(不碰库)
-  python -m taosha.ingest.seed_pool_b1_return --dry        # 连库+双算闸+硬闸,不落库
-  python -m taosha.ingest.seed_pool_b1_return              # 全量预算+落库
+  python -m taosha.ingest.seed_pool_b1_return --selftest                          # 纯核手算自检(不碰库)
+  python -m taosha.ingest.seed_pool_b1_return --source-snapshot-id N --dry        # 连库+双算闸+硬闸,不落库
+  python -m taosha.ingest.seed_pool_b1_return --source-snapshot-id N              # 全量预算+落库
   python -m taosha.ingest.seed_pool_b1_return --verify     # 落库后验收硬项(抽日成分==当日池快照)
 """
 from __future__ import annotations
@@ -42,7 +48,7 @@ from taosha.compute.frozen_config import COMPOUNDING, audit_digest
 from taosha.compute.returns import log_rates_from_prices
 from taosha.reader.contract import HOLDOUT_START
 
-VIEW = "explore_reader_prices"
+VIEW = "explore_reader_prices_snap"   # 修法#3 窄补: 快照视图(manifest 路由;~~current 视图~~作废)
 CROSSCHECK_TOL = 1e-9
 VERIFY_TOL = 1e-9
 VERIFY_SAMPLE = 12          # 验收硬项抽样日数(确定性均匀抽 + 端点)
@@ -109,9 +115,10 @@ def compute_pool_eqw(rows: Iterable[tuple],
 
 
 # 源=prices ∩ calendar(约束②)、限池全期并集(universe,非池票零贡献故不拉)
+# 修法#3 窄补: 两侧均为 *_snap 快照视图(同一已发布 manifest 路由,批次钉死)。
 def _src(universe_param: str) -> str:
     return (f"SELECT p.ts_code, p.trade_date, p.close FROM {VIEW} p "
-            "JOIN explore_reader_calendar c USING (trade_date) "
+            "JOIN explore_reader_calendar_snap c USING (trade_date) "
             f"WHERE p.ts_code = ANY({universe_param})")
 
 
@@ -219,7 +226,7 @@ def _pool_batch_id(tconn) -> int:
     return int(r)
 
 
-def run(dry: bool):
+def run(dry: bool, source_snapshot_id: int):
     import psycopg
     from psycopg.types.json import Json
 
@@ -237,16 +244,23 @@ def run(dry: bool):
 
     with psycopg.connect(tdsn) as tconn:
         pool_batch = _pool_batch_id(tconn)
-        print(f"当日池快照:pool_b1_membership(batch={pool_batch}=pool_b1_current 同集)加载中…", flush=True)
+        print(f"当日池快照:pool_b1_membership(batch={pool_batch},显式批次钉死读取)加载中…", flush=True)
         pool_by_date = load_pool_snapshots(tconn, pool_batch=pool_batch)
     universe = sorted({ts for s in pool_by_date.values() for ts in s})
     print(f"  评估日 {len(pool_by_date)} 天,池宇宙(全期并集)={len(universe)} 票", flush=True)
 
     with psycopg.connect(qdsn) as qconn:
-        # 修法#3: 源锚定=运行时实际所读 qbase 现值向量 + taosha 父池批(触发器强制非空)
+        # 修法#3 窄补: 绑定已发布快照——锚=所读快照向量+taosha 父池批;价读径=快照视图
+        # (GUC 路由到同一 manifest);~~current/max 现值锚~~作废。
         with qconn.cursor() as qcur:
-            anchor = {"qbase": snapshot.collect_qbase_vector(qcur),
-                      "taosha_parent": {"pool_b1": pool_batch}}
+            qcur.execute("SELECT set_config('shuheng.study_snapshot_id', %s, false)",
+                         (str(source_snapshot_id),))
+            snap_content, snap_digest = snapshot.read_published_snapshot(qcur, source_snapshot_id)
+        anchor = {"qbase": snap_content["qbase"],
+                  "source_manifest": {"snapshot_id": source_snapshot_id, "digest": snap_digest},
+                  "taosha_parent": {"pool_b1": pool_batch}}
+        print(f"源快照绑定: snapshot_id={source_snapshot_id} digest={snap_digest[:12]}…"
+              f"(已发布,读径=*_snap 视图)", flush=True)
         view_rows, v_min, v_max = view_scan_stats(qconn, universe)
         print(f"价视图(池宇宙∩calendar): rows={view_rows} range={v_min}..{v_max}", flush=True)
         print("Path A(冻结 returns.py)逐票门控聚合中…", flush=True)
@@ -283,7 +297,9 @@ def run(dry: bool):
 
     with psycopg.connect(tdsn) as tconn:
         bid, landed = land(
-            tconn, py_rows, source=f"qbase:{VIEW}∩calendar × taosha:pool_b1_current",
+            tconn, py_rows,
+            source=f"qbase:{VIEW}∩calendar_snap@snapshot{source_snapshot_id} × "
+                   f"taosha:pool_b1_membership(batch={pool_batch})",
             pool_batch_id=pool_batch, frozen_digest=digest, holdout=holdout, view_rows=view_rows,
             min_date=min_date, max_date=max_date, avg_n=avg_n, pull_time=pull_time, note=note,
             source_anchor=Json(anchor))
@@ -420,13 +436,18 @@ def main():
     ap.add_argument("--selftest", action="store_true")
     ap.add_argument("--dry", action="store_true")
     ap.add_argument("--verify", action="store_true", help="落库后验收硬项(抽日成分==当日池快照)")
+    ap.add_argument("--source-snapshot-id", type=int, default=None,
+                    help="修法#3 窄补: 绑定的已发布 StudySnapshot ID(锚+读径同源,必填)")
     args = ap.parse_args()
     if args.selftest:
         selftest()
     elif args.verify:
         verify()
     else:
-        run(dry=args.dry)
+        if args.source_snapshot_id is None:
+            sys.exit("修法#3(窄补): 须 --source-snapshot-id 绑定已发布快照"
+                     "(禁 current/max 现值为锚,fail-closed)")
+        run(dry=args.dry, source_snapshot_id=args.source_snapshot_id)
 
 
 if __name__ == "__main__":

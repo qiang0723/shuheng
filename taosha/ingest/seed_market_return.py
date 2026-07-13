@@ -17,15 +17,22 @@
   逐日 |Δret|<1e-9 且 n_stocks 整数全等,否则**中止不落库**。
 硬闸(holdout 泄漏):max(trade_date) < 2024-07-01 且 out_rows 远小于全日历 8797(≈8187),否则中止。
 
+修法#3 窄补(外审第二轮,2026-07-13)——seed 绑定已发布快照:
+  读径=explore_reader_{prices,calendar}_snap(GUC shuheng.study_snapshot_id 路由,qbase 权威镜像
+  +publication attestation fail-closed,014);source_anchor={所读快照的 qbase 向量, source_manifest
+  {snapshot_id, digest}}=**实际所读数据的钉死向量**。~~旧模式"先记录 current/max 批次为锚、再
+  多次查询 current 视图"~~ 作废(并发回填下"稳定复现但血缘不一致"的窗口已消除:锚与读取
+  同源于同一已发布不可变快照)。
+
 红线(taosha CLAUDE.md §2):不 import 兄弟目录(qbase/radar);数据入口=qbase 视图(经 DSN,非 import)。
   读取身份=QBASE_APP_DSN(可 SELECT 视图;holdout/.BJ/后复权 由视图定义结构性保证,与账号无关);
   写入身份=TAOSHA_APP_DSN(只 INSERT,触发器焊 append-only);引擎最小权 taosha_engine 属步4。
 秘钥纪律:DSN 只从 .env 读,不落日志、不回显、不进 git。
 
 用法:
-  python -m taosha.ingest.seed_market_return --selftest   # 纯核手算自检(不碰库)
-  python -m taosha.ingest.seed_market_return --dry        # 连库+双算闸+硬闸,不落库
-  python -m taosha.ingest.seed_market_return              # 全量预算+落库
+  python -m taosha.ingest.seed_market_return --selftest                          # 纯核手算自检(不碰库)
+  python -m taosha.ingest.seed_market_return --source-snapshot-id N --dry        # 连库+双算闸+硬闸,不落库
+  python -m taosha.ingest.seed_market_return --source-snapshot-id N              # 全量预算+落库
 """
 from __future__ import annotations
 
@@ -40,7 +47,7 @@ from taosha.compute.frozen_config import COMPOUNDING, audit_digest
 from taosha.compute.returns import log_rates_from_prices
 from taosha.reader.contract import HOLDOUT_START
 
-VIEW = "explore_reader_prices"
+VIEW = "explore_reader_prices_snap"   # 修法#3 窄补: 快照视图(manifest 路由;~~current 视图~~作废)
 FULL_CALENDAR_TRADING_DAYS = 8797   # 全日历(1990→2026)交易日数;落库行数落此值=holdout 泄漏事故
 CROSSCHECK_TOL = 1e-9               # 逐日 |Δret| 容差(两独立实现 float 序噪声上界)
 
@@ -106,8 +113,9 @@ def compute_market_eqw(rows: Iterable[tuple]) -> list[tuple[dt.date, float, int]
 
 
 # 源=prices ∩ calendar 交易日轴(约束②):剔除早年非交易日 bar,基准落 SSE 交易日轴。
+# 修法#3 窄补: 两侧均为 *_snap 快照视图(同一已发布 manifest 路由,批次钉死)。
 SRC = (f"SELECT p.ts_code, p.trade_date, p.close FROM {VIEW} p "
-       "JOIN explore_reader_calendar c USING (trade_date)")
+       "JOIN explore_reader_calendar_snap c USING (trade_date)")
 
 
 # ── qbase 视图流式(server-side cursor,按 ts_code,trade_date 升序;日历轴限制)──
@@ -183,7 +191,7 @@ def land(tconn, rows, *, source, hypothesis, frozen_digest, holdout, view_rows,
     return bid, int(landed)
 
 
-def run(dry: bool):
+def run(dry: bool, source_snapshot_id: int):
     import psycopg
     from psycopg.types.json import Json
 
@@ -201,9 +209,16 @@ def run(dry: bool):
     holdout = HOLDOUT_START            # date(2024,7,1)
 
     with psycopg.connect(qdsn) as qconn:
-        # 修法#3: 源锚定=运行时实际所读 qbase 现值向量(BEFORE INSERT 触发器强制非空)
+        # 修法#3 窄补: 绑定已发布快照——锚=所读快照向量(mirror+attestation fail-closed),
+        # 读径=快照视图(GUC 路由到同一 manifest);~~先记 current 锚后读 current 视图~~作废。
         with qconn.cursor() as qcur:
-            anchor = {"qbase": snapshot.collect_qbase_vector(qcur)}
+            qcur.execute("SELECT set_config('shuheng.study_snapshot_id', %s, false)",
+                         (str(source_snapshot_id),))
+            snap_content, snap_digest = snapshot.read_published_snapshot(qcur, source_snapshot_id)
+        anchor = {"qbase": snap_content["qbase"],
+                  "source_manifest": {"snapshot_id": source_snapshot_id, "digest": snap_digest}}
+        print(f"源快照绑定: snapshot_id={source_snapshot_id} digest={snap_digest[:12]}…"
+              f"(已发布,读径=*_snap 视图)", flush=True)
         raw_rows, input_rows, v_min, v_max = view_scan_stats(qconn)
         off_cal = raw_rows - input_rows
         print(f"视图 {VIEW}: raw={raw_rows} 日历轴input={input_rows}"
@@ -245,7 +260,9 @@ def run(dry: bool):
 
     with psycopg.connect(tdsn) as tconn:
         bid, landed = land(
-            tconn, py_rows, source=f"qbase:{VIEW}∩explore_reader_calendar", hypothesis="market",
+            tconn, py_rows,
+            source=f"qbase:{VIEW}∩explore_reader_calendar_snap@snapshot{source_snapshot_id}",
+            hypothesis="market",
             frozen_digest=digest, holdout=holdout, view_rows=raw_rows,
             min_date=min_date, max_date=max_date, pull_time=pull_time, note=note,
             source_anchor=Json(anchor))
@@ -298,11 +315,15 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--selftest", action="store_true", help="纯核手算自检(不碰库)")
     ap.add_argument("--dry", action="store_true", help="连库双算闸+硬闸,不落库")
+    ap.add_argument("--source-snapshot-id", type=int, default=None,
+                    help="修法#3 窄补: 绑定的已发布 StudySnapshot ID(锚+读径同源,必填)")
     args = ap.parse_args()
     if args.selftest:
         selftest()
         return
-    run(dry=args.dry)
+    if args.source_snapshot_id is None:
+        sys.exit("修法#3(窄补): 须 --source-snapshot-id 绑定已发布快照(禁 current/max 现值为锚,fail-closed)")
+    run(dry=args.dry, source_snapshot_id=args.source_snapshot_id)
 
 
 if __name__ == "__main__":

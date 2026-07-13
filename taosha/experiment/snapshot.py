@@ -120,6 +120,24 @@ def publish(snapshot_id: int) -> str:
     return t_digest
 
 
+def read_published_snapshot(qcur, snapshot_id: int) -> tuple[dict, str]:
+    """修法#3 窄补(2026-07-13): 读 qbase 权威镜像中的**已发布** snapshot(mirror+attestation),
+    供 seed 绑定源锚——锚=所读快照的 qbase 向量+{snapshot_id, digest},非运行时 current/max 现值。
+    传入开放的 qbase 游标(qbase_app 对两表有 SELECT);无镜像/未 attested → RuntimeError(fail-closed)。"""
+    qcur.execute(
+        "SELECT m.content, m.digest FROM study_snapshot_mirror m "
+        "WHERE m.snapshot_id = %s AND EXISTS ("
+        "  SELECT 1 FROM study_snapshot_publication p "
+        "  WHERE p.snapshot_id = m.snapshot_id AND p.attested_digest = m.digest)",
+        (snapshot_id,))
+    row = qcur.fetchone()
+    if row is None:
+        raise RuntimeError(
+            f"修法#3(窄补): snapshot {snapshot_id} 无已发布镜像(mirror+attestation 任一缺),"
+            "seed 拒运行——须先经受权角色 publish(fail-closed,禁绑定未发布快照)")
+    return row[0], row[1]
+
+
 def get(snapshot_id: int | None = None) -> dict | None:
     """读 manifest(None=最新)。"""
     with psycopg.connect(_dsn("TAOSHA_APP_DSN")) as conn, \

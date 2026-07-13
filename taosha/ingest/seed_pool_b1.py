@@ -1,16 +1,23 @@
 """淘沙 L2 · b1 全市场流动性池成员 PIT 预计算落库(切片3 #2b;003 承载表)。
 
-读 qbase `bar_daily_snap.amount`(非 .BJ、holdout<2024-07-01、max daily batch)+ `entity_master.list_date`
-+ `explore_reader_calendar`(交易日轴)→ 按 compute.liquidity_pool 口径逐评估日算 b1 池成员(trailing-20d
-成交额均值 PIT 排名、上市满120交易日宇宙、前20%)→ 写 taosha `pool_b1_membership`(单事务 COPY,append-only)。
+读 qbase `bar_daily_snap.amount`(非 .BJ、holdout<2024-07-01)+ `entity_master.list_date`
++ `explore_reader_calendar_snap`(交易日轴)→ 按 compute.liquidity_pool 口径逐评估日算 b1 池成员
+(trailing-20d 成交额均值 PIT 排名、上市满120交易日宇宙、前20%)→ 写 taosha `pool_b1_membership`
+(单事务 COPY,append-only)。
+
+修法#3 窄补(2026-07-13)——seed 绑定已发布快照: 底表批次经 study_snap_batch('daily'/'stock_basic')
+钉死到 GUC 指定的已发布 manifest(权威镜像+attestation fail-closed),日历轴走 *_snap 视图;
+source_anchor={所读快照 qbase 向量, source_manifest{snapshot_id,digest}}。
+~~旧模式 max(batch_id) 现值路由~~ 作废(先记锚后读 current 的血缘窗口已消除)。
 
 口径一致:滚动 trailing 均值(O(1)/日,内存友好)自检对齐 liquidity_pool.trailing_mean_amount。
 秘钥:读 QBASE_APP_DSN、写 TAOSHA_APP_DSN,只从 .env,不回显。用法(aliyun,属主已建 003):
   set -a; . /opt/quant/.env; set +a
-  /opt/venvs/qbase-ingest/bin/python -m taosha.ingest.seed_pool_b1
+  /opt/venvs/qbase-ingest/bin/python -m taosha.ingest.seed_pool_b1 --source-snapshot-id N [--dry]
 """
 from __future__ import annotations
 
+import argparse
 import bisect
 import datetime as dt
 import math
@@ -55,7 +62,7 @@ def _rolling_trailing_mean(amounts, window):
     return out
 
 
-def run():
+def run(source_snapshot_id: int, dry: bool = False):
     from psycopg.types.json import Json
 
     from taosha.experiment import snapshot
@@ -64,19 +71,26 @@ def run():
     q = psycopg.connect(qdsn)
     qc = q.cursor()
 
-    # 修法#3: 源锚定=运行时实际所读 qbase 现值向量(BEFORE INSERT 触发器强制非空)
-    anchor = {"qbase": snapshot.collect_qbase_vector(qc)}
+    # 修法#3 窄补: 绑定已发布快照——锚=所读快照向量;读径批次=study_snap_batch(GUC 路由,
+    # 权威镜像+attestation fail-closed);~~current/max 现值锚~~作废。
+    qc.execute("SELECT set_config('shuheng.study_snapshot_id', %s, false)",
+               (str(source_snapshot_id),))
+    snap_content, snap_digest = snapshot.read_published_snapshot(qc, source_snapshot_id)
+    anchor = {"qbase": snap_content["qbase"],
+              "source_manifest": {"snapshot_id": source_snapshot_id, "digest": snap_digest}}
+    print(f"源快照绑定: snapshot_id={source_snapshot_id} digest={snap_digest[:12]}…"
+          f"(已发布,批次=study_snap_batch 路由)", flush=True)
 
-    # 交易日轴(explore_reader_calendar:SSE 交易日,holdout 焊死)
-    qc.execute("SELECT trade_date FROM explore_reader_calendar ORDER BY trade_date")
+    # 交易日轴(explore_reader_calendar_snap:SSE 交易日,holdout 焊死,manifest 路由)
+    qc.execute("SELECT trade_date FROM explore_reader_calendar_snap ORDER BY trade_date")
     cal = [r[0] for r in qc.fetchall()]
     cal_idx = {d: i for i, d in enumerate(cal)}
     n = len(cal)
     print(f"交易日轴 {n} 日 [{cal[0]}..{cal[-1]}]", flush=True)
 
-    # list_date → 轴索引(上市首个交易日:cal 中首个 ≥ list_date)
+    # list_date → 轴索引(上市首个交易日:cal 中首个 ≥ list_date;批次=快照钉死)
     qc.execute("""SELECT ts_code, list_date FROM entity_master
-                  WHERE batch_id=(SELECT max(batch_id) FROM entity_batch WHERE source='tushare:stock_basic')
+                  WHERE batch_id = public.study_snap_batch('stock_basic')
                     AND ts_code !~ '\\.BJ$'""")
     list_idx = {}
     for ts, ld in qc.fetchall():
@@ -86,11 +100,11 @@ def run():
             p = bisect.bisect_left(cal, ld)
             list_idx[ts] = p if p < n else None
 
-    # amount 按 sec 密集展开到轴(非 .BJ、holdout、max daily batch);停牌/无行=None
+    # amount 按 sec 密集展开到轴(非 .BJ、holdout;daily 批次=快照钉死);停牌/无行=None
     print("加载 amount(全市场)...", flush=True)
     amt = {}
     qc.execute("""SELECT ts_code, trade_date, amount FROM bar_daily_snap
-                  WHERE batch_id=(SELECT max(batch_id) FROM fact_batch WHERE source='tushare:daily')
+                  WHERE batch_id = public.study_snap_batch('daily')
                     AND ts_code !~ '\\.BJ$' AND trade_date < %s""", (HOLDOUT,))
     rows = 0
     for ts, td, amount in qc:
@@ -149,6 +163,10 @@ def run():
     assert max_d < HOLDOUT, f"holdout 泄漏:{max_d}"
     print(f"池成员 {len(members)} 行、覆盖 {n_dates} 评估日、平均池 {avg_pool:.1f}、[{min_d}..{max_d}]", flush=True)
 
+    if dry:
+        print("--dry:快照钉死读径+全量预算完成,不落库。", flush=True)
+        return
+
     # 写 taosha(单事务:建 batch + COPY 成员)
     t = psycopg.connect(tdsn)
     try:
@@ -158,7 +176,8 @@ def run():
                 " top_fraction, holdout_start, min_date, max_date, n_dates, out_rows, avg_pool_size, "
                 " pull_time, note, source_anchor) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s, now(), %s, %s) "
                 "RETURNING batch_id",
-                ("qbase:bar_daily_snap.amount(非.BJ)", lp.audit_digest(), lp.AMOUNT_WINDOW,
+                (f"qbase:bar_daily_snap.amount(非.BJ)@snapshot{source_snapshot_id}",
+                 lp.audit_digest(), lp.AMOUNT_WINDOW,
                  lp.LISTING_MIN_DAYS, lp.TOP_FRACTION, HOLDOUT, min_d, max_d, n_dates, len(members),
                  avg_pool, f"b1池PIT预计算:trailing-{lp.AMOUNT_WINDOW}d成交额均值降序前{int(lp.TOP_FRACTION*100)}%、"
                  f"上市满{lp.LISTING_MIN_DAYS}交易日、非.BJ、评估日<{HOLDOUT}", Json(anchor)))
@@ -173,4 +192,11 @@ def run():
 
 
 if __name__ == "__main__":
-    run()
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--source-snapshot-id", type=int, default=None,
+                    help="修法#3 窄补: 绑定的已发布 StudySnapshot ID(锚+读径同源,必填)")
+    ap.add_argument("--dry", action="store_true", help="快照钉死读径+全量预算,不落库")
+    a = ap.parse_args()
+    if a.source_snapshot_id is None:
+        raise SystemExit("修法#3(窄补): 须 --source-snapshot-id 绑定已发布快照(禁 current/max 现值为锚,fail-closed)")
+    run(source_snapshot_id=a.source_snapshot_id, dry=a.dry)
