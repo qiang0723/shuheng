@@ -69,21 +69,34 @@ def main() -> int:
                          AND t.tgname LIKE '%%_bi' AND NOT t.tgisinternal""")
         _ok("S3 三派生批次表 BEFORE INSERT 源锚触发器在位", cur.fetchone()[0] == 3)
 
-        # ── 正向 F1: 现值向量 manifest 正常生成(历史批经 registry 可信) ──
+        # ── 正向 F1(窄补三改判): 一致读向量 manifest 正常生成——qbase 半=最新派生批绑定源
+        #   快照之向量(锚定源=引擎一致读;~~恒用现值向量~~作废: E2E 后无关新源批并发落地时
+        #   现值口径与派生批锚不相容被正确拒,见 create(from_source_snapshot)) ──
+        cur.execute("""SELECT coalesce(b.source_anchor, r.source_anchor)
+                       FROM pool_b1_return_batch b
+                       LEFT JOIN batch_lineage_registry r
+                         ON r.batch_table='pool_b1_return_batch' AND r.batch_id=b.batch_id
+                        AND r.lineage_status='verified'
+                       ORDER BY b.batch_id DESC LIMIT 1""")
+        latest_anchor = cur.fetchone()[0]
+        cur.execute("SELECT content->'qbase' FROM study_snapshot WHERE snapshot_id=%s",
+                    (int(latest_anchor["source_manifest"]["snapshot_id"]),))
+        bound_qbase = cur.fetchone()[0]
+        coherent = {"qbase": bound_qbase, "taosha": content["taosha"]}
         cur.execute("SAVEPOINT f1")
         try:
             cur.execute("INSERT INTO study_snapshot (content, note) VALUES (%s, %s) "
                         "RETURNING snapshot_id, digest",
-                        (Json(content), "[修法#3 自检探针] 现值向量,回滚不落库"))
+                        (Json(coherent), "[修法#3 自检探针] 一致读向量,回滚不落库"))
             sid, dg = cur.fetchone()
             cur.execute("RELEASE SAVEPOINT f1")
             import re
-            _ok("F1 现值向量 manifest 生成放行(digest 库算 64hex)",
+            _ok("F1 一致读向量 manifest 生成放行(qbase 半=最新批绑定源快照;digest 库算 64hex)",
                 bool(re.fullmatch(r"[0-9a-f]{64}", dg)), f"snapshot_id={sid}(回滚后不存在)")
         except psycopg.Error as e:
             cur.execute("ROLLBACK TO SAVEPOINT f1")
-            _ok("F1 现值向量 manifest 生成放行(digest 库算 64hex)", False,
-                str(e).splitlines()[0][:120])
+            _ok("F1 一致读向量 manifest 生成放行(qbase 半=最新批绑定源快照;digest 库算 64hex)",
+                False, str(e).splitlines()[0][:120])
 
         # ── 参照 manifest(锚绑定用): #1=存量已发布快照(digest 2a8a271f…在案) ──
         cur.execute("SELECT snapshot_id, digest, content FROM study_snapshot WHERE snapshot_id=1")
@@ -114,23 +127,6 @@ def main() -> int:
             "VALUES ('probe','market','continuous','probe','2024-07-01',0,0,"
             "'2020-01-01','2020-01-02',now(),%s,%s) RETURNING batch_id")
 
-        # ── 正向 F2(窄补三改判): 依赖键锚新批落库放行,且 manifest 引用它可信 ──
-        cur.execute("SAVEPOINT f2")
-        try:
-            cur.execute(_batch_ins, ("[修法#3 自检探针] 依赖键锚新批", Json(_dep_anchor())))
-            new_bid = cur.fetchone()[0]
-            c2 = {"qbase": ref_content["qbase"],
-                  "taosha": dict(content["taosha"], market_return=new_bid)}
-            cur.execute("INSERT INTO study_snapshot (content, note) VALUES (%s, %s)",
-                        (Json(c2), "[修法#3 自检探针] 引用带锚新批,回滚不落库"))
-            cur.execute("RELEASE SAVEPOINT f2")
-            _ok("F2 依赖键锚新批落库+manifest 引用放行(前向血缘路径;窄补三改判)", True,
-                f"probe batch_id={new_bid}(回滚后不存在)")
-        except psycopg.Error as e:
-            cur.execute("ROLLBACK TO SAVEPOINT f2")
-            _ok("F2 依赖键锚新批落库+manifest 引用放行(前向血缘路径;窄补三改判)", False,
-                str(e).splitlines()[0][:120])
-
         _pool_ins = (
             "INSERT INTO pool_b1_batch (source,frozen_digest,amount_window,listing_min,"
             "top_fraction,holdout_start,min_date,max_date,n_dates,out_rows,avg_pool_size,"
@@ -158,6 +154,24 @@ def main() -> int:
                                             taosha_parent={"pool_b1": p}))))
             pr = cur.fetchone()[0]
             return mr, p, pr
+
+        # ── 正向 F2(窄补三改判×2): 依赖键锚新批落库放行,且 manifest 引用它可信。
+        #   三批全探针+参照快照向量(~~混用现值 taosha 半~~作废: E2E 后存量最新批绑定源≠
+        #   参照#1,混引正确拒;探针自洽=测"依赖键锚批可落可入 manifest"本义)──
+        cur.execute("SAVEPOINT f2")
+        try:
+            mr2, p2, pr2 = _seed_three_probes(ref_sid, ref_digest, ref_content["qbase"], "修法#3F2")
+            c2 = {"qbase": ref_content["qbase"],
+                  "taosha": {"market_return": mr2, "pool_b1": p2, "pool_b1_return": pr2}}
+            cur.execute("INSERT INTO study_snapshot (content, note) VALUES (%s, %s)",
+                        (Json(c2), "[修法#3 自检探针] 引用带锚新批,回滚不落库"))
+            cur.execute("ROLLBACK TO SAVEPOINT f2")
+            _ok("F2 依赖键锚新批落库+manifest 引用放行(前向血缘路径;窄补三改判)", True,
+                f"probe batches=({mr2},{p2},{pr2})(回滚后不存在)")
+        except psycopg.Error as e:
+            cur.execute("ROLLBACK TO SAVEPOINT f2")
+            _ok("F2 依赖键锚新批落库+manifest 引用放行(前向血缘路径;窄补三改判)", False,
+                str(e).splitlines()[0][:120])
 
         # ── 窄补三 F5(#3-a 验收点): 无依赖源刷新不碰派生批相容——manifest 只比对实际依赖键。
         #   三批全为依赖键锚探针(绑 snapshot#1;存量批 registry 全向量历史锚会正确拒=换代前
