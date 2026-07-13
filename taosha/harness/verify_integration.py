@@ -39,15 +39,30 @@ def _sha(obj) -> str:
 
 
 def _manifest_idempotent() -> tuple[int, str, bool]:
-    """S1 manifest 生成(幂等):批次向量同现值已有 manifest → 复用;否则真实生成新行。"""
+    """S1 manifest 生成(幂等):一致读向量已有 manifest → 复用;否则真实生成新行。
+
+    窄补三改判(2026-07-13): qbase 半=最新派生批**绑定源快照**之向量(锚定源=引擎一致读);
+    ~~恒用现值向量~~作废——派生批再种后若有无关新源批落地,现值口径与派生批锚不相容被
+    正确拒(fail-closed),幂等基准随之改为一致读向量。"""
     content = snapshot.collect_content()
     with psycopg.connect(os.environ["TAOSHA_APP_DSN"]) as conn, conn.cursor() as cur:
+        cur.execute("""SELECT coalesce(b.source_anchor, r.source_anchor)
+                       FROM pool_b1_return_batch b
+                       LEFT JOIN batch_lineage_registry r
+                         ON r.batch_table='pool_b1_return_batch' AND r.batch_id=b.batch_id
+                        AND r.lineage_status='verified'
+                       ORDER BY b.batch_id DESC LIMIT 1""")
+        bound_sid = int(cur.fetchone()[0]["source_manifest"]["snapshot_id"])
+        cur.execute("SELECT content->'qbase' FROM study_snapshot WHERE snapshot_id=%s",
+                    (bound_sid,))
+        content["qbase"] = cur.fetchone()[0]
         cur.execute("SELECT snapshot_id, digest FROM study_snapshot WHERE content = %s::jsonb "
                     "ORDER BY snapshot_id LIMIT 1", (Json(content),))
         row = cur.fetchone()
     if row:
         return int(row[0]), row[1], True
-    sid, digest, _ = snapshot.create(note="硬化⑥端到端集成回归自检(幂等生成)")
+    sid, digest, _ = snapshot.create(note="硬化⑥端到端集成回归自检(幂等生成)",
+                                     from_source_snapshot=bound_sid)
     return sid, digest, False
 
 
