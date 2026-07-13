@@ -4,7 +4,7 @@
 > 本文件 + 数据库实物 = 真身;会话记忆是草稿。**断链恢复第一动作 = 查库 + 读本文件。**
 > 改判纪律:口径/指针改判须在此**显式作废旧条目(内容+原因)**,不留新旧并存。
 
-最后更新:2026-07-13(第二轮)—— **▶外审第二独立视角复审已回:#2/#4/#5 通过;#1/#3 退回窄补(范围三条钉死+四项反向测试,原文=`docs/postaudit-round2-narrow-order-2026-07-13.md`)——窄补窗口开工,开工前 HEAD 锚 `c4ce3c8`**。详见下〈▶ 外审窄补窗口(第二轮)〉节。〔历史存档 07-13 晚〕**✅✅✅外审五项修法施工全毕,统一验收措辞成立:"五种攻击尝试全部被拒,正反向测试套件全部PASS"——已交验收(第一轮复审结果=上行)**。五项详况见下〈▶ 外审五项修法窗口〉节看板(全 ✅);验收档五份 `taosha/docs/postaudit-item{4,5,3,2,1}-*-2026-07-13.md`。**诊断跑登记(③通路规矩)**:2026-07-13 12:46–12:52,exp3 策略版 `--diagnostic --snapshot-id 1`,事由=修法#1 措辞统一验收(数值零差异断言+语义 diff vs item3 基线 b2s_eventday,人令验收口径);产物 `/root/s5item1/c2s_wording.json`(sha 336fef56…);结果=数值/结构差异 0、文本差异恰 1 处(G3 措辞对齐 addendum_id=1 定性)、零台账写入;**本跑=修法#1 层③硬门安装前最后一次 legacy 策略诊断跑(此后策略驱动对 legacy 一律拒,含 --diagnostic;将来人批审计需 legacy 策略重跑须专项人令解法)**。#3 采集守护照守(07-13:PID35692 活,done 3820/errors 39)。
+最后更新:2026-07-13(第二轮夜)—— **✅✅外审第二轮窄补施工全毕,统一验收措辞(窄补口径)成立:"四项反向攻击尝试全部被拒,正反向测试套件全部 PASS"——交人核对范围合规性(§10 diff --stat)后转回外部第二独立视角复核**。验收档=`taosha/docs/postaudit-round2-narrow-acceptance-2026-07-13.md`(五要素×2项+四项反向测试映射+diff --stat);施工 commit `3c521c4`(#1)/`4a2bfdd`(#3),迁移 taosha 012/013 已 apply;回归全家福=pap_gate **21/21**+lineage **17/17**+状态机46/46+addendum14/14+镜像11/11+探针19/19+集成7/7(sha 3bef1f81 同基线)+合成 3116ba9b 双跑逐字节同;三 seed --dry 绑 snapshot#1 逐值复现在库 batch#1;施工前探针 P-A/B/C/D 坐实→施工后全拒(含属主旁路 O1)。详见下〈▶ 外审窄补窗口(第二轮)〉节。〔历史存档 07-13 晚〕**✅✅✅外审五项修法施工全毕,统一验收措辞成立:"五种攻击尝试全部被拒,正反向测试套件全部PASS"——已交验收(第一轮复审结果=上行)**。五项详况见下〈▶ 外审五项修法窗口〉节看板(全 ✅);验收档五份 `taosha/docs/postaudit-item{4,5,3,2,1}-*-2026-07-13.md`。**诊断跑登记(③通路规矩)**:2026-07-13 12:46–12:52,exp3 策略版 `--diagnostic --snapshot-id 1`,事由=修法#1 措辞统一验收(数值零差异断言+语义 diff vs item3 基线 b2s_eventday,人令验收口径);产物 `/root/s5item1/c2s_wording.json`(sha 336fef56…);结果=数值/结构差异 0、文本差异恰 1 处(G3 措辞对齐 addendum_id=1 定性)、零台账写入;**本跑=修法#1 层③硬门安装前最后一次 legacy 策略诊断跑(此后策略驱动对 legacy 一律拒,含 --diagnostic;将来人批审计需 legacy 策略重跑须专项人令解法)**。#3 采集守护照守(07-13:PID35692 活,done 3820/errors 39)。
 
 〔历史存档 07-13 晨〕外审已回+人终签五项修法施工单("可以,先这么做"),冻结令对五项解除,施工序 #4→#5→#3→#2→#1 开工。人令原文逐字留痕 = `docs/postaudit-five-order-2026-07-13.md`(F 条)。
 
@@ -22,6 +22,14 @@
 **范围禁令**:仅限 #1/#3 两项及上述具体缺口;不得触碰已通过的 #2/#4/#5 实现;不得新增制度或重构无关代码;承接第一轮禁令(不碰闭卷 result_json/密封卡数值,不 reset/checkout 回退共享区)。
 
 **交付**:验收实物五要素照旧 + `git diff --stat c4ce3c8..<完工HEAD>` 供范围合规性核对;核对通过后转回外部第二独立视角复核。
+
+**▶施工全毕看板(2026-07-13 夜,全 ✅)**:
+- **#1 引擎消费 strategy_execution ✅**:resolve_execution 单一执行门(驱动取数前+引擎双闸同实现);close_to_next_open 真实现=holding_path fill_mode='next_open'(收盘确认决策→次日后复权 open 成交/顺延 open/触发即末 bar 截断;same_close 用例零改动=决策判据零回归);preclose_to_tail=可冻结不可执行(fail-closed 拒运行,不兜底不宣称已可执行)+时间字段结构化 HH:MM+强制断言 cutoff<fill_window.start(python 层①+012 迁移层②,作废字符串非空判断);commit `3c521c4`。
+- **#3 血缘严格化 ✅**:013 迁移=_anchor_schema_reason 严格 schema(拒 {}/缺 qbase/缺 source_manifest/伪 digest)+批次 INSERT 绑库内真实 manifest(digest 逐字+qbase 向量全等+pool 父批锚行一致)+manifest 生成双检(锚 schema 合法+qbase 向量逐键相容,作废仅非 NULL;_batch_lineage_trusted 已 DROP)+存量 4 历史批前置断言焊进迁移;三 seed --source-snapshot-id 必填绑已发布快照(mirror+attestation fail-closed)、读径=*_snap 视图/study_snap_batch 钉批、锚=快照向量+source_manifest,作废"先记 current 锚后读 current 视图";commit `4a2bfdd`。
+- **四项反向测试全拒 ✅**:①E1 冻结→实跑成交=次日开盘 net −0.07188319≠旧同刻 −0.12073144;②R8 反向时间窗口冻结拒;③R6 空锚批次拒+O1 属主旁路 registry 空锚→manifest 拒(双层);④R10 锚≠manifest 向量生成拒。施工前探针 P-A/B/C/D 全坐实放行→施工后全拒(留痕验收档 §1)。
+- **回归**:pap_gate 21/21/lineage 17/17/状态机 46/addendum 14/镜像 11/探针 19/集成 7/7 sha `3bef1f81` 同基线/合成 `3116ba9b` 双跑同;三 seed --dry 绑 snapshot#1 逐值复现在库 batch#1(market 8186 日 6.5e-16/pool_return 8066 日 1.683e-16/pool 2,948,735 行均 365.5)。台账 25/registry 4/manifest 2 全程未扰。
+- **遗留注记(验收档 §五)**:seed_pool_b1_return --verify 引擎读 current 已收权=既有携带项(hardening-item2 §4)不动;qbase 既有源将来刷新→旧派生批不相容→新 manifest 拒生成(fail-closed 正确方向,再种序届时人令排产)。
+**⏳交人:核对范围合规性(验收档 §10 diff --stat)→转回外部第二独立视角复核。**
 
 ## ▶ 外审五项修法窗口(人终签 2026-07-13,第一轮复审已回:#2/#4/#5 通过,#1/#3 退回窄补→见上节)
 
