@@ -4,13 +4,26 @@
 > 本文件 + 数据库实物 = 真身;会话记忆是草稿。**断链恢复第一动作 = 查库 + 读本文件。**
 > 改判纪律:口径/指针改判须在此**显式作废旧条目(内容+原因)**,不留新旧并存。
 
-最后更新:2026-07-13(晚)—— **✅✅✅外审五项修法施工全毕,统一验收措辞成立:"五种攻击尝试全部被拒,正反向测试套件全部PASS"——交人验收**。五项详况见下〈▶ 外审五项修法窗口〉节看板(全 ✅);验收档五份 `taosha/docs/postaudit-item{4,5,3,2,1}-*-2026-07-13.md`。**诊断跑登记(③通路规矩)**:2026-07-13 12:46–12:52,exp3 策略版 `--diagnostic --snapshot-id 1`,事由=修法#1 措辞统一验收(数值零差异断言+语义 diff vs item3 基线 b2s_eventday,人令验收口径);产物 `/root/s5item1/c2s_wording.json`(sha 336fef56…);结果=数值/结构差异 0、文本差异恰 1 处(G3 措辞对齐 addendum_id=1 定性)、零台账写入;**本跑=修法#1 层③硬门安装前最后一次 legacy 策略诊断跑(此后策略驱动对 legacy 一律拒,含 --diagnostic;将来人批审计需 legacy 策略重跑须专项人令解法)**。#3 采集守护照守(07-13:PID35692 活,done 3820/errors 39)。
+最后更新:2026-07-13(第二轮)—— **▶外审第二独立视角复审已回:#2/#4/#5 通过;#1/#3 退回窄补(范围三条钉死+四项反向测试,原文=`docs/postaudit-round2-narrow-order-2026-07-13.md`)——窄补窗口开工,开工前 HEAD 锚 `c4ce3c8`**。详见下〈▶ 外审窄补窗口(第二轮)〉节。〔历史存档 07-13 晚〕**✅✅✅外审五项修法施工全毕,统一验收措辞成立:"五种攻击尝试全部被拒,正反向测试套件全部PASS"——已交验收(第一轮复审结果=上行)**。五项详况见下〈▶ 外审五项修法窗口〉节看板(全 ✅);验收档五份 `taosha/docs/postaudit-item{4,5,3,2,1}-*-2026-07-13.md`。**诊断跑登记(③通路规矩)**:2026-07-13 12:46–12:52,exp3 策略版 `--diagnostic --snapshot-id 1`,事由=修法#1 措辞统一验收(数值零差异断言+语义 diff vs item3 基线 b2s_eventday,人令验收口径);产物 `/root/s5item1/c2s_wording.json`(sha 336fef56…);结果=数值/结构差异 0、文本差异恰 1 处(G3 措辞对齐 addendum_id=1 定性)、零台账写入;**本跑=修法#1 层③硬门安装前最后一次 legacy 策略诊断跑(此后策略驱动对 legacy 一律拒,含 --diagnostic;将来人批审计需 legacy 策略重跑须专项人令解法)**。#3 采集守护照守(07-13:PID35692 活,done 3820/errors 39)。
 
 〔历史存档 07-13 晨〕外审已回+人终签五项修法施工单("可以,先这么做"),冻结令对五项解除,施工序 #4→#5→#3→#2→#1 开工。人令原文逐字留痕 = `docs/postaudit-five-order-2026-07-13.md`(F 条)。
 
 〔历史存档 07-12〕最后更新:2026-07-12(深夜)—— **✅硬化③施工+验收完毕(九连跑全rc=0+三对归因diff+确定性硬项三真+post-ST新基线sha登记,验收档 `taosha/docs/hardening-item3-st-eventday-acceptance-2026-07-12.md`,待架构窗口)+ ✅⑤整体关闭(附注(b)(c)已补录 addendum_id 4/5/6,验收档 `taosha/docs/hardening-item5-addendum-acceptance-2026-07-12.md`)**;同日:**▶可信度硬化窗口开窗(人批终版施工单,见下〈可信度硬化窗口〉节)**;此前同日:**✅#2b(exp_id=3)已闭卷**(persist 终态 done_at=2026-07-12 11:53:31+08,详见下〈#2b 闭卷〉条)+ **代码宪章九条接收即日生效**(`docs/code-charter-nine-2026-07-12.md`)+ **✅收割会首批登记令执行毕(2026-07-12)**:9 条假设入台账 exp_id 8–16 全 `registered`(不冻结不排产不占引擎;event_def 逐字含"待冻结"显式标注/对偶双方注记/9 条全市场口径/数据盲声明入 contamination_note;单事务;台账现 16 行=registered9/frozen3/running0/done3/closed1,distinct family15;登记档 `taosha/docs/harvest-batch1-registration-2026-07-12.md`)。**下一动作=待命**:下一假设单暂缓,等①#3 采集收敛后数据验收②检验排产人拍;#3 采集守护照守。 **✅收割会第二轮登记令执行毕(2026-07-12)**:9 条入台账 exp_id 17–25 全 `registered`(LLM 财务 7=prescreen + human 2=**full**〔sox_spillover 宏观/跨市场、preannounced_exhaustion 财务×量价交叉〕;财务锚约束句逐字入 8 条 event_def〔sox 无披露日概念不适用,工程判断留档〕;human 2 条 crowding 登记令未载经人补拍 sox=高/preannounced=中;exp15 st_imposition 对偶注记回写 delist_warning_financial;台账现 **25 行**=registered18/frozen3/running0/done3/closed1,distinct family24;登记档 `taosha/docs/harvest-batch2-registration-2026-07-12.md`)。**轮巡指针→分析师预期(下周):前置=时间戳口径核查(修正时点是否=研报发布日),口径不明不登记。**〔下行 07-09 头注为历史存档〕
 
-## ▶ 外审五项修法窗口(人终签 2026-07-13,进行中)
+## ▶ 外审窄补窗口(第二轮,2026-07-13,进行中)
+
+**来源=外部第二独立视角对五项修法(HEAD c4ce3c8)的复审:#2/#4/#5 通过;#1/#3 退回窄补。人转达原文逐字留痕 = `docs/postaudit-round2-narrow-order-2026-07-13.md`(F 条,原文即口径)。开工前 HEAD 锚 = `c4ce3c8`(两台干净)。**
+
+**窄补范围(严格三条,不得扩大,不新增制度或功能)**:
+1. **#1·策略引擎真正消费 strategy_execution**:drawdown_strategy.py 读取校验通过的 strategy_execution 并据此选执行路径,不得静默走旧"同刻成交";未实现 profile(如 preclose_to_tail)驱动层显式 fail-closed 拒跑,不得校验后悄悄旧口径兜底;preclose_to_tail 改结构化可解析时间字段+代码层强制断言 decision_cutoff < fill_window_start(非字符串非空判断);日内数据不足前不得宣称该模式"已可执行"。
+2. **#3·source_anchor 严格 schema+血缘真相容+seed 绑快照**:严格 schema 拒 {} 及缺关键字段锚;manifest 生成时比对派生批 qbase 源向量 vs manifest qbase 向量,不相容拒(非仅非 NULL 检查);seed 阶段(如 seed_market_return.py)改绑已发布 source snapshot ID/digest 从对应快照视图读取,禁"先记 current/max 批次为锚、再多次查 current 视图"模式(消除并发回填下"稳定复现但血缘不一致"窗口)。
+3. **四项反向测试(全拒方可交验收)**:①合法 close_to_next_open PAP 冻结后断言实际成交=次日开盘(非旧同刻收盘价);②decision_cutoff 晚于 fill_window 起点→PAP 冻结拒;③source_anchor={} 空锚→manifest 生成拒;④source_anchor 存在但与 manifest qbase 向量不匹配→manifest 生成拒。
+
+**范围禁令**:仅限 #1/#3 两项及上述具体缺口;不得触碰已通过的 #2/#4/#5 实现;不得新增制度或重构无关代码;承接第一轮禁令(不碰闭卷 result_json/密封卡数值,不 reset/checkout 回退共享区)。
+
+**交付**:验收实物五要素照旧 + `git diff --stat c4ce3c8..<完工HEAD>` 供范围合规性核对;核对通过后转回外部第二独立视角复核。
+
+## ▶ 外审五项修法窗口(人终签 2026-07-13,第一轮复审已回:#2/#4/#5 通过,#1/#3 退回窄补→见上节)
 
 **人令原文逐字留痕 = `docs/postaudit-five-order-2026-07-13.md`(F 条,原文即口径)。** 来源=外部第二独立视角复审意见(对象 8b36eeb+d545c2a+7bd246a)经人分拣;终签"可以,先这么做"=五项原文+我方 4 确认点+施工序 **#4→#5→#3→#2→#1** 全批;冻结令仅对本单五项解除,其余照旧(不新起假设冻结/检验,#3 采集照常)。
 
