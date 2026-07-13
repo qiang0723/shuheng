@@ -82,8 +82,10 @@ def _freeze_allow(cur, name: str, pap_text: str) -> None:
 
 
 def _engine_fill_probe(frozen_pap: dict) -> None:
-    """窄补反向测试①(引擎半): 用 DB 冻结后读回的 pap 实跑合成单事件,断言实际成交发生在
-    **次日后复权 open**(而非旧同刻收盘价)。同一合成序列下两口径数值可分辨(95.0 vs 90.0)。
+    """窄补反向测试①(引擎半)+ 窄补第三轮 #1-a/#1-b(2026-07-13): 用 DB 冻结后读回的 pap
+    实跑合成单事件,**直接断言事件级 fill 字段**(signal_date/fill_date/fill_price/fill_source,
+    禁由聚合净收益反推);E3=人令反例(当天 open 可成交但收盘跌停 → 不顺延,日终字段不进判定);
+    E4=开盘恰在跌停位 → 按冻结代理规则顺延(fill_source='postponed_open')。
     附 E2: 结构合法 preclose_to_tail(可冻结)执行 fail-closed 拒(未实现不得旧口径兜底)。"""
     import datetime as dt
     import math
@@ -97,41 +99,86 @@ def _engine_fill_probe(frozen_pap: dict) -> None:
     closes = ([100.0 + 0.5 * math.sin(i) for i in range(330)]
               + [102.0] * 15 + [90.0] + [95.0] * (n_days - 346))
 
-    def _rows(ts):
-        return [PriceRow(ts_code=ts, trade_date=dates[i], close=closes[i], is_suspended=False,
-                         limit_status="none", board="main", is_st=False, industry="I",
-                         open=closes[i]) for i in range(n_days)]
+    def _rows(ts, closes_, opens_=None, lim=None, olim=None):
+        opens_ = opens_ or closes_
+        return [PriceRow(ts_code=ts, trade_date=dates[i], close=closes_[i], is_suspended=False,
+                         limit_status=(lim or {}).get(i, "none"), board="main", is_st=False,
+                         industry="I", open=opens_[i],
+                         open_limit_status=(olim or {}).get(i, "none")) for i in range(n_days)]
 
     class _Ev:
         ts_code = "A01"; event_id = "A01:E1"; snapshot_batch = "SYNTH"
         first_ann_date = dates[330]; event_type_layer = None
         d1_never_broke_ma10 = False; d2_episode_to_entry_days = 3; d3_broke_ma20_before_entry = False
 
-    class _Rd:
-        def prices_by_security(self):
-            return {"A01": _rows("A01")}
-        def calendar(self):
-            return [CalendarRow(trade_date=d, pretrade_date=None) for d in dates]
-        def pool_return(self, ds):
-            return [None] + [(0.001 if i % 2 == 0 else -0.001) for i in range(1, len(ds))]
+    def _reader(rows):
+        class _Rd:
+            def prices_by_security(self):
+                return {"A01": rows}
+            def calendar(self):
+                return [CalendarRow(trade_date=d, pretrade_date=None) for d in dates]
+            def pool_return(self, ds):
+                return [None] + [(0.001 if i % 2 == 0 else -0.001) for i in range(1, len(ds))]
+        return _Rd()
 
     pap = dict(frozen_pap)
     pap["_family_trial"] = 1
-    # idx345 close=90 破 ma20 收盘确认;次日 idx346 open=95。同刻口径 net 用 90、次日开盘用 95。
+    # E1: idx345 close=90 破 ma20 收盘确认;次日 idx346 open=95 成交。
+    # 窄补第三轮 #1-a: 直接断言 fill 字段值(净收益比对保留为交叉项,不再是判据本体)。
     fill_next_open = 95.0 * (1 - 0.00225) / (102.0 * (1 + 0.00125)) - 1
-    fill_same_close = 90.0 * (1 - 0.00225) / (102.0 * (1 + 0.00125)) - 1
     try:
-        res = run_strategy(_Rd(), pap, [_Ev()])
-        net = res["strategy_version"]["net"]["mean"]
-        ok = (abs(net - fill_next_open) < 1e-12 and abs(net - fill_same_close) > 1e-6
-              and res["strategy_version"]["execution"]["profile"] == "close_to_next_open")
-        _ok("E1 合法 close_to_next_open 冻结后实际成交=次日开盘(非同刻收盘)", ok,
-            f"net={net:.8f}(次日开盘口径 {fill_next_open:.8f} / 旧同刻 {fill_same_close:.8f})")
+        res = run_strategy(_reader(_rows("A01", closes)), pap, [_Ev()])
+        sv = res["strategy_version"]
+        f0 = sv["fills"]["records"][0]
+        ok = (f0["signal_date"] == dates[345].isoformat()
+              and f0["fill_date"] == dates[346].isoformat()
+              and f0["fill_price"] == 95.0
+              and f0["fill_source"] == "next_open"
+              and sv["fills"]["by_source"] == {"next_open": 1}
+              and abs(sv["net"]["mean"] - fill_next_open) < 1e-12          # 交叉项
+              and sv["execution"]["profile"] == "close_to_next_open"
+              and "非真实委托成交验证" in sv["execution"]["fill_feasibility_proxy_rule"])
+        _ok("E1 冻结后 fill 字段直接断言: signal=触发日/fill=次日@open95/source=next_open", ok,
+            f"signal={f0['signal_date']} fill={f0['fill_date']}@{f0['fill_price']} "
+            f"[{f0['fill_source']}]")
     except Exception as err:  # noqa: BLE001 —— 探针如实报错
-        _ok("E1 合法 close_to_next_open 冻结后实际成交=次日开盘(非同刻收盘)", False, str(err)[:130])
+        _ok("E1 冻结后 fill 字段直接断言: signal=触发日/fill=次日@open95/source=next_open",
+            False, str(err)[:130])
+
+    # E3(窄补第三轮反例,人令统一验收要求): 名义成交日 idx346 open=97 可成交(开盘时点字段
+    # 'none')但**收盘跌停**(日终 limit_status='limit_down')→ 照常当日 open 成交,不顺延。
+    # 旧实现(日终 _sellable 判开盘)在此序列会错误顺延到 idx347——新代理规则已消灭该前视。
+    c3 = list(closes); c3[346] = 85.0                       # 收盘跌停日的 close(数值仅示意)
+    o3 = list(closes); o3[346] = 97.0; o3[347] = 91.0       # 开盘 97 可成交;若误顺延会拿到 91
+    try:
+        res = run_strategy(_reader(_rows("A01", c3, o3, lim={346: "limit_down"})), pap, [_Ev()])
+        f0 = res["strategy_version"]["fills"]["records"][0]
+        ok = (f0["fill_date"] == dates[346].isoformat() and f0["fill_price"] == 97.0
+              and f0["fill_source"] == "next_open")
+        _ok("E3 反例: 当日open=97可成交而收盘跌停 → 当日open成交**不顺延**(日终字段不进判定)",
+            ok, f"fill={f0['fill_date']}@{f0['fill_price']} [{f0['fill_source']}]"
+                f"(误顺延将={dates[347].isoformat()}@91.0)")
+    except Exception as err:  # noqa: BLE001
+        _ok("E3 反例: 当日open=97可成交而收盘跌停 → 当日open成交**不顺延**(日终字段不进判定)",
+            False, str(err)[:130])
+
+    # E4: 名义成交日开盘恰在跌停位(open_limit_status='open_at_down_limit')→ 按冻结代理规则
+    # 顺延至首个代理可成交 bar 的 open,fill_source='postponed_open'(能力边界=代理非验证)。
+    o4 = list(closes); o4[346] = 88.0; o4[347] = 91.0
+    try:
+        res = run_strategy(_reader(_rows("A01", closes, o4,
+                                         olim={346: "open_at_down_limit"})), pap, [_Ev()])
+        f0 = res["strategy_version"]["fills"]["records"][0]
+        ok = (f0["fill_date"] == dates[347].isoformat() and f0["fill_price"] == 91.0
+              and f0["fill_source"] == "postponed_open")
+        _ok("E4 开盘恰在跌停位 → 按代理规则顺延(postponed_open;代理规则非成交验证)",
+            ok, f"fill={f0['fill_date']}@{f0['fill_price']} [{f0['fill_source']}]")
+    except Exception as err:  # noqa: BLE001
+        _ok("E4 开盘恰在跌停位 → 按代理规则顺延(postponed_open;代理规则非成交验证)",
+            False, str(err)[:130])
 
     try:
-        run_strategy(_Rd(), dict(pap, strategy_execution=SE_PCT), [_Ev()])
+        run_strategy(_reader(_rows("A01", closes)), dict(pap, strategy_execution=SE_PCT), [_Ev()])
         _ok("E2 preclose_to_tail 可冻结但执行 fail-closed 拒(未实现不得兜底)", False, "放行=静默兜底")
     except SystemExit as err:
         _ok("E2 preclose_to_tail 可冻结但执行 fail-closed 拒(未实现不得兜底)",

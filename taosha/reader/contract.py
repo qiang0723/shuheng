@@ -18,9 +18,12 @@ HOLDOUT_START = dt.date(2024, 7, 1)
 # ⚠ open 追加在**末尾**(industry 之后):Postgres CREATE OR REPLACE VIEW 只允许在列尾新增,
 #   故 010 视图增列必落末尾;契约同序。open=后复权开盘(切片3 步7 选项2 可交易口径进场价,
 #   pap exp_id5 冻结"T+1 开盘进";不进 close 收益路径,既有键零回归)。
+# ⚠ open_limit_status 追加在 open 之后(末尾;窄补第三轮 #1-b,qbase 015 增):**开盘时点**
+#   涨跌停位标记(原始 open 恰在 round(原始前收×(1±limit_pct),2) 价位),供 next_open 可成交
+#   日线代理判定——只消费开盘时点可得信息,日终 limit_status 不得用于开盘可成交判定。
 PRICE_COLUMNS = (
     "ts_code", "trade_date", "close", "is_suspended",
-    "limit_status", "board", "is_st", "industry", "open",
+    "limit_status", "board", "is_st", "industry", "open", "open_limit_status",
 )
 EVENT_COLUMNS = (
     "ts_code", "event_id", "first_ann_date", "event_type_layer", "snapshot_batch",
@@ -33,14 +36,19 @@ CALENDAR_COLUMNS = (
 # limit_status / board 值域(契约 §1)
 LIMIT_STATUS = ("none", "limit_up", "limit_down", "one_word")
 BOARDS = ("main", "chinext", "star", "bse")
+# open_limit_status 值域(窄补第三轮 #1-b:开盘时点口径;compute.holding_path.OPEN_AT_DOWN_LIMIT
+# 引用其中字面值,engine 自检交叉断言两处一致)
+OPEN_LIMIT_STATUS = ("none", "open_at_up_limit", "open_at_down_limit")
 
 
 @dataclass(frozen=True, slots=True)
 class PriceRow:
     """explore_reader_prices 一行(契约 §1)。close=None ⇔ 停牌/无交易(禁零填充)。
 
-    open=后复权开盘价(契约末列,010 增;可交易口径进场价 = τ=0 当日 open)。停牌/无交易日
+    open=后复权开盘价(契约列,010 增;可交易口径进场价 = τ=0 当日 open)。停牌/无交易日
     open=None(同 close,禁零填充)。默认 None 保住旧位置构造(cleaning 自检、不产 open 的场景)。
+    open_limit_status=开盘时点涨跌停位标记(契约末列,窄补第三轮 #1-b,qbase 015 增;值域
+    OPEN_LIMIT_STATUS)。默认 'none' 保住旧构造(合成域开盘不在跌停位=既有语义零扰动)。
     """
     ts_code: str
     trade_date: dt.date
@@ -51,10 +59,13 @@ class PriceRow:
     is_st: bool
     industry: str
     open: Optional[float] = None
+    open_limit_status: str = "none"
 
     def __post_init__(self):
         if self.limit_status not in LIMIT_STATUS:
             raise ValueError(f"limit_status 非法: {self.limit_status!r}")
+        if self.open_limit_status not in OPEN_LIMIT_STATUS:
+            raise ValueError(f"open_limit_status 非法: {self.open_limit_status!r}")
         if self.board not in BOARDS:
             raise ValueError(f"board 非法: {self.board!r}")
         if self.is_suspended and self.close is not None:

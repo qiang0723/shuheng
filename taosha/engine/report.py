@@ -298,6 +298,20 @@ def render_strategy(result: dict) -> str:
     L.append(f"  {sv['dsr_note']}")
     L.append("")
 
+    # ④b 成交明细(窄补第三轮 #1-a:**直接消费** fills 事件级字段渲染,禁由净收益倒推展示)
+    fl = sv.get("fills") or {}
+    L.append("【成交明细(事件级 fill 证据字段直接渲染;#1-a)】")
+    L.append(f"  n={fl.get('n')} 按来源: {fl.get('by_source')}")
+    recs = fl.get("records") or []
+    for r in recs[:5]:                                   # 样例前 5 行(全量在 result_json.fills.records)
+        L.append(f"    · {r['event_id']}: 进场 {r['entry_date']}@{_fmt(r['entry_price'],4)} → "
+                 f"决策(收盘确认) {r['signal_date']} → 成交 {r['fill_date']}@{_fmt(r['fill_price'],4)} "
+                 f"[{r['fill_source']}]" + ("(删失标记,非成交)" if r["right_censored"] else ""))
+    if len(recs) > 5:
+        L.append(f"    …(共 {len(recs)} 行,全量见 result_json.fills.records)")
+    L.append(f"  {fl.get('note')}")
+    L.append("")
+
     # ⑤ 附录G 诊断(报告项)
     dg = sv["diagnostics"]
     L.append("【附录G 诊断(报告项)】")

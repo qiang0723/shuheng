@@ -137,18 +137,20 @@ class ViewReader:
                 cur.itersize = 100_000
                 cur.execute(
                     "SELECT p.ts_code, p.trade_date, p.close, p.is_suspended, p.limit_status, "
-                    '       p.board, p.is_st, p.industry, p."open" '            # open=视图末列(010 增)
+                    '       p.board, p.is_st, p.industry, p."open", '           # open=010 增
+                    "       p.open_limit_status "        # 015 末列(窄补第三轮 #1-b:开盘时点口径)
                     "FROM explore_reader_prices_snap p "
                     "JOIN explore_reader_calendar_snap cal USING (trade_date) "   # 轴=日历(约束②)
                     "WHERE p.ts_code = ANY(%s) "
                     "ORDER BY p.ts_code, p.trade_date", (codes,))
-                for ts, td, close, susp, lim, board, is_st, ind, opn in cur:
+                for ts, td, close, susp, lim, board, is_st, ind, opn, olim in cur:
                     yield PriceRow(
                         ts_code=ts, trade_date=td,
                         close=None if close is None else float(close),
                         is_suspended=bool(susp), limit_status=lim, board=board,
                         is_st=bool(is_st), industry=ind,
-                        open=None if opn is None else float(opn))
+                        open=None if opn is None else float(opn),
+                        open_limit_status=olim)
 
     def prices(self) -> Iterator[PriceRow]:
         return enforce_holdout_price(self._raw_prices())

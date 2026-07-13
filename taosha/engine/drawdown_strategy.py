@@ -119,6 +119,7 @@ def run_strategy(reader, pap: dict, events: list, *, st_mode: str = "event_day")
     # ── 逐存活事件跑持有路径(附录G)+ BHAR(四件套①②)────────────────────────────
     paths = []              # (ev, ce, path, net, gross, bench_bh, bhar, sbh, h_days)
     excluded = {"no_entry_open": [], "bench_gap": [], "sbhar_none": []}   # 同源差集逐项归因
+    fills = []              # 窄补第三轮 #1-a: 事件级成交证据(与 paths 同序,全量入 result)
     rho_inputs = []
     for ev, ce, fit, est_ar_by_date, rows in survivors:
         present = [r for r in rows if r.close is not None]                # present-bar 序列(同信号侧口径)
@@ -136,6 +137,9 @@ def run_strategy(reader, pap: dict, events: list, *, st_mode: str = "event_day")
             entry_idx=entry_pidx,
             trade_day_idx=[date_index[d] for d in p_dates],   # G4 顺延>20 交易日口径(日历轴序号)
             fill_mode=fill_mode,        # 修法#1 窄补: 执行路径由 strategy_execution 白名单决定
+            # 窄补第三轮 #1-b: 开盘时点字段(qbase 015 视图列)——next_open 可成交判定唯一输入,
+            # 日终 limit_status 结构上不再进入开盘可成交判定
+            open_limit_status=[r.open_limit_status for r in present],
         )
         if path is None:            # 建仓价缺(open None/≤0)→ 不可建仓(策略版自身差集)
             excluded["no_entry_open"].append(ev.event_id)
@@ -164,6 +168,17 @@ def run_strategy(reader, pap: dict, events: list, *, st_mode: str = "event_day")
             est_ar_sd=fit.est_ar_sd, L=fit.delta, x_bar=fit.x_bar, sxx=fit.sxx,
             event_market=[], event_abnormal=[], industry=ce.industry,
             est_ar_by_date=est_ar_by_date))
+        # 窄补第三轮 #1-a: 事件级成交证据(直接产出,供测试直接断言/报告直接渲染,禁反推)
+        fills.append({
+            "event_id": ev.event_id, "ts_code": ev.ts_code,
+            "entry_date": entry_date.isoformat(), "entry_price": path.entry_price,
+            "signal_date": (p_dates[path.trigger_idx].isoformat()
+                            if path.trigger_idx is not None else None),
+            "fill_date": p_dates[path.exit_idx].isoformat(),
+            "fill_price": path.exit_price,
+            "fill_source": path.fill_source,
+            "right_censored": path.right_censored,
+        })
         paths.append((ev, ce, path, net, gross, bench_bh, bhar, sbh, h_days,
                       bhar_gross, sbh_gross))
 
@@ -234,7 +249,16 @@ def run_strategy(reader, pap: dict, events: list, *, st_mode: str = "event_day")
                 "profile": exec_profile,
                 "fill_mode": fill_mode,
                 "decision": "close_confirmed(附录G 判据: 成本×0.8 强平/收盘破 ma20,先到先出,收盘确认)",
-                "fill": "next_adjusted_open(次一 present-bar 后复权 open;不可成交顺延至首个可成交 bar 的 open)",
+                "fill": "next_adjusted_open(次一 present-bar 后复权 open;代理不可成交顺延至首个"
+                        "代理可成交 bar 的 open)",
+                "fill_feasibility_proxy_rule": (
+                    "窄补第三轮 #1-b(冻结代理规则,2026-07-13): 开盘可成交判定只消费开盘时点字段"
+                    "——R-open-1 opening print 存在(open 有值>0)+ R-open-2 开盘价不在跌停价位"
+                    "(open_limit_status≠open_at_down_limit,limit_pct 复用 qbase 视图既有口径);"
+                    "日终 limit_status/close 结构上不进入判定。"
+                    "**能力边界(如实标注): 本判定是日线代理规则,非真实委托成交验证——市场存在"
+                    "开盘成交/开盘价不在跌停位 ≠ 我方委托单能排上队成交(排队优先级不可得),"
+                    "不得表述为'已验证真实可成交'。**"),
                 "note": "修法#1 窄补: 引擎据校验通过的 strategy_execution 选执行路径;"
                         "同刻成交口径生产不可达(legacy 域专属且策略驱动对 legacy 一律拒)",
             },
@@ -298,6 +322,17 @@ def run_strategy(reader, pap: dict, events: list, *, st_mode: str = "event_day")
             "dsr": dsr,
             "dsr_note": "DSR 常设报告项(施工令①;BLdP 精确公式;V 口径=proxy 人裁 2026-07-10;"
                         "N=族内 trial 计数;不进 verdict)",
+            "fills": {
+                "note": "窄补第三轮 #1-a: 事件级成交证据(signal_date=收盘确认决策日/fill_date/"
+                        "fill_price/fill_source),直接产出供测试直接断言与报告直接渲染,禁由聚合"
+                        "净收益反推;fill_source='censored_close_mark'=末端 close 截断(mark-to-"
+                        "market 标记,非成交)。可成交判定=日线代理规则(见 execution."
+                        "fill_feasibility_proxy_rule,非真实委托成交验证)。",
+                "n": len(fills),
+                "by_source": {s: sum(1 for f in fills if f["fill_source"] == s)
+                              for s in sorted({f["fill_source"] for f in fills})},
+                "records": fills,
+            },
             "diagnostics": diagnostics,
             "known_caliber_features": [
                 "G1:−20% 强平收盘确认 → 盘中硬止损频率被低估,对策略版收益方向保守(附录G1 登记;"
@@ -374,6 +409,21 @@ if __name__ == "__main__":
     old_same_close_net = 90.0 * (1 - 0.00225) / (102.0 * (1 + 0.00125)) - 1
     assert abs(sv["net"]["mean"] - exp_net) < 1e-12, (sv["net"], exp_net)
     assert abs(sv["net"]["mean"] - old_same_close_net) > 1e-6, "成交仍在同刻收盘=旧口径未消灭"
+    # ── 窄补第三轮 #1-a: 事件级成交证据字段**直接断言**(非聚合净收益反推) ────────────
+    fl = sv["fills"]
+    assert fl["n"] == 1 and fl["by_source"] == {"next_open": 1}, fl["by_source"]
+    f0 = fl["records"][0]
+    assert f0["event_id"] == "A01:E1" and f0["ts_code"] == "A01", f0
+    assert f0["signal_date"] == dates[345].isoformat(), f0["signal_date"]   # 收盘确认决策日
+    assert f0["fill_date"] == dates[346].isoformat(), f0["fill_date"]       # 次日成交
+    assert f0["fill_price"] == 95.0 and f0["fill_source"] == "next_open", f0
+    assert f0["entry_date"] == dates[331].isoformat() and f0["entry_price"] == 102.0, f0
+    assert not f0["right_censored"]
+    assert "代理规则" in sv["execution"]["fill_feasibility_proxy_rule"]     # 能力边界声明在场
+    # 值域交叉断言: compute 层字面值 == reader 契约值域(口径唯一,两处一致)
+    from taosha.compute.holding_path import OPEN_AT_DOWN_LIMIT
+    from taosha.reader.contract import OPEN_LIMIT_STATUS
+    assert OPEN_AT_DOWN_LIMIT in OPEN_LIMIT_STATUS, (OPEN_AT_DOWN_LIMIT, OPEN_LIMIT_STATUS)
     # 基准同跨度买入持有手算:seg=mkt[τ0..exit]=[331..346](H=16 日,exit=成交日 idx346),bench=exp(Σ)−1
     _mkt = _Rd().pool_return(dates)
     exp_bench = math.exp(sum(_mkt[331:347])) - 1.0
@@ -422,5 +472,6 @@ if __name__ == "__main__":
 
     print(f"drawdown_strategy.py 冒烟 OK:n_consumed=1/INSUFFICIENT(合法)/break_ma20 收盘确认决策/"
           f"成交=次日后复权open 95.0(≠同刻close 90.0,修法#1窄补)/净收益手算一致({sv['net']['mean']:.6f})/"
+          f"fills字段直接断言(signal_date/fill_date/fill_price/fill_source,#1-a)/代理规则声明在场(#1-b)/"
           f"BHAR=net−基准BH手算一致/H=16/同源差集空/判决权=event_version/"
           f"缺execution·未实现profile·白名单外 全拒(fail-closed)")
