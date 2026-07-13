@@ -215,7 +215,8 @@ def run(dry: bool, source_snapshot_id: int):
             qcur.execute("SELECT set_config('shuheng.study_snapshot_id', %s, false)",
                          (str(source_snapshot_id),))
             snap_content, snap_digest = snapshot.read_published_snapshot(qcur, source_snapshot_id)
-        anchor = {"qbase": snap_content["qbase"],
+        # 窄补第三轮 #3-a: 锚=实际依赖键集合(adj_factor/daily/namechange/stock_basic/trade_cal)
+        anchor = {"qbase": snapshot.anchor_qbase_deps("market_batch", snap_content["qbase"]),
                   "source_manifest": {"snapshot_id": source_snapshot_id, "digest": snap_digest}}
         print(f"源快照绑定: snapshot_id={source_snapshot_id} digest={snap_digest[:12]}…"
               f"(已发布,读径=*_snap 视图)", flush=True)

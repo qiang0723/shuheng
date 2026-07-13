@@ -24,6 +24,35 @@ from psycopg.types.json import Json
 REQUIRED_QBASE = {"stock_basic", "namechange", "trade_cal", "daily", "adj_factor", "forecast"}
 REQUIRED_TAOSHA = {"market_return", "pool_b1", "pool_b1_return"}
 
+# ── 窄补第三轮 #3-a(2026-07-13): 各派生批次 → 实际 qbase 依赖键映射(不多不少) ──────
+# 依据=各 seed 实际读径(逐件核对留档验收档):
+#   · market_batch:        explore_reader_prices_snap(daily+adj_factor+stock_basic+namechange)
+#                          + explore_reader_calendar_snap(trade_cal)
+#   · pool_b1_batch:       bar_daily_snap.amount(daily,原始额不复权)+ entity_master 上市界
+#                          (stock_basic)+ explore_reader_calendar_snap(trade_cal)
+#                          ——不读 adj_factor/namechange
+#   · pool_b1_return_batch: explore_reader_prices_snap+calendar_snap(同 market)+taosha 父池批
+#                          (taosha_parent 另锚,非 qbase 键)
+# forecast / stk_holdertrade 等与三派生批无依赖 → 不入锚(其刷新不应使派生批"不相容")。
+# SQL 权威镜像 = taosha 014 _derived_qbase_deps();本表与之逐键交叉断言(verify_manifest_lineage)。
+DERIVED_BATCH_QBASE_DEPS = {
+    "market_batch": ("adj_factor", "daily", "namechange", "stock_basic", "trade_cal"),
+    "pool_b1_batch": ("daily", "stock_basic", "trade_cal"),
+    "pool_b1_return_batch": ("adj_factor", "daily", "namechange", "stock_basic", "trade_cal"),
+}
+
+
+def anchor_qbase_deps(batch_table: str, snap_qbase: dict) -> dict:
+    """窄补第三轮 #3-a: 从所读快照 qbase 向量中提取该派生批**实际依赖键集合**作锚(不多不少)。
+    快照缺依赖键 → fail-closed(不默认不猜)。"""
+    deps = DERIVED_BATCH_QBASE_DEPS.get(batch_table)
+    if deps is None:
+        raise RuntimeError(f"未知派生批次表 {batch_table!r}(依赖映射未登记,不默认不猜)")
+    missing = [k for k in deps if k not in snap_qbase]
+    if missing:
+        raise RuntimeError(f"所绑定快照 qbase 向量缺 {batch_table} 依赖键 {missing}(fail-closed)")
+    return {k: int(snap_qbase[k]) for k in deps}
+
 
 def _dsn(name: str) -> str:
     v = os.environ.get(name)
@@ -70,9 +99,37 @@ def collect_content() -> dict:
 
 
 def create(note: str | None = None) -> tuple[int, str, dict]:
-    """生成 manifest(单事务;digest 由库触发器权威计算)+ 发布到 qbase(修法#2 流程①→②③)。
-    返回 (snapshot_id, digest, content)。"""
+    """生成**研究 manifest**(两半向量;单事务;digest 由库触发器权威计算)+ 发布到 qbase
+    (修法#2 流程①→②③)。返回 (snapshot_id, digest, content)。"""
     content = collect_content()
+    with psycopg.connect(_dsn("TAOSHA_APP_DSN")) as conn, conn.cursor() as cur:
+        cur.execute(
+            "INSERT INTO study_snapshot (content, note) VALUES (%s, %s) "
+            "RETURNING snapshot_id, digest", (Json(content), note))
+        sid, digest = cur.fetchone()
+        conn.commit()
+    publish(sid)
+    return sid, digest, content
+
+
+def create_source(note: str | None = None) -> tuple[int, str, dict]:
+    """窄补第三轮 #3-b(2026-07-13): 生成**源级快照**(content 仅 qbase 半)并发布。
+
+    用途=合法再种链条第一环: qbase 既有源刷新后,研究 manifest 因旧派生批不相容而拒生成
+    (013 fail-closed,正确),但三 seed 又必须绑定已发布快照 → 源级快照先行发布打断循环:
+      刷新源 → create_source(新 qbase 向量) → 三 seed --source-snapshot-id 绑之再种
+      → create() 研究 manifest(此时最新派生批锚与新向量相容,双检放行)。
+    结构: 同表同 digest 同发布机制(镜像+attestation);content **无 taosha 键** = 源级快照
+    标识(taosha 014: 研究 manifest 双检只对含 taosha 半者施加;引擎 ViewReader 对缺 taosha
+    半的快照 fail-closed 拒读 = 源级快照不可当研究 manifest 消费)。"""
+    content: dict = {"qbase": {}}
+    with psycopg.connect(_dsn("QBASE_APP_DSN")) as qc, qc.cursor() as cur:
+        cur.execute("SELECT current_user")
+        assert cur.fetchone()[0] != "taosha_engine", "生成角色不得为 taosha_engine(硬化②)"
+        content["qbase"] = collect_qbase_vector(cur)
+    missing = REQUIRED_QBASE - set(content["qbase"])
+    if missing:
+        raise RuntimeError(f"源级快照缺必需键 {sorted(missing)}:先补齐源批次")
     with psycopg.connect(_dsn("TAOSHA_APP_DSN")) as conn, conn.cursor() as cur:
         cur.execute(
             "INSERT INTO study_snapshot (content, note) VALUES (%s, %s) "
@@ -153,6 +210,8 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     g = ap.add_mutually_exclusive_group(required=True)
     g.add_argument("--create", action="store_true")
+    g.add_argument("--create-source", action="store_true",
+                   help="窄补第三轮 #3-b: 生成源级快照(仅 qbase 半;合法再种链条第一环)")
     g.add_argument("--show", type=int)
     g.add_argument("--latest", action="store_true")
     g.add_argument("--publish", type=int, metavar="N",
@@ -163,6 +222,11 @@ def main() -> int:
     if a.create:
         sid, digest, content = create(a.note)
         print(f"StudySnapshot 已生成并发布: snapshot_id={sid} digest={digest}")
+        print(json.dumps(content, ensure_ascii=False, indent=2, sort_keys=True))
+        return 0
+    if a.create_source:
+        sid, digest, content = create_source(a.note)
+        print(f"源级快照已生成并发布(仅 qbase 半,#3-b): snapshot_id={sid} digest={digest}")
         print(json.dumps(content, ensure_ascii=False, indent=2, sort_keys=True))
         return 0
     if a.publish is not None:

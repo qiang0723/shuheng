@@ -76,7 +76,9 @@ def run(source_snapshot_id: int, dry: bool = False):
     qc.execute("SELECT set_config('shuheng.study_snapshot_id', %s, false)",
                (str(source_snapshot_id),))
     snap_content, snap_digest = snapshot.read_published_snapshot(qc, source_snapshot_id)
-    anchor = {"qbase": snap_content["qbase"],
+    # 窄补第三轮 #3-a: 锚=实际依赖键集合(daily/stock_basic/trade_cal,不多不少;
+    # ~~整个 qbase 向量~~作废——与本批无依赖的源刷新不得使其"不相容")
+    anchor = {"qbase": snapshot.anchor_qbase_deps("pool_b1_batch", snap_content["qbase"]),
               "source_manifest": {"snapshot_id": source_snapshot_id, "digest": snap_digest}}
     print(f"源快照绑定: snapshot_id={source_snapshot_id} digest={snap_digest[:12]}…"
           f"(已发布,批次=study_snap_batch 路由)", flush=True)
