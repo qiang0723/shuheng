@@ -131,28 +131,6 @@ def main() -> int:
             _ok("F2 依赖键锚新批落库+manifest 引用放行(前向血缘路径;窄补三改判)", False,
                 str(e).splitlines()[0][:120])
 
-        # ── 窄补三 F5(#3-a 验收点): 无依赖源刷新不碰派生批相容——manifest 只比对实际依赖键 ──
-        #   probe 批锚=依赖键(无 stk_holdertrade);manifest 向量中 stk_holdertrade 值改动 → 放行。
-        cur.execute("SAVEPOINT f5")
-        try:
-            cur.execute(_batch_ins, ("[窄补三探针] 依赖键锚批,验无依赖源刷新", Json(_dep_anchor())))
-            f5_bid = cur.fetchone()[0]
-            c5 = {"qbase": dict(ref_content["qbase"], stk_holdertrade=999999),
-                  "taosha": dict(content["taosha"], market_return=f5_bid)}
-            cur.execute("INSERT INTO study_snapshot (content, note) VALUES (%s, %s)",
-                        (Json(c5), "[窄补三探针] 无依赖源(stk_holdertrade)刷新,应放行"))
-            cur.execute("RELEASE SAVEPOINT f5")
-            _ok("F5 无依赖源(stk_holdertrade)刷新→manifest 放行(#3-a: 只比对实际依赖键)", True,
-                "锚不含 stk_holdertrade → 其批次号变动与本批相容性无关")
-        except psycopg.Error as e:
-            cur.execute("ROLLBACK TO SAVEPOINT f5")
-            _ok("F5 无依赖源(stk_holdertrade)刷新→manifest 放行(#3-a: 只比对实际依赖键)", False,
-                str(e).splitlines()[0][:130])
-        cur.execute("ROLLBACK TO SAVEPOINT f5")
-
-        # ── 窄补三 F6(#3-b 结构探针): 源级快照生成放行 + 合法再种链全通路(事务内静态半;
-        #   真实端到端+并发=E2E 实测另录验收档,本探针证触发器通路)。trade_cal 为三批共同
-        #   依赖 → 三批全再种(只种一批则其余批 registry 锚与新向量不相容=正确拒,F7 反证)──
         _pool_ins = (
             "INSERT INTO pool_b1_batch (source,frozen_digest,amount_window,listing_min,"
             "top_fraction,holdout_start,min_date,max_date,n_dates,out_rows,avg_pool_size,"
@@ -163,6 +141,45 @@ def main() -> int:
             "holdout_start,view_rows,out_rows,min_date,max_date,avg_n_stocks,pull_time,note,"
             "source_anchor) VALUES ('probe',%s,'continuous','probe','2024-07-01',0,0,"
             "'2020-01-01','2020-01-02',0,now(),%s,%s) RETURNING batch_id")
+
+        def _seed_three_probes(bind_sid, bind_dg, vec, tag):
+            """三批依赖键锚探针(绑定 snapshot bind_sid;vec=其 qbase 向量)→ (mr, p, pr)。"""
+            def _a(tbl, **extra):
+                a = {"qbase": snapshot.anchor_qbase_deps(tbl, vec),
+                     "source_manifest": {"snapshot_id": bind_sid, "digest": bind_dg}}
+                a.update(extra)
+                return a
+            cur.execute(_batch_ins, (f"[{tag}] 再种market", Json(_a("market_batch"))))
+            mr = cur.fetchone()[0]
+            cur.execute(_pool_ins, (f"[{tag}] 再种pool", Json(_a("pool_b1_batch"))))
+            p = cur.fetchone()[0]
+            cur.execute(_pret_ins, (p, f"[{tag}] 再种pool_return",
+                                    Json(_a("pool_b1_return_batch",
+                                            taosha_parent={"pool_b1": p}))))
+            pr = cur.fetchone()[0]
+            return mr, p, pr
+
+        # ── 窄补三 F5(#3-a 验收点): 无依赖源刷新不碰派生批相容——manifest 只比对实际依赖键。
+        #   三批全为依赖键锚探针(绑 snapshot#1;存量批 registry 全向量历史锚会正确拒=换代前
+        #   实况,#3-b 真实再种后换代);manifest 向量 stk_holdertrade 值改动 → 放行。──
+        cur.execute("SAVEPOINT f5")
+        try:
+            mr5, p5, pr5 = _seed_three_probes(ref_sid, ref_digest, ref_content["qbase"], "窄补三F5")
+            c5 = {"qbase": dict(ref_content["qbase"], stk_holdertrade=999999),
+                  "taosha": {"market_return": mr5, "pool_b1": p5, "pool_b1_return": pr5}}
+            cur.execute("INSERT INTO study_snapshot (content, note) VALUES (%s, %s)",
+                        (Json(c5), "[窄补三F5] 无依赖源(stk_holdertrade)刷新,应放行"))
+            cur.execute("ROLLBACK TO SAVEPOINT f5")
+            _ok("F5 无依赖源(stk_holdertrade)刷新→manifest 放行(#3-a: 只比对实际依赖键)", True,
+                "三批锚均不含 stk_holdertrade → 其批次号变动与相容性无关")
+        except psycopg.Error as e:
+            cur.execute("ROLLBACK TO SAVEPOINT f5")
+            _ok("F5 无依赖源(stk_holdertrade)刷新→manifest 放行(#3-a: 只比对实际依赖键)", False,
+                str(e).splitlines()[0][:130])
+
+        # ── 窄补三 F6(#3-b 结构探针): 源级快照生成放行 + 合法再种链全通路(事务内静态半;
+        #   真实端到端+并发=E2E 实测另录验收档,本探针证触发器通路)。trade_cal 为三批共同
+        #   依赖 → 三批全再种(只种一批则其余批 registry 锚与新向量不相容=正确拒,F7 反证)──
         cur.execute("SAVEPOINT f6")
         try:
             src_c = {"qbase": dict(ref_content["qbase"], trade_cal=999999)}   # 模拟源刷新后向量
@@ -172,33 +189,18 @@ def main() -> int:
             src_sid, src_dg = cur.fetchone()
             import re as _re
             ok_src = bool(_re.fullmatch(r"[0-9a-f]{64}", src_dg))
-
-            def _a6(tbl, **extra):
-                a = {"qbase": snapshot.anchor_qbase_deps(tbl, src_c["qbase"]),
-                     "source_manifest": {"snapshot_id": src_sid, "digest": src_dg}}
-                a.update(extra)
-                return a
-
-            cur.execute(_batch_ins, ("[窄补三探针] 再种market", Json(_a6("market_batch"))))
-            b6_mr = cur.fetchone()[0]
-            cur.execute(_pool_ins, ("[窄补三探针] 再种pool", Json(_a6("pool_b1_batch"))))
-            b6_p = cur.fetchone()[0]
-            cur.execute(_pret_ins, (b6_p, "[窄补三探针] 再种pool_return",
-                                    Json(_a6("pool_b1_return_batch",
-                                             taosha_parent={"pool_b1": b6_p}))))
-            b6_pr = cur.fetchone()[0]
+            b6_mr, b6_p, b6_pr = _seed_three_probes(src_sid, src_dg, src_c["qbase"], "窄补三F6")
             c6 = {"qbase": src_c["qbase"],
                   "taosha": {"market_return": b6_mr, "pool_b1": b6_p, "pool_b1_return": b6_pr}}
             cur.execute("INSERT INTO study_snapshot (content, note) VALUES (%s, %s)",
-                        (Json(c6), "[窄补三探针] 三批再种后研究 manifest,应放行"))
-            cur.execute("RELEASE SAVEPOINT f6")
+                        (Json(c6), "[窄补三F6] 三批再种后研究 manifest,应放行"))
+            cur.execute("ROLLBACK TO SAVEPOINT f6")
             _ok("F6 合法再种链通路: 源级快照(digest 库算)→三批依赖锚绑之→研究 manifest 放行(#3-b)",
                 ok_src, f"src={src_sid} batches=({b6_mr},{b6_p},{b6_pr})(回滚后不存在)")
         except psycopg.Error as e:
             cur.execute("ROLLBACK TO SAVEPOINT f6")
             _ok("F6 合法再种链通路: 源级快照(digest 库算)→三批依赖锚绑之→研究 manifest 放行(#3-b)",
                 False, str(e).splitlines()[0][:130])
-        cur.execute("ROLLBACK TO SAVEPOINT f6")
 
         # ── 窄补三 F7(反证=fail-closed 未弱化): 源刷新后只种一批,研究 manifest 仍拒 ──
         cur.execute("SAVEPOINT f7")
