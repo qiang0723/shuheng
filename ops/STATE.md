@@ -4,9 +4,26 @@
 > 本文件 + 数据库实物 = 真身;会话记忆是草稿。**断链恢复第一动作 = 查库 + 读本文件。**
 > 改判纪律:口径/指针改判须在此**显式作废旧条目(内容+原因)**,不留新旧并存。
 
-最后更新:2026-07-12(深夜)—— **✅硬化③施工+验收完毕(九连跑全rc=0+三对归因diff+确定性硬项三真+post-ST新基线sha登记,验收档 `taosha/docs/hardening-item3-st-eventday-acceptance-2026-07-12.md`,待架构窗口)+ ✅⑤整体关闭(附注(b)(c)已补录 addendum_id 4/5/6,验收档 `taosha/docs/hardening-item5-addendum-acceptance-2026-07-12.md`)**;同日:**▶可信度硬化窗口开窗(人批终版施工单,见下〈可信度硬化窗口〉节)**;此前同日:**✅#2b(exp_id=3)已闭卷**(persist 终态 done_at=2026-07-12 11:53:31+08,详见下〈#2b 闭卷〉条)+ **代码宪章九条接收即日生效**(`docs/code-charter-nine-2026-07-12.md`)+ **✅收割会首批登记令执行毕(2026-07-12)**:9 条假设入台账 exp_id 8–16 全 `registered`(不冻结不排产不占引擎;event_def 逐字含"待冻结"显式标注/对偶双方注记/9 条全市场口径/数据盲声明入 contamination_note;单事务;台账现 16 行=registered9/frozen3/running0/done3/closed1,distinct family15;登记档 `taosha/docs/harvest-batch1-registration-2026-07-12.md`)。**下一动作=待命**:下一假设单暂缓,等①#3 采集收敛后数据验收②检验排产人拍;#3 采集守护照守。 **✅收割会第二轮登记令执行毕(2026-07-12)**:9 条入台账 exp_id 17–25 全 `registered`(LLM 财务 7=prescreen + human 2=**full**〔sox_spillover 宏观/跨市场、preannounced_exhaustion 财务×量价交叉〕;财务锚约束句逐字入 8 条 event_def〔sox 无披露日概念不适用,工程判断留档〕;human 2 条 crowding 登记令未载经人补拍 sox=高/preannounced=中;exp15 st_imposition 对偶注记回写 delist_warning_financial;台账现 **25 行**=registered18/frozen3/running0/done3/closed1,distinct family24;登记档 `taosha/docs/harvest-batch2-registration-2026-07-12.md`)。**轮巡指针→分析师预期(下周):前置=时间戳口径核查(修正时点是否=研报发布日),口径不明不登记。**〔下行 07-09 头注为历史存档〕
+最后更新:2026-07-13 —— **✅✅外审已回+人终签五项修法施工单("可以,先这么做"),冻结令对五项解除,施工序 #4→#5→#3→#2→#1 开工**。人令原文逐字留痕 = `docs/postaudit-five-order-2026-07-13.md`(F 条);详见下〈▶ 外审五项修法窗口〉节。#3 采集守护照守(07-13:PID35692 活,done 3820/errors 39)。
 
-## ▶ 可信度硬化窗口(人批终版 2026-07-12,进行中)
+〔历史存档 07-12〕最后更新:2026-07-12(深夜)—— **✅硬化③施工+验收完毕(九连跑全rc=0+三对归因diff+确定性硬项三真+post-ST新基线sha登记,验收档 `taosha/docs/hardening-item3-st-eventday-acceptance-2026-07-12.md`,待架构窗口)+ ✅⑤整体关闭(附注(b)(c)已补录 addendum_id 4/5/6,验收档 `taosha/docs/hardening-item5-addendum-acceptance-2026-07-12.md`)**;同日:**▶可信度硬化窗口开窗(人批终版施工单,见下〈可信度硬化窗口〉节)**;此前同日:**✅#2b(exp_id=3)已闭卷**(persist 终态 done_at=2026-07-12 11:53:31+08,详见下〈#2b 闭卷〉条)+ **代码宪章九条接收即日生效**(`docs/code-charter-nine-2026-07-12.md`)+ **✅收割会首批登记令执行毕(2026-07-12)**:9 条假设入台账 exp_id 8–16 全 `registered`(不冻结不排产不占引擎;event_def 逐字含"待冻结"显式标注/对偶双方注记/9 条全市场口径/数据盲声明入 contamination_note;单事务;台账现 16 行=registered9/frozen3/running0/done3/closed1,distinct family15;登记档 `taosha/docs/harvest-batch1-registration-2026-07-12.md`)。**下一动作=待命**:下一假设单暂缓,等①#3 采集收敛后数据验收②检验排产人拍;#3 采集守护照守。 **✅收割会第二轮登记令执行毕(2026-07-12)**:9 条入台账 exp_id 17–25 全 `registered`(LLM 财务 7=prescreen + human 2=**full**〔sox_spillover 宏观/跨市场、preannounced_exhaustion 财务×量价交叉〕;财务锚约束句逐字入 8 条 event_def〔sox 无披露日概念不适用,工程判断留档〕;human 2 条 crowding 登记令未载经人补拍 sox=高/preannounced=中;exp15 st_imposition 对偶注记回写 delist_warning_financial;台账现 **25 行**=registered18/frozen3/running0/done3/closed1,distinct family24;登记档 `taosha/docs/harvest-batch2-registration-2026-07-12.md`)。**轮巡指针→分析师预期(下周):前置=时间戳口径核查(修正时点是否=研报发布日),口径不明不登记。**〔下行 07-09 头注为历史存档〕
+
+## ▶ 外审五项修法窗口(人终签 2026-07-13,进行中)
+
+**人令原文逐字留痕 = `docs/postaudit-five-order-2026-07-13.md`(F 条,原文即口径)。** 来源=外部第二独立视角复审意见(对象 8b36eeb+d545c2a+7bd246a)经人分拣;终签"可以,先这么做"=五项原文+我方 4 确认点+施工序 **#4→#5→#3→#2→#1** 全批;冻结令仅对本单五项解除,其余照旧(不新起假设冻结/检验,#3 采集照常)。
+
+**五项看板**(每项交 5 要素:攻击路径复述/结构修法/正向控制/反向测试/权限+迁移回滚边界+验收实物;统一验收措辞="五种攻击尝试全部被拒,正反向测试套件全部PASS"):
+- **#4 状态机出生即frozen旁路**:⏳施工中。攻击路径坐实=`taosha/sql/005` 出生白名单含 frozen(taosha_app 可直插 born-frozen 绕过人冻结仪式)。修法=INSERT 只 registered;历史导入走独立高权限程序(本次无需求)。
+- **#5 addendum result_sha256 库侧锚定**:⏳排队。坐实=`007` 裸 text 列零库侧校验。前置=实测存量正确锚与库算 digest 全等(不等停工上报)。
+- **#3 manifest 批次血缘相容性**:⏳排队。坐实=manifest 生成处无 pool_batch_id 交叉校验。历史批不加 NOT NULL 不补猜,走 append-only lineage registry / legacy-unverified。
+- **#2 qbase 快照路由伪造防护**:⏳排队。坐实=`qbase/sql/012 study_snap_batch()` 读引擎自报 GUC 完整 JSON 可伪造。修法=qbase 权威镜像+publication attestation(append-only,不 UPDATE);**存量 manifest#1/#2 迁移时受权角色回填镜像+attestation(确认点①)**。
+- **#1 新策略 PAP 可执行离场硬门**:⏳排队。pap_schema_version/analysis_type/execution_profile 白名单{close_to_next_open, preclose_to_tail}/禁 close_confirmed+same_close/三层 fail-closed/legacy registry 物化(**收录范围=全部存量缺 schema 实验含 frozen/done/closed,确认点②**)/旧措辞→addendum 定性;验收=数值零差异+语义 diff,不再要求 SHA 相等,不碰闭卷 result_json。
+
+**范围禁令**:仅此 5 项,不重构无关代码,不新增未列功能,不触碰 #2b/#4 已闭卷 result_json/密封卡数值;超范围立即停工上报;不得 reset/checkout 回退共享工作区用户改动。
+
+**流程位**:五项全毕交人 → 窗口关闭 → 恢复检验排产(#3 排产另下)。
+
+## ▶ 可信度硬化窗口(人批终版 2026-07-12,进行中→**待关闭:外审已回,见上节;施工六项全毕、复审意见已转化为上节五项修法单**)
 
 **人令原文逐字留痕 = `docs/hardening-window-order-2026-07-12.md`(F 条,原文即口径)。外部第二视角三轮审查全采纳。**
 
