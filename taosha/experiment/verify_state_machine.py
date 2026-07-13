@@ -21,8 +21,12 @@ import sys
 import psycopg
 
 FAMILY = "_smtest_statemachine"
-PAP = '{"probe": true, "note": "状态机自检探针,事务内回滚不落库"}'
-PAP2 = '{"probe": true, "note": "registered 态 PAP 完善探针(内容变更)"}'
+# 探针 PAP 带修法#1 schema(2026-07-13): 探针行非 legacy(不在 011 registry)→ 冻结硬门
+# 要求 pap_schema_version+analysis_type;纯事件不要求 strategy_execution。
+PAP = ('{"probe": true, "note": "状态机自检探针,事务内回滚不落库", '
+       '"pap_schema_version": 2, "analysis_type": "event"}')
+PAP2 = ('{"probe": true, "note": "registered 态 PAP 完善探针(内容变更)", '
+        '"pap_schema_version": 2, "analysis_type": "event"}')
 RESULT = '{"probe_result": "自检探针 result(回滚不落库)"}'
 
 _results: list[tuple[str, bool, str]] = []

@@ -25,6 +25,9 @@ def synth_pap() -> dict:
         cleaning={"est_window": [-250, -91], "coverage_min": "112/160(70%)",
                   "suspension": "事件落停牌期剔除", "st": "剔除", "one_word": "顺延"},
         snapshot_batch_req="SYNTH",
+        # 修法#1(2026-07-13): validate_pap 层①现要求 schema 键;合成冒烟=纯事件。
+        # 两键不被 runner 消费、不入 result → 合成基线 sha 3116ba9b 逐字节不变(施工时双跑实测)。
+        extra={"pap_schema_version": pap_mod.PAP_SCHEMA_VERSION, "analysis_type": "event"},
     )
     # 可交易口径 cost 块(选项2;合成域也走该口径出新键,rates 对齐真实 exp_id5 pap 冻结值)
     p["cost"] = {"commission": 0.00025, "stamp_tax_sell": 0.001, "slippage_oneway": 0.001,

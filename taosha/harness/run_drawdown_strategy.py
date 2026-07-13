@@ -19,6 +19,7 @@ import json
 from taosha.engine.drawdown_events import generate_events, to_event_rows
 from taosha.engine.drawdown_strategy import run_strategy
 from taosha.experiment import ledger
+from taosha.experiment import pap as pap_mod
 from taosha.reader.view import ViewReader
 
 
@@ -40,6 +41,20 @@ def main():
     row = ledger.get(a.exp_id)
     if row is None:
         raise SystemExit(f"exp_id={a.exp_id} 不存在")
+
+    # ── 修法#1 层③(外审 2026-07-13): 策略驱动启动校验,fail-closed,先于一切取数 ────
+    # 判据=pap_legacy_registry 物化表(011),不认 pap 字段自称/registered_at;一律拒含 --diagnostic
+    # (历史注记: 2026-07-13 修法#1 验收跑=本硬门安装前最后一次 legacy 策略诊断跑,STATE 已登记)。
+    if ledger.is_legacy(a.exp_id):
+        raise SystemExit(
+            f"修法#1: exp {a.exp_id} 在 pap_legacy_registry——legacy 实验只允许事件版冻结与运行,"
+            "所有策略驱动一律拒绝(含 --diagnostic;策略研究须 INSERT 新实验行走新 schema)")
+    _at = (row["pap_json"] or {}).get("analysis_type")
+    if _at not in ("strategy", "event_and_strategy"):
+        raise SystemExit(f"修法#1: exp {a.exp_id} analysis_type={_at!r} 不含 strategy,"
+                         "策略驱动拒执行(不得靠文本推断是否含策略版)")
+    pap_mod.validate_strategy_execution((row["pap_json"] or {}).get("strategy_execution"))
+
     if a.diagnostic and not a.reason:
         raise SystemExit("诊断跑必须给 --reason(事由,STATE 登记;通路预裁 2026-07-12)")
     if a.st_mode == "legacy_row0" and not a.diagnostic:

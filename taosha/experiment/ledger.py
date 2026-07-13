@@ -112,6 +112,21 @@ def close(exp_id: int, reason: str, *, conn=None) -> None:
             conn.close()
 
 
+def is_legacy(exp_id: int, *, conn=None) -> bool:
+    """修法#1(2026-07-13): legacy 判据 = pap_legacy_registry 物化表(011 迁移时刻普查,
+    append-only 零写权)——不认调用方传入的 legacy 字段、不认可伪造的 registered_at。
+    legacy 实验只允许事件版冻结与运行;所有策略驱动一律拒绝(层③消费本函数)。"""
+    own = conn is None
+    conn = conn or connect()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT 1 FROM pap_legacy_registry WHERE exp_id=%s", (exp_id,))
+            return cur.fetchone() is not None
+    finally:
+        if own:
+            conn.close()
+
+
 def start_running(exp_id: int, *, conn=None) -> None:
     """引擎启动:frozen→running(既有状态机路径,触发器放行)。不另建通路(item 11)。"""
     own = conn is None
