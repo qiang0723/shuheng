@@ -98,10 +98,21 @@ def collect_content() -> dict:
     return content
 
 
-def create(note: str | None = None) -> tuple[int, str, dict]:
+def create(note: str | None = None,
+           from_source_snapshot: int | None = None) -> tuple[int, str, dict]:
     """生成**研究 manifest**(两半向量;单事务;digest 由库触发器权威计算)+ 发布到 qbase
-    (修法#2 流程①→②③)。返回 (snapshot_id, digest, content)。"""
+    (修法#2 流程①→②③)。返回 (snapshot_id, digest, content)。
+
+    from_source_snapshot(窄补第三轮 #3-b,E2E 并发实测揪出): qbase 半改自**已发布源级快照**
+    N 的向量(fail-closed 经 read_published_snapshot),taosha 半仍取派生批现值——再种链收口时
+    若有无关新源批并发落地(现值向量已前移),现值口径 manifest 与派生批锚(=快照向量)不相容
+    被正确拒;研究 manifest 的 qbase 半本义=派生数据实际所出之源向量,锚定源快照方为一致读
+    (引擎经 manifest 路由读到的 qbase 批 == 派生批当时所读)。None=两半均现值(源无刷新时两者同)。"""
     content = collect_content()
+    if from_source_snapshot is not None:
+        with psycopg.connect(_dsn("QBASE_APP_DSN")) as qc, qc.cursor() as cur:
+            snap_content, _ = read_published_snapshot(cur, from_source_snapshot)
+        content["qbase"] = snap_content["qbase"]
     with psycopg.connect(_dsn("TAOSHA_APP_DSN")) as conn, conn.cursor() as cur:
         cur.execute(
             "INSERT INTO study_snapshot (content, note) VALUES (%s, %s) "
@@ -217,10 +228,12 @@ def main() -> int:
     g.add_argument("--publish", type=int, metavar="N",
                    help="修法#2: 对既有 manifest N 执行 qbase 镜像+attestation 发布(幂等)")
     ap.add_argument("--note", default=None)
+    ap.add_argument("--from-source-snapshot", type=int, default=None, metavar="N",
+                    help="窄补三#3-b: 研究 manifest 的 qbase 半锚定已发布源级快照 N(再种链收口)")
     a = ap.parse_args()
 
     if a.create:
-        sid, digest, content = create(a.note)
+        sid, digest, content = create(a.note, from_source_snapshot=a.from_source_snapshot)
         print(f"StudySnapshot 已生成并发布: snapshot_id={sid} digest={digest}")
         print(json.dumps(content, ensure_ascii=False, indent=2, sort_keys=True))
         return 0
