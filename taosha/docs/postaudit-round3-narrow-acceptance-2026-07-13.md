@@ -325,3 +325,68 @@ holdout 前开市日数:批8=8187,水印=8186(−3+2)。
 **补测验收措辞:水印并发批在 seed 运行窗内提交且对 current/max 路由可见,seed 产出数据内容
 逐行来自锚定批 8(探针日行在/行缺与逐值全等、全量 EXCEPT 0/0),source_anchor=批 8;
 判别力并发补测通过。**
+
+---
+
+## §12 判别力补测·时序修正(外部复核第三回件令,2026-07-13;v2)
+
+> 人令原文=`docs/postaudit-round3-disc2-order-2026-07-13.md`(留痕 commit `8b538e4`)。复核判点:
+> §11 两跑水印均在主读语句开始**之后**提交——READ COMMITTED 单语句 MVCC 快照在语句开始时固化,
+> 主读若走错 current/max 也可能因时序看不到水印而"蒙对"(批 9/10 与批 8 同内容);SQL 复算是独立
+> 后起语句,钉不住主读语句的路由。**我方认同**(§11.3 实测主读游标≈21:32:01.91 早于水印 commit
+> 21:32:02.066,复核点在我方自己的时间线上坐实)。**⚠️改判纪律:§11.3 时序证据效力作废,以本节
+> 取代;§11 的内容证据(EXCEPT/探针/anchor)与水印设计仍立,本节复用同一设计仅修时序。**
+> 修正=纯编排调整(orchestrate2.py;隔离环境/水印设计/零生产触碰全不变):水印触发点从"逐票聚合
+> 中"提前到**"源快照绑定"行(= source snapshot 38 及 anchor 读取完成)**。
+
+### §12.1 四时点与严格不等式(令内验收项)
+
+| 时点 | RUN3 `seed_market_return` | RUN4 `seed_pool_b1_return` |
+|---|---|---|
+| T_anchor(快照38+anchor 读取完成) | 21:58:03.743 | 22:02:17.357 |
+| T_watermark_commit | **批 13**,21:58:03.837 | **批 14**,22:02:17.455 |
+| T_main_select_start(主读游标) | 21:59:41.335(pg query_start) | **22:03:04.344(pg query_start,DECLARE 本体)** |
+| T_finish(seed 产出完成) | 22:02:14.324 | 22:05:52.359 |
+| **T_anchor < T_wm < T_main < T_finish** | **全部成立** | **全部成立** |
+| 水印→主读余量 | **97.5 秒** | **46.9 秒** |
+
+- 时钟:seed / PostgreSQL / 编排同宿主机同时钟;T_wm、T_main、T_finish 取库钟(clock_timestamp
+  / pg_stat_activity.query_start),T_anchor 取"源快照绑定"行打印时戳(≥锚读实际完成时刻,作保守
+  上界仍满足严格不等式)。
+- 主读语句身份=命名服务器游标(生产代码固有:`mkt_prices_stream`/`pool_prices_stream`),
+  pg_stat_activity 轮询(120ms)按游标名捕获:RUN4 捕获 `DECLARE "pool_prices_stream" CURSOR FOR
+  SELECT…` 语句本体(游标 MVCC 快照固化时刻的直接证据);RUN3 最早捕获为首个
+  `FETCH FORWARD 100000 FROM "mkt_prices_stream"`(21:59:41.335),其 DECLARE 被相位打印下界钉住:
+  T_wm(21:58:03.837)<"逐票聚合中"打印(21:59:41.319)≤ DECLARE ≤ 首 FETCH——97.5 秒余量下
+  严格先后无歧义。**两跑均无毫秒级 race:水印与主读之间隔着诊断计数查询(88s/47s)。**
+- 令内语义闭合:水印在主读游标快照固化前已提交 → 主读若走错 current/max,其 MVCC 快照**必然
+  可见水印**(必产出翻转内容);实测产出仍与批 8 全等 → "蒙对"通路已被排除。
+
+### §12.2 产出内容与锚(与 §11 同证据集,v2 重取)
+
+- RUN3 产出批 **65**=8,186 行:EXCEPT 批 39=**0/0** 逐行;翻关三探针日行在且逐值全等
+  (2000-01-04 ret=0.02771499487837608/n=911 等三行与 §11.4 逐字同);翻开两日行数 **0**;
+  anchor.trade_cal=**8** + source_manifest={snapshot_id:38, digest:4aaadb65…}。
+- RUN4 产出批 **13**=8,066 行:EXCEPT 批 5=**0/0**;探针同全对;anchor 同(含 pool_batch=5)。
+- 水印可区分性:W3/W4 vs 批 8 双向 EXCEPT=**5/5**(与 §11.2 同设计)。
+
+### §12.3 加强项——本轮连锚读/计数查询相位也具判别力
+
+v1 遗留水印批已存 iso 且为 max(RUN3 跑前 max=**12**、RUN4 跑前 max=**13**,探针日均翻转值,
+实测在案):本轮 seed **自启动起任意相位任意语句**走 current/max 皆必见可区分内容——不再依赖
+"水印恰在某语句前提交"的时序论证。实测:锚=8 非 12/13/14;诊断计数查询(横跨/先于新水印,
+其快照晚于跑前已在的旧水印)计数与 v1 全等(mret raw=15,099,014/input=15,099,011,pret
+rows=14,349,440,v1==v2)=计数查询亦走钉批路由实证。跑后 max=**14**=水印(current/max 反事实
+通路照 §11.4 在案)。
+
+### §12.4 生产零触碰(v2 重核)
+
+生产 qbase trade_cal 批次仍=`5,8,9,10`;生产 taosha max 批仍=39/5;生产 `/opt/quant` git
+porcelain=0。水印批 13/14 仅存 `qbase_iso`。产物:`/root/r3disc/`(evidence2.json〔含
+pg_stat_activity 全采样表〕+ orchestrate2.py + mret_seed2.log/pret_seed2.log 逐行时间戳;
+v1 全套原件留档)。
+
+**时序修正验收措辞:四时点严格不等式 T_anchor < T_watermark_commit < T_main_select_start
+< T_finish 于两 seed 均成立(余量 97.5s/46.9s,主读语句 pg_stat_activity 直接捕获),水印在
+主读 MVCC 快照固化前已提交且对 current/max 路由可见,产出数据内容逐行仍来自锚定批 8,
+source_anchor=批 8;判别力并发补测(时序修正版)通过,"蒙对"通路排除。**
