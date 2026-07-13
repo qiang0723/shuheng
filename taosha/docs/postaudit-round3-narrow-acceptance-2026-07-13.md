@@ -359,6 +359,11 @@ holdout 前开市日数:批8=8187,水印=8186(−3+2)。
   `FETCH FORWARD 100000 FROM "mkt_prices_stream"`(21:59:41.335),其 DECLARE 被相位打印下界钉住:
   T_wm(21:58:03.837)<"逐票聚合中"打印(21:59:41.319)≤ DECLARE ≤ 首 FETCH——97.5 秒余量下
   严格先后无歧义。**两跑均无毫秒级 race:水印与主读之间隔着诊断计数查询(88s/47s)。**
+- 隔离级别实核(外部复核确认的隐含前提,2026-07-13,我方与复核方独立实测一致):`qbase_iso`
+  server 默认 `default_transaction_isolation=read committed`(`SHOW` 实测)+ `pg_db_role_setting`
+  空=无库级/角色级覆盖 + seed 代码(psycopg3)未显式设置隔离级别——READ COMMITTED 下游标 MVCC
+  快照在 DECLARE 语句开始时固化,"T_main_select_start=快照固化时刻"前提成立(若为 REPEATABLE
+  READ 则快照提前至事务首语句、本前提不成立;§12.3 加强项不依赖此前提,独立兜底)。
 - 令内语义闭合:水印在主读游标快照固化前已提交 → 主读若走错 current/max,其 MVCC 快照**必然
   可见水印**(必产出翻转内容);实测产出仍与批 8 全等 → "蒙对"通路已被排除。
 
