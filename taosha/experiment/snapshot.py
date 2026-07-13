@@ -38,16 +38,24 @@ def _short_key(source: str, seen: dict) -> str:
     return source if key in seen else key
 
 
+def collect_qbase_vector(cur) -> dict:
+    """qbase 源批次向量(entity_batch/fact_batch 各 source 现值 max;开放 qbase 游标传入)。
+    修法#3 复用点: 三个派生批次 seed 落批时以此为 source_anchor 的 qbase 半(锚=实际所读现值向量)。"""
+    vec: dict = {}
+    for tbl in ("entity_batch", "fact_batch"):
+        cur.execute(f"SELECT source, max(batch_id) FROM {tbl} GROUP BY source ORDER BY source")
+        for source, mx in cur.fetchall():
+            vec[_short_key(source, vec)] = int(mx)
+    return vec
+
+
 def collect_content() -> dict:
     """读两库批次表现值,产批次向量(受权角色;拒 taosha_engine)。"""
     content: dict = {"qbase": {}, "taosha": {}}
     with psycopg.connect(_dsn("QBASE_APP_DSN")) as qc, qc.cursor() as cur:
         cur.execute("SELECT current_user")
         assert cur.fetchone()[0] != "taosha_engine", "生成角色不得为 taosha_engine(硬化②)"
-        for tbl in ("entity_batch", "fact_batch"):
-            cur.execute(f"SELECT source, max(batch_id) FROM {tbl} GROUP BY source ORDER BY source")
-            for source, mx in cur.fetchall():
-                content["qbase"][_short_key(source, content["qbase"])] = int(mx)
+        content["qbase"] = collect_qbase_vector(cur)
     with psycopg.connect(_dsn("TAOSHA_APP_DSN")) as tc, tc.cursor() as cur:
         for key, tbl in (("market_return", "market_batch"), ("pool_b1", "pool_b1_batch"),
                          ("pool_b1_return", "pool_b1_return_batch")):

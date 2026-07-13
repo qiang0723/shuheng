@@ -56,9 +56,16 @@ def _rolling_trailing_mean(amounts, window):
 
 
 def run():
+    from psycopg.types.json import Json
+
+    from taosha.experiment import snapshot
+
     qdsn, tdsn = _env("QBASE_APP_DSN"), _env("TAOSHA_APP_DSN")
     q = psycopg.connect(qdsn)
     qc = q.cursor()
+
+    # 修法#3: 源锚定=运行时实际所读 qbase 现值向量(BEFORE INSERT 触发器强制非空)
+    anchor = {"qbase": snapshot.collect_qbase_vector(qc)}
 
     # 交易日轴(explore_reader_calendar:SSE 交易日,holdout 焊死)
     qc.execute("SELECT trade_date FROM explore_reader_calendar ORDER BY trade_date")
@@ -149,11 +156,12 @@ def run():
             tc.execute(
                 "INSERT INTO pool_b1_batch (source, frozen_digest, amount_window, listing_min, "
                 " top_fraction, holdout_start, min_date, max_date, n_dates, out_rows, avg_pool_size, "
-                " pull_time, note) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s, now(), %s) RETURNING batch_id",
+                " pull_time, note, source_anchor) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s, now(), %s, %s) "
+                "RETURNING batch_id",
                 ("qbase:bar_daily_snap.amount(非.BJ)", lp.audit_digest(), lp.AMOUNT_WINDOW,
                  lp.LISTING_MIN_DAYS, lp.TOP_FRACTION, HOLDOUT, min_d, max_d, n_dates, len(members),
                  avg_pool, f"b1池PIT预计算:trailing-{lp.AMOUNT_WINDOW}d成交额均值降序前{int(lp.TOP_FRACTION*100)}%、"
-                 f"上市满{lp.LISTING_MIN_DAYS}交易日、非.BJ、评估日<{HOLDOUT}"))
+                 f"上市满{lp.LISTING_MIN_DAYS}交易日、非.BJ、评估日<{HOLDOUT}", Json(anchor)))
             batch_id = tc.fetchone()[0]
             with tc.copy("COPY pool_b1_membership (batch_id, trade_date, ts_code) FROM STDIN") as cp:
                 for d, ts in members:

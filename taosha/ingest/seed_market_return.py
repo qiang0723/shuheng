@@ -162,15 +162,15 @@ def compare(py_rows, sql_map) -> tuple[float, int]:
 
 # ── 落库(append-only:一条 market_batch + COPY market_eqw_return,单事务)──────
 def land(tconn, rows, *, source, hypothesis, frozen_digest, holdout, view_rows,
-         min_date, max_date, pull_time, note) -> tuple[int, int]:
+         min_date, max_date, pull_time, note, source_anchor) -> tuple[int, int]:
     with tconn.cursor() as cur:
         cur.execute(
             "INSERT INTO public.market_batch"
             "(source,hypothesis,compounding,frozen_digest,holdout_start,view_rows,"
-            " out_rows,min_date,max_date,pull_time,note) "
-            "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING batch_id",
+            " out_rows,min_date,max_date,pull_time,note,source_anchor) "
+            "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING batch_id",
             (source, hypothesis, COMPOUNDING, frozen_digest, holdout, view_rows,
-             len(rows), min_date, max_date, pull_time, note))
+             len(rows), min_date, max_date, pull_time, note, source_anchor))
         bid = cur.fetchone()[0]
         with cur.copy("COPY public.market_eqw_return(batch_id,trade_date,ret_eqw,n_stocks) "
                       "FROM STDIN") as cp:
@@ -185,6 +185,9 @@ def land(tconn, rows, *, source, hypothesis, frozen_digest, holdout, view_rows,
 
 def run(dry: bool):
     import psycopg
+    from psycopg.types.json import Json
+
+    from taosha.experiment import snapshot
 
     root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     env = load_env(os.path.join(root, ".env"))
@@ -198,6 +201,9 @@ def run(dry: bool):
     holdout = HOLDOUT_START            # date(2024,7,1)
 
     with psycopg.connect(qdsn) as qconn:
+        # 修法#3: 源锚定=运行时实际所读 qbase 现值向量(BEFORE INSERT 触发器强制非空)
+        with qconn.cursor() as qcur:
+            anchor = {"qbase": snapshot.collect_qbase_vector(qcur)}
         raw_rows, input_rows, v_min, v_max = view_scan_stats(qconn)
         off_cal = raw_rows - input_rows
         print(f"视图 {VIEW}: raw={raw_rows} 日历轴input={input_rows}"
@@ -241,7 +247,8 @@ def run(dry: bool):
         bid, landed = land(
             tconn, py_rows, source=f"qbase:{VIEW}∩explore_reader_calendar", hypothesis="market",
             frozen_digest=digest, holdout=holdout, view_rows=raw_rows,
-            min_date=min_date, max_date=max_date, pull_time=pull_time, note=note)
+            min_date=min_date, max_date=max_date, pull_time=pull_time, note=note,
+            source_anchor=Json(anchor))
     if landed != out_rows:
         sys.exit(f"✗ 回读行数 {landed} ≠ 预算 {out_rows}")
     print(f"✓ 落库 batch={bid} 行数={landed}(frozen_digest={digest[:12]}…)", flush=True)

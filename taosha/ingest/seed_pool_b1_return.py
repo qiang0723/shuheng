@@ -189,15 +189,15 @@ def compare(py_rows, sql_map) -> tuple[float, int]:
 
 
 def land(tconn, rows, *, source, pool_batch_id, frozen_digest, holdout, view_rows,
-         min_date, max_date, avg_n, pull_time, note) -> tuple[int, int]:
+         min_date, max_date, avg_n, pull_time, note, source_anchor) -> tuple[int, int]:
     with tconn.cursor() as cur:
         cur.execute(
             "INSERT INTO public.pool_b1_return_batch"
             "(source,pool_batch_id,compounding,frozen_digest,holdout_start,view_rows,"
-            " out_rows,min_date,max_date,avg_n_stocks,pull_time,note) "
-            "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING batch_id",
+            " out_rows,min_date,max_date,avg_n_stocks,pull_time,note,source_anchor) "
+            "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING batch_id",
             (source, pool_batch_id, COMPOUNDING, frozen_digest, holdout, view_rows,
-             len(rows), min_date, max_date, avg_n, pull_time, note))
+             len(rows), min_date, max_date, avg_n, pull_time, note, source_anchor))
         bid = cur.fetchone()[0]
         with cur.copy("COPY public.pool_b1_return(batch_id,trade_date,ret_pool_eqw,n_pool_stocks) "
                       "FROM STDIN") as cp:
@@ -221,6 +221,10 @@ def _pool_batch_id(tconn) -> int:
 
 def run(dry: bool):
     import psycopg
+    from psycopg.types.json import Json
+
+    from taosha.experiment import snapshot
+
     root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     env = load_env(os.path.join(root, ".env"))
     qdsn, tdsn = env.get("QBASE_APP_DSN"), env.get("TAOSHA_APP_DSN")
@@ -239,6 +243,10 @@ def run(dry: bool):
     print(f"  评估日 {len(pool_by_date)} 天,池宇宙(全期并集)={len(universe)} 票", flush=True)
 
     with psycopg.connect(qdsn) as qconn:
+        # 修法#3: 源锚定=运行时实际所读 qbase 现值向量 + taosha 父池批(触发器强制非空)
+        with qconn.cursor() as qcur:
+            anchor = {"qbase": snapshot.collect_qbase_vector(qcur),
+                      "taosha_parent": {"pool_b1": pool_batch}}
         view_rows, v_min, v_max = view_scan_stats(qconn, universe)
         print(f"价视图(池宇宙∩calendar): rows={view_rows} range={v_min}..{v_max}", flush=True)
         print("Path A(冻结 returns.py)逐票门控聚合中…", flush=True)
@@ -277,7 +285,8 @@ def run(dry: bool):
         bid, landed = land(
             tconn, py_rows, source=f"qbase:{VIEW}∩calendar × taosha:pool_b1_current",
             pool_batch_id=pool_batch, frozen_digest=digest, holdout=holdout, view_rows=view_rows,
-            min_date=min_date, max_date=max_date, avg_n=avg_n, pull_time=pull_time, note=note)
+            min_date=min_date, max_date=max_date, avg_n=avg_n, pull_time=pull_time, note=note,
+            source_anchor=Json(anchor))
     if landed != out_rows:
         sys.exit(f"✗ 回读行数 {landed} ≠ 预算 {out_rows}")
     print(f"✓ 落库 batch={bid} 行数={landed}(frozen_digest={digest[:12]}…,pool_batch={pool_batch})",
