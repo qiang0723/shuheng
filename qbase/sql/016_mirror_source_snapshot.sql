@@ -10,7 +10,8 @@
 -- 正向控制不弱化: 引擎不得写镜像(保留);digest 库算(保留);append-only/no-truncate 触发器
 --   不动;attestation 流程不动;源级快照仍不可被引擎当研究 manifest 消费(ViewReader fail-closed)。
 -- 回滚边界: study_snapshot_mirror_bi() 重放 014 定义。
--- 幂等: CREATE OR REPLACE。apply 身份 = qbase_app(承 014;函数属主链同)。
+-- 幂等: CREATE OR REPLACE。apply 身份 = postgres(承 014;镜像表/触发器防拆链属主,
+--   qbase_app 实测非属主被拒 must be owner——防拆对施工者同样生效,照 014 先例走属主)。
 
 CREATE OR REPLACE FUNCTION public.study_snapshot_mirror_bi() RETURNS trigger
 LANGUAGE plpgsql AS $$
