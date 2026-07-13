@@ -1,8 +1,10 @@
 """淘沙 · 台账状态机焊死自检(可信度硬化窗口 ①,常设)。
 
 职责: 以 taosha_app 身份实测台账触发器——反向(a)非法路径全拒 + 正向(b)合法流程全通。
-口径依据: docs/hardening-window-order-2026-07-12.md ①(字段变更绑定唯一合法迁移;人拍A=closure_reason 新列)。
-验收档: taosha/docs/hardening-item1-statemachine-acceptance-2026-07-12.md。
+口径依据: docs/hardening-window-order-2026-07-12.md ①(字段变更绑定唯一合法迁移;人拍A=closure_reason 新列)
+        + docs/postaudit-five-order-2026-07-13.md #4(出生态收窄仅 registered,R31/R32)。
+验收档: taosha/docs/hardening-item1-statemachine-acceptance-2026-07-12.md
+      + taosha/docs/postaudit-item4-birth-registered-acceptance-2026-07-13.md。
 
 机制: 全套用例跑在**单事务内 + 逐用例 SAVEPOINT + 末尾整体 ROLLBACK**——append-only
 触发器辖不到未提交行,自检对台账零残留(结尾断言 family 探针行数=0)。
@@ -194,6 +196,14 @@ def _suite(cur) -> None:
 
     _reject(cur, "R30 (a) DELETE 拒(append-only/权限双层任一)",
             "DELETE FROM experiment WHERE exp_id=%s", (a,))
+
+    # ── 修法#4(外审 2026-07-13): 出生即 frozen 旁路封死 ──
+    _reject(cur, "R31 (a) INSERT 出生即 frozen+frozen_at(外审#4 变体,005 曾放行)",
+            ins.format(cols=", frozen_at", vals=", now()"),
+            (FAMILY, "[探针] 出生frozen带frozen_at", "human", "full", PAP, "frozen"))
+    _reject(cur, "R32 (a) INSERT 出生即 frozen 缺 frozen_at",
+            ins.format(cols="", vals=""),
+            (FAMILY, "[探针] 出生frozen无frozen_at", "human", "full", PAP, "frozen"))
 
 
 def main() -> int:
