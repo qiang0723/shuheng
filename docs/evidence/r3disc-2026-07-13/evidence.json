@@ -1,0 +1,278 @@
+{
+ "order": "docs/postaudit-round3-disc-order-2026-07-13.md",
+ "generated_wall": "2026-07-13T21:38:10.554",
+ "iso_env": {
+  "qbase": "qbase_iso",
+  "taosha": "taosha_iso"
+ },
+ "code_tree": "/root/r3disc/quant",
+ "code_head": "669c2823a57c353e2fa4cb89dd85751437f4c6f7",
+ "watermark_discriminative": {
+  "W1_vs_8_diff_rows": [
+   [
+    "1992-10-04",
+    "1"
+   ],
+   [
+    "1993-01-03",
+    "1"
+   ],
+   [
+    "2000-01-04",
+    "0"
+   ],
+   [
+    "2015-06-15",
+    "0"
+   ],
+   [
+    "2023-06-15",
+    "0"
+   ]
+  ],
+  "W1_except_8": 5,
+  "8_except_W1": 5,
+  "W2_except_8": 5,
+  "8_except_W2": 5,
+  "old_batch9_except_8": 0,
+  "old_8_except_batch9": 0,
+  "old_batch10_except_8": 0,
+  "old_8_except_batch10": 0,
+  "open_days_pre_holdout_batch8": 8187,
+  "open_days_pre_holdout_W1": 8186
+ },
+ "counterfactual_foundation": {
+  "pinned_prices_bars_on_flip_on": {
+   "1992-10-04": 1,
+   "1993-01-03": 2
+  },
+  "note": "翻开日在钉批(快照38→trade_cal=8同源 daily/adj 批)价视图有真实 bar:若 seed 读到水印日历(此两日 is_open=1),产出必新增这些日期的行;翻关三日从水印日历消失,产出必缺行。"
+ },
+ "run1_market_return": {
+  "tag": "RUN1-mret",
+  "module": "taosha.ingest.seed_market_return",
+  "rc": 0,
+  "seed_start_db": "2026-07-13 21:30:33.056865+08:00",
+  "seed_start_wall": "2026-07-13T21:30:33.057",
+  "seed_end_db": "2026-07-13 21:34:31.736792+08:00",
+  "seed_end_wall": "2026-07-13T21:34:31.736",
+  "watermark": {
+   "wm_batch": 11,
+   "wm_rows": 13162,
+   "wm_txn_begin_db": "2026-07-13 21:32:01.927871+08:00",
+   "wm_after_commit_db": "2026-07-13 21:32:02.066382+08:00",
+   "wm_after_commit_wall": "2026-07-13T21:32:02.066",
+   "tag": "RUN1-mret"
+  },
+  "sql_recompute_phase_wall": "2026-07-13T21:33:17.536",
+  "wm_before_sql_recompute": true,
+  "landing_line": "✓ 落库 batch=64 行数=8186(frozen_digest=b88a43ef7bd8…)",
+  "log_file": "/root/r3disc/mret_seed.log",
+  "new_batch_id": 64,
+  "out_rows": 8186,
+  "min_date": "1990-12-20",
+  "max_date": "2024-06-28",
+  "frozen_digest8": "b88a43ef",
+  "anchor_trade_cal": "8",
+  "anchor_source_manifest": {
+   "digest": "4aaadb65da9d51d82d31056d38c5474d45b474d56a63835920a3402701f72643",
+   "snapshot_id": 38
+  },
+  "anchor_qbase_vector": {
+   "daily": 6,
+   "trade_cal": 8,
+   "adj_factor": 7,
+   "namechange": 7,
+   "stock_basic": 6
+  },
+  "content_newbatch_except_39": 0,
+  "content_39_except_newbatch": 0,
+  "flip_off_rows_present": [
+   [
+    "2000-01-04",
+    "0.02771499487837608",
+    "911"
+   ],
+   [
+    "2015-06-15",
+    "-0.019313055336540538",
+    "2314"
+   ],
+   [
+    "2023-06-15",
+    "0.0031658463890428144",
+    "4976"
+   ]
+  ],
+  "flip_off_equal_batch39": [
+   [
+    "2000-01-04",
+    "True"
+   ],
+   [
+    "2015-06-15",
+    "True"
+   ],
+   [
+    "2023-06-15",
+    "True"
+   ]
+  ],
+  "flip_on_rows_absent": 0
+ },
+ "run2_pool_b1_return": {
+  "tag": "RUN2-pret",
+  "module": "taosha.ingest.seed_pool_b1_return",
+  "rc": 0,
+  "seed_start_db": "2026-07-13 21:34:31.749865+08:00",
+  "seed_start_wall": "2026-07-13T21:34:31.749",
+  "seed_end_db": "2026-07-13 21:38:10.553876+08:00",
+  "seed_end_wall": "2026-07-13T21:38:10.554",
+  "watermark": {
+   "wm_batch": 12,
+   "wm_rows": 13162,
+   "wm_txn_begin_db": "2026-07-13 21:35:24.050231+08:00",
+   "wm_after_commit_db": "2026-07-13 21:35:24.175052+08:00",
+   "wm_after_commit_wall": "2026-07-13T21:35:24.175",
+   "tag": "RUN2-pret"
+  },
+  "sql_recompute_phase_wall": "2026-07-13T21:36:39.536",
+  "wm_before_sql_recompute": true,
+  "landing_line": "✓ 落库 batch=12 行数=8066(frozen_digest=b88a43ef7bd8…,pool_batch=5)",
+  "log_file": "/root/r3disc/pret_seed.log",
+  "new_batch_id": 12,
+  "batch_table_columns": [
+   "batch_id",
+   "source",
+   "pool_batch_id",
+   "compounding",
+   "frozen_digest",
+   "holdout_start",
+   "view_rows",
+   "out_rows",
+   "min_date",
+   "max_date",
+   "avg_n_stocks",
+   "pull_time",
+   "note",
+   "source_anchor"
+  ],
+  "out_rows": 8066,
+  "anchor_trade_cal": "8",
+  "anchor_source_manifest": {
+   "digest": "4aaadb65da9d51d82d31056d38c5474d45b474d56a63835920a3402701f72643",
+   "snapshot_id": 38
+  },
+  "anchor_qbase_vector": {
+   "daily": 6,
+   "trade_cal": 8,
+   "adj_factor": 7,
+   "namechange": 7,
+   "stock_basic": 6
+  },
+  "anchor_full": {
+   "qbase": {
+    "daily": 6,
+    "trade_cal": 8,
+    "adj_factor": 7,
+    "namechange": 7,
+    "stock_basic": 6
+   },
+   "taosha_parent": {
+    "pool_b1": 5
+   },
+   "source_manifest": {
+    "digest": "4aaadb65da9d51d82d31056d38c5474d45b474d56a63835920a3402701f72643",
+    "snapshot_id": 38
+   }
+  },
+  "content_newbatch_except_5": 0,
+  "content_5_except_newbatch": 0,
+  "flip_off_rows_present": [
+   [
+    "2000-01-04",
+    "0.03682450113159065",
+    "173"
+   ],
+   [
+    "2015-06-15",
+    "-0.019146449711778396",
+    "447"
+   ],
+   [
+    "2023-06-15",
+    "0.00702802740431636",
+    "973"
+   ]
+  ],
+  "flip_off_equal_batch5": [
+   [
+    "2000-01-04",
+    "True"
+   ],
+   [
+    "2015-06-15",
+    "True"
+   ],
+   [
+    "2023-06-15",
+    "True"
+   ]
+  ],
+  "flip_on_rows_absent": 0
+ },
+ "current_route_counterfactual": {
+  "max_trade_cal_batch_after_runs": 12,
+  "is_watermark": true,
+  "probe_is_open_on_max_batch": [
+   [
+    "1992-10-04",
+    "1"
+   ],
+   [
+    "1993-01-03",
+    "1"
+   ],
+   [
+    "2000-01-04",
+    "0"
+   ],
+   [
+    "2015-06-15",
+    "0"
+   ],
+   [
+    "2023-06-15",
+    "0"
+   ]
+  ],
+  "probe_is_open_on_batch8": [
+   [
+    "1992-10-04",
+    "0"
+   ],
+   [
+    "1993-01-03",
+    "0"
+   ],
+   [
+    "2000-01-04",
+    "1"
+   ],
+   [
+    "2015-06-15",
+    "1"
+   ],
+   [
+    "2023-06-15",
+    "1"
+   ]
+  ],
+  "note": "若 seed 走 current/max 批次路由(旧作废模式),读到的即水印翻转值;实测产出与批8全等、与水印矛盾=实际读取源=批8。"
+ },
+ "production_untouched": {
+  "prod_qbase_trade_cal_batches": "5,8,9,10",
+  "prod_taosha_max_batches_mret/pret": "39/5",
+  "prod_git_porcelain_lines": 0
+ }
+}

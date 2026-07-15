@@ -1,0 +1,1586 @@
+{
+ "order": "docs/postaudit-round3-disc2-order-2026-07-13.md",
+ "generated_wall": "2026-07-13T22:05:52.360",
+ "iso_env": {
+  "qbase": "qbase_iso",
+  "taosha": "taosha_iso"
+ },
+ "code_tree": "/root/r3disc/quant",
+ "code_head": "8b538e4989c59f4c37c79e7a3f1d2764a2a1043a",
+ "watermark_discriminative": {
+  "W3_except_8": 5,
+  "8_except_W3": 5,
+  "W4_except_8": 5,
+  "8_except_W4": 5
+ },
+ "count_query_discriminative": {
+  "v1_mret_raw_input": [
+   "15099014",
+   "15099011"
+  ],
+  "v2_mret_raw_input": [
+   "15099014",
+   "15099011"
+  ],
+  "v1_pret_view_rows": "14349440",
+  "v2_pret_view_rows": "14349440",
+  "mret_equal": true,
+  "pret_equal": true
+ },
+ "run1_market_return": {
+  "tag": "RUN3-mret",
+  "module": "taosha.ingest.seed_market_return",
+  "rc": 0,
+  "pre_run_max_trade_cal_batch": 12,
+  "pre_run_max_batch_probe_is_open": [
+   [
+    "1992-10-04",
+    "1"
+   ],
+   [
+    "1993-01-03",
+    "1"
+   ],
+   [
+    "2000-01-04",
+    "0"
+   ],
+   [
+    "2015-06-15",
+    "0"
+   ],
+   [
+    "2023-06-15",
+    "0"
+   ]
+  ],
+  "seed_start_db": "2026-07-13T21:58:03.634",
+  "seed_finish_db": "2026-07-13T22:02:14.324",
+  "watermark": {
+   "wm_batch": 13,
+   "wm_rows": 13162,
+   "wm_txn_begin_db": "2026-07-13T21:58:03.750",
+   "wm_commit_db": "2026-07-13T21:58:03.837",
+   "wm_commit_wall": "2026-07-13T21:58:03.837",
+   "tag": "RUN3-mret"
+  },
+  "ordering": {
+   "T_anchor": "2026-07-13T21:58:03.743",
+   "T_watermark_commit_db": "2026-07-13T21:58:03.837",
+   "T_watermark_commit_wall": "2026-07-13T21:58:03.837",
+   "T_main_select_lower_bound_phase_print": "2026-07-13T21:59:41.319",
+   "T_main_select_start_pg_query_start": "2026-07-13T21:59:41.335",
+   "T_finish_db": "2026-07-13T22:02:14.324",
+   "strict_1_anchor_lt_wm": true,
+   "strict_2_wm_lt_main_phase_print": true,
+   "strict_2b_wm_lt_main_pg_query_start": true,
+   "strict_3_main_lt_finish": true,
+   "margin_wm_to_main_seconds": 97.497809,
+   "clock_note": "seed/PostgreSQL/编排同宿主机同时钟;wall=进程钟,db=clock_timestamp()"
+  },
+  "main_statements_observed": [
+   {
+    "pid": 135004,
+    "query_start_db": "2026-07-13T21:59:41.335",
+    "query": "FETCH FORWARD 100000 FROM \"mkt_prices_stream\"",
+    "first_seen": "2026-07-13T21:59:41.373"
+   },
+   {
+    "pid": 135004,
+    "query_start_db": "2026-07-13T22:00:40.476",
+    "query": "FETCH FORWARD 100000 FROM \"mkt_prices_stream\"",
+    "first_seen": "2026-07-13T22:00:40.484"
+   },
+   {
+    "pid": 135004,
+    "query_start_db": "2026-07-13T22:00:40.586",
+    "query": "FETCH FORWARD 100000 FROM \"mkt_prices_stream\"",
+    "first_seen": "2026-07-13T22:00:40.604"
+   },
+   {
+    "pid": 135004,
+    "query_start_db": "2026-07-13T22:00:42.170",
+    "query": "FETCH FORWARD 100000 FROM \"mkt_prices_stream\"",
+    "first_seen": "2026-07-13T22:00:42.171"
+   },
+   {
+    "pid": 135004,
+    "query_start_db": "2026-07-13T22:00:42.400",
+    "query": "FETCH FORWARD 100000 FROM \"mkt_prices_stream\"",
+    "first_seen": "2026-07-13T22:00:42.412"
+   },
+   {
+    "pid": 135004,
+    "query_start_db": "2026-07-13T22:00:42.528",
+    "query": "FETCH FORWARD 100000 FROM \"mkt_prices_stream\"",
+    "first_seen": "2026-07-13T22:00:42.533"
+   }
+  ],
+  "activity_sample_all": [
+   {
+    "pid": 135004,
+    "query_start_db": "2026-07-13T21:58:03.743",
+    "query": "SELECT count(*) FROM explore_reader_prices_snap",
+    "first_seen": "2026-07-13T21:58:03.767"
+   },
+   {
+    "pid": 135005,
+    "query_start_db": "2026-07-13T21:58:03.758",
+    "query": "INSERT INTO trade_cal_snap (batch_id, exchange, cal_date, is_open, pretrade_date, valid_time) SELECT",
+    "first_seen": "2026-07-13T21:58:03.767"
+   },
+   {
+    "pid": 135004,
+    "query_start_db": "2026-07-13T21:58:52.277",
+    "query": "SELECT count(*), min(trade_date), max(trade_date) FROM (SELECT p.ts_code, p.trade_date, p.close FROM",
+    "first_seen": "2026-07-13T21:58:52.390"
+   },
+   {
+    "pid": 135004,
+    "query_start_db": "2026-07-13T21:59:41.335",
+    "query": "FETCH FORWARD 100000 FROM \"mkt_prices_stream\"",
+    "first_seen": "2026-07-13T21:59:41.373"
+   },
+   {
+    "pid": 135004,
+    "query_start_db": "2026-07-13T22:00:40.476",
+    "query": "FETCH FORWARD 100000 FROM \"mkt_prices_stream\"",
+    "first_seen": "2026-07-13T22:00:40.484"
+   },
+   {
+    "pid": 135004,
+    "query_start_db": "2026-07-13T22:00:40.586",
+    "query": "FETCH FORWARD 100000 FROM \"mkt_prices_stream\"",
+    "first_seen": "2026-07-13T22:00:40.604"
+   },
+   {
+    "pid": 135004,
+    "query_start_db": "2026-07-13T22:00:42.170",
+    "query": "FETCH FORWARD 100000 FROM \"mkt_prices_stream\"",
+    "first_seen": "2026-07-13T22:00:42.171"
+   },
+   {
+    "pid": 135004,
+    "query_start_db": "2026-07-13T22:00:42.400",
+    "query": "FETCH FORWARD 100000 FROM \"mkt_prices_stream\"",
+    "first_seen": "2026-07-13T22:00:42.412"
+   },
+   {
+    "pid": 135004,
+    "query_start_db": "2026-07-13T22:00:42.528",
+    "query": "FETCH FORWARD 100000 FROM \"mkt_prices_stream\"",
+    "first_seen": "2026-07-13T22:00:42.533"
+   },
+   {
+    "pid": 135004,
+    "query_start_db": "2026-07-13T22:00:42.633",
+    "query": "FETCH FORWARD 100000 FROM \"mkt_prices_stream\"",
+    "first_seen": "2026-07-13T22:00:42.653"
+   },
+   {
+    "pid": 135004,
+    "query_start_db": "2026-07-13T22:00:43.479",
+    "query": "FETCH FORWARD 100000 FROM \"mkt_prices_stream\"",
+    "first_seen": "2026-07-13T22:00:43.497"
+   },
+   {
+    "pid": 135004,
+    "query_start_db": "2026-07-13T22:00:44.206",
+    "query": "FETCH FORWARD 100000 FROM \"mkt_prices_stream\"",
+    "first_seen": "2026-07-13T22:00:44.220"
+   },
+   {
+    "pid": 135004,
+    "query_start_db": "2026-07-13T22:00:44.819",
+    "query": "FETCH FORWARD 100000 FROM \"mkt_prices_stream\"",
+    "first_seen": "2026-07-13T22:00:44.823"
+   },
+   {
+    "pid": 135004,
+    "query_start_db": "2026-07-13T22:00:44.921",
+    "query": "FETCH FORWARD 100000 FROM \"mkt_prices_stream\"",
+    "first_seen": "2026-07-13T22:00:44.943"
+   },
+   {
+    "pid": 135004,
+    "query_start_db": "2026-07-13T22:00:45.544",
+    "query": "FETCH FORWARD 100000 FROM \"mkt_prices_stream\"",
+    "first_seen": "2026-07-13T22:00:45.546"
+   },
+   {
+    "pid": 135004,
+    "query_start_db": "2026-07-13T22:00:45.648",
+    "query": "FETCH FORWARD 100000 FROM \"mkt_prices_stream\"",
+    "first_seen": "2026-07-13T22:00:45.666"
+   },
+   {
+    "pid": 135004,
+    "query_start_db": "2026-07-13T22:00:46.263",
+    "query": "FETCH FORWARD 100000 FROM \"mkt_prices_stream\"",
+    "first_seen": "2026-07-13T22:00:46.269"
+   },
+   {
+    "pid": 135004,
+    "query_start_db": "2026-07-13T22:00:46.367",
+    "query": "FETCH FORWARD 100000 FROM \"mkt_prices_stream\"",
+    "first_seen": "2026-07-13T22:00:46.390"
+   },
+   {
+    "pid": 135004,
+    "query_start_db": "2026-07-13T22:00:46.985",
+    "query": "FETCH FORWARD 100000 FROM \"mkt_prices_stream\"",
+    "first_seen": "2026-07-13T22:00:46.992"
+   },
+   {
+    "pid": 135004,
+    "query_start_db": "2026-07-13T22:00:47.090",
+    "query": "FETCH FORWARD 100000 FROM \"mkt_prices_stream\"",
+    "first_seen": "2026-07-13T22:00:47.113"
+   },
+   {
+    "pid": 135004,
+    "query_start_db": "2026-07-13T22:00:47.705",
+    "query": "FETCH FORWARD 100000 FROM \"mkt_prices_stream\"",
+    "first_seen": "2026-07-13T22:00:47.715"
+   },
+   {
+    "pid": 135004,
+    "query_start_db": "2026-07-13T22:00:48.674",
+    "query": "FETCH FORWARD 100000 FROM \"mkt_prices_stream\"",
+    "first_seen": "2026-07-13T22:00:48.679"
+   },
+   {
+    "pid": 135004,
+    "query_start_db": "2026-07-13T22:00:48.795",
+    "query": "FETCH FORWARD 100000 FROM \"mkt_prices_stream\"",
+    "first_seen": "2026-07-13T22:00:48.800"
+   },
+   {
+    "pid": 135004,
+    "query_start_db": "2026-07-13T22:00:49.628",
+    "query": "FETCH FORWARD 100000 FROM \"mkt_prices_stream\"",
+    "first_seen": "2026-07-13T22:00:49.643"
+   },
+   {
+    "pid": 135004,
+    "query_start_db": "2026-07-13T22:00:50.242",
+    "query": "FETCH FORWARD 100000 FROM \"mkt_prices_stream\"",
+    "first_seen": "2026-07-13T22:00:50.246"
+   },
+   {
+    "pid": 135004,
+    "query_start_db": "2026-07-13T22:00:50.347",
+    "query": "FETCH FORWARD 100000 FROM \"mkt_prices_stream\"",
+    "first_seen": "2026-07-13T22:00:50.366"
+   },
+   {
+    "pid": 135004,
+    "query_start_db": "2026-07-13T22:00:50.965",
+    "query": "FETCH FORWARD 100000 FROM \"mkt_prices_stream\"",
+    "first_seen": "2026-07-13T22:00:50.969"
+   },
+   {
+    "pid": 135004,
+    "query_start_db": "2026-07-13T22:00:51.066",
+    "query": "FETCH FORWARD 100000 FROM \"mkt_prices_stream\"",
+    "first_seen": "2026-07-13T22:00:51.089"
+   },
+   {
+    "pid": 135004,
+    "query_start_db": "2026-07-13T22:00:51.680",
+    "query": "FETCH FORWARD 100000 FROM \"mkt_prices_stream\"",
+    "first_seen": "2026-07-13T22:00:51.692"
+   },
+   {
+    "pid": 135004,
+    "query_start_db": "2026-07-13T22:00:52.403",
+    "query": "FETCH FORWARD 100000 FROM \"mkt_prices_stream\"",
+    "first_seen": "2026-07-13T22:00:52.415"
+   },
+   {
+    "pid": 135004,
+    "query_start_db": "2026-07-13T22:00:53.122",
+    "query": "FETCH FORWARD 100000 FROM \"mkt_prices_stream\"",
+    "first_seen": "2026-07-13T22:00:53.138"
+   },
+   {
+    "pid": 135004,
+    "query_start_db": "2026-07-13T22:00:53.846",
+    "query": "FETCH FORWARD 100000 FROM \"mkt_prices_stream\"",
+    "first_seen": "2026-07-13T22:00:53.861"
+   },
+   {
+    "pid": 135004,
+    "query_start_db": "2026-07-13T22:00:53.957",
+    "query": "FETCH FORWARD 100000 FROM \"mkt_prices_stream\"",
+    "first_seen": "2026-07-13T22:00:53.982"
+   },
+   {
+    "pid": 135004,
+    "query_start_db": "2026-07-13T22:00:54.694",
+    "query": "FETCH FORWARD 100000 FROM \"mkt_prices_stream\"",
+    "first_seen": "2026-07-13T22:00:54.705"
+   },
+   {
+    "pid": 135004,
+    "query_start_db": "2026-07-13T22:00:54.816",
+    "query": "FETCH FORWARD 100000 FROM \"mkt_prices_stream\"",
+    "first_seen": "2026-07-13T22:00:54.825"
+   },
+   {
+    "pid": 135004,
+    "query_start_db": "2026-07-13T22:00:55.351",
+    "query": "CLOSE \"mkt_prices_stream\"",
+    "first_seen": "2026-07-13T22:00:55.428"
+   },
+   {
+    "pid": 135004,
+    "query_start_db": "2026-07-13T22:00:55.550",
+    "query": "SELECT trade_date, avg(ret), count(ret) FROM (  SELECT trade_date, ln(close / lag(close) OVER       ",
+    "first_seen": "2026-07-13T22:00:55.669"
+   }
+  ],
+  "landing_line": "✓ 落库 batch=65 行数=8186(frozen_digest=b88a43ef7bd8…)",
+  "log_file": "/root/r3disc/mret_seed2.log",
+  "new_batch_id": 65,
+  "out_rows": 8186,
+  "anchor_trade_cal": "8",
+  "anchor_source_manifest": {
+   "digest": "4aaadb65da9d51d82d31056d38c5474d45b474d56a63835920a3402701f72643",
+   "snapshot_id": 38
+  },
+  "anchor_qbase_vector": {
+   "daily": 6,
+   "trade_cal": 8,
+   "adj_factor": 7,
+   "namechange": 7,
+   "stock_basic": 6
+  },
+  "content_newbatch_except_39": 0,
+  "content_39_except_newbatch": 0,
+  "flip_off_rows_present": [
+   [
+    "2000-01-04",
+    "0.02771499487837608",
+    "911"
+   ],
+   [
+    "2015-06-15",
+    "-0.019313055336540538",
+    "2314"
+   ],
+   [
+    "2023-06-15",
+    "0.0031658463890428144",
+    "4976"
+   ]
+  ],
+  "flip_on_rows_absent": 0
+ },
+ "run2_pool_b1_return": {
+  "tag": "RUN4-pret",
+  "module": "taosha.ingest.seed_pool_b1_return",
+  "rc": 0,
+  "pre_run_max_trade_cal_batch": 13,
+  "pre_run_max_batch_probe_is_open": [
+   [
+    "1992-10-04",
+    "1"
+   ],
+   [
+    "1993-01-03",
+    "1"
+   ],
+   [
+    "2000-01-04",
+    "0"
+   ],
+   [
+    "2015-06-15",
+    "0"
+   ],
+   [
+    "2023-06-15",
+    "0"
+   ]
+  ],
+  "seed_start_db": "2026-07-13T22:02:14.391",
+  "seed_finish_db": "2026-07-13T22:05:52.359",
+  "watermark": {
+   "wm_batch": 14,
+   "wm_rows": 13162,
+   "wm_txn_begin_db": "2026-07-13T22:02:17.364",
+   "wm_commit_db": "2026-07-13T22:02:17.455",
+   "wm_commit_wall": "2026-07-13T22:02:17.455",
+   "tag": "RUN4-pret"
+  },
+  "ordering": {
+   "T_anchor": "2026-07-13T22:02:17.357",
+   "T_watermark_commit_db": "2026-07-13T22:02:17.455",
+   "T_watermark_commit_wall": "2026-07-13T22:02:17.455",
+   "T_main_select_lower_bound_phase_print": "2026-07-13T22:03:04.338",
+   "T_main_select_start_pg_query_start": "2026-07-13T22:03:04.344",
+   "T_finish_db": "2026-07-13T22:05:52.359",
+   "strict_1_anchor_lt_wm": true,
+   "strict_2_wm_lt_main_phase_print": true,
+   "strict_2b_wm_lt_main_pg_query_start": true,
+   "strict_3_main_lt_finish": true,
+   "margin_wm_to_main_seconds": 46.888067,
+   "clock_note": "seed/PostgreSQL/编排同宿主机同时钟;wall=进程钟,db=clock_timestamp()"
+  },
+  "main_statements_observed": [
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:03:04.344",
+    "query": "DECLARE \"pool_prices_stream\" CURSOR FOR SELECT ts_code, trade_date, close FROM (SELECT p.ts_code, p.trade_date, p.close FROM explore_reader_prices_snap p JOIN e",
+    "first_seen": "2026-07-13T22:03:04.362"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:03:04.459",
+    "query": "FETCH FORWARD 100000 FROM \"pool_prices_stream\"",
+    "first_seen": "2026-07-13T22:03:04.482"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:04:04.299",
+    "query": "FETCH FORWARD 100000 FROM \"pool_prices_stream\"",
+    "first_seen": "2026-07-13T22:04:04.308"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:04:04.409",
+    "query": "FETCH FORWARD 100000 FROM \"pool_prices_stream\"",
+    "first_seen": "2026-07-13T22:04:04.428"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:04:05.011",
+    "query": "FETCH FORWARD 100000 FROM \"pool_prices_stream\"",
+    "first_seen": "2026-07-13T22:04:05.031"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:04:05.257",
+    "query": "FETCH FORWARD 100000 FROM \"pool_prices_stream\"",
+    "first_seen": "2026-07-13T22:04:05.272"
+   }
+  ],
+  "activity_sample_all": [
+   {
+    "pid": 135201,
+    "query_start_db": "2026-07-13T22:02:17.371",
+    "query": "INSERT INTO trade_cal_snap (batch_id, exchange, cal_date, is_open, pretrade_date, valid_time) SELECT",
+    "first_seen": "2026-07-13T22:02:17.422"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:02:17.413",
+    "query": "SELECT count(*), min(trade_date), max(trade_date) FROM (SELECT p.ts_code, p.trade_date, p.close FROM",
+    "first_seen": "2026-07-13T22:02:17.422"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:03:04.344",
+    "query": "DECLARE \"pool_prices_stream\" CURSOR FOR SELECT ts_code, trade_date, close FROM (SELECT p.ts_code, p.",
+    "first_seen": "2026-07-13T22:03:04.362"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:03:04.459",
+    "query": "FETCH FORWARD 100000 FROM \"pool_prices_stream\"",
+    "first_seen": "2026-07-13T22:03:04.482"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:04:04.299",
+    "query": "FETCH FORWARD 100000 FROM \"pool_prices_stream\"",
+    "first_seen": "2026-07-13T22:04:04.308"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:04:04.409",
+    "query": "FETCH FORWARD 100000 FROM \"pool_prices_stream\"",
+    "first_seen": "2026-07-13T22:04:04.428"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:04:05.011",
+    "query": "FETCH FORWARD 100000 FROM \"pool_prices_stream\"",
+    "first_seen": "2026-07-13T22:04:05.031"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:04:05.257",
+    "query": "FETCH FORWARD 100000 FROM \"pool_prices_stream\"",
+    "first_seen": "2026-07-13T22:04:05.272"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:04:05.501",
+    "query": "FETCH FORWARD 100000 FROM \"pool_prices_stream\"",
+    "first_seen": "2026-07-13T22:04:05.513"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:04:05.742",
+    "query": "FETCH FORWARD 100000 FROM \"pool_prices_stream\"",
+    "first_seen": "2026-07-13T22:04:05.754"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:04:05.980",
+    "query": "FETCH FORWARD 100000 FROM \"pool_prices_stream\"",
+    "first_seen": "2026-07-13T22:04:05.995"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:04:06.222",
+    "query": "FETCH FORWARD 100000 FROM \"pool_prices_stream\"",
+    "first_seen": "2026-07-13T22:04:06.236"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:04:06.461",
+    "query": "FETCH FORWARD 100000 FROM \"pool_prices_stream\"",
+    "first_seen": "2026-07-13T22:04:06.477"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:04:07.674",
+    "query": "FETCH FORWARD 100000 FROM \"pool_prices_stream\"",
+    "first_seen": "2026-07-13T22:04:07.682"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:04:07.787",
+    "query": "FETCH FORWARD 100000 FROM \"pool_prices_stream\"",
+    "first_seen": "2026-07-13T22:04:07.803"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:04:09.003",
+    "query": "FETCH FORWARD 100000 FROM \"pool_prices_stream\"",
+    "first_seen": "2026-07-13T22:04:09.008"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:04:09.114",
+    "query": "FETCH FORWARD 100000 FROM \"pool_prices_stream\"",
+    "first_seen": "2026-07-13T22:04:09.128"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:04:09.225",
+    "query": "FETCH FORWARD 100000 FROM \"pool_prices_stream\"",
+    "first_seen": "2026-07-13T22:04:09.249"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:04:10.566",
+    "query": "FETCH FORWARD 100000 FROM \"pool_prices_stream\"",
+    "first_seen": "2026-07-13T22:04:10.575"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:04:10.675",
+    "query": "FETCH FORWARD 100000 FROM \"pool_prices_stream\"",
+    "first_seen": "2026-07-13T22:04:10.695"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:04:12.020",
+    "query": "FETCH FORWARD 100000 FROM \"pool_prices_stream\"",
+    "first_seen": "2026-07-13T22:04:12.021"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:04:12.132",
+    "query": "FETCH FORWARD 100000 FROM \"pool_prices_stream\"",
+    "first_seen": "2026-07-13T22:04:12.142"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:04:12.381",
+    "query": "FETCH FORWARD 100000 FROM \"pool_prices_stream\"",
+    "first_seen": "2026-07-13T22:04:12.383"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:04:14.907",
+    "query": "FETCH FORWARD 100000 FROM \"pool_prices_stream\"",
+    "first_seen": "2026-07-13T22:04:14.913"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:04:15.021",
+    "query": "FETCH FORWARD 100000 FROM \"pool_prices_stream\"",
+    "first_seen": "2026-07-13T22:04:15.034"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:04:15.133",
+    "query": "FETCH FORWARD 100000 FROM \"pool_prices_stream\"",
+    "first_seen": "2026-07-13T22:04:15.155"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:04:17.435",
+    "query": "FETCH FORWARD 100000 FROM \"pool_prices_stream\"",
+    "first_seen": "2026-07-13T22:04:17.444"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:04:17.547",
+    "query": "FETCH FORWARD 100000 FROM \"pool_prices_stream\"",
+    "first_seen": "2026-07-13T22:04:17.565"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:04:18.383",
+    "query": "CLOSE \"pool_prices_stream\"",
+    "first_seen": "2026-07-13T22:04:18.408"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:04:18.999",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:04:19.011"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:17.946",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:17.988"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:18.194",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:18.229"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:18.440",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:18.470"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:18.695",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:18.711"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:18.949",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:18.951"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:19.190",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:19.192"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:19.436",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:19.554"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:19.748",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:19.795"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:19.979",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:20.036"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:20.212",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:20.277"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:20.445",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:20.518"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:20.704",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:20.759"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:20.927",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:21.000"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:21.190",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:21.241"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:21.420",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:21.482"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:21.676",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:21.723"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:21.902",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:21.964"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:22.158",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:22.205"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:22.386",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:22.446"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:22.643",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:22.687"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:22.873",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:22.928"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:23.130",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:23.169"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:23.358",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:23.410"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:23.616",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:23.651"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:23.839",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:23.892"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:24.093",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:24.133"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:24.325",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:24.374"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:24.558",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:24.615"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:24.789",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:24.856"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:25.024",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:25.097"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:25.255",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:25.338"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:25.487",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:25.579"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:25.718",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:25.820"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:25.948",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:26.061"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:26.178",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:26.182"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:26.415",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:26.423"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:26.653",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:26.664"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:26.886",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:26.905"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:27.115",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:27.146"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:27.351",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:27.387"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:27.580",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:27.628"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:27.809",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:27.869"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:28.039",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:28.110"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:28.268",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:28.351"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:28.497",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:28.592"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:28.731",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:28.833"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:28.960",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:29.074"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:29.192",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:29.194"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:29.420",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:29.435"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:29.645",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:29.677"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:29.872",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:29.918"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:30.105",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:30.159"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:30.334",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:30.400"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:30.566",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:30.641"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:30.795",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:30.882"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:31.022",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:31.123"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:31.255",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:31.364"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:31.492",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:31.605"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:31.729",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:31.846"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:31.966",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:31.967"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:32.201",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:32.208"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:32.435",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:32.449"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:32.667",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:32.690"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:32.899",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:32.931"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:33.128",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:33.172"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:33.360",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:33.413"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:33.589",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:33.654"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:33.820",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:33.895"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:34.052",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:34.136"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:34.290",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:34.377"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:34.523",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:34.618"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:34.827",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:34.859"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:35.051",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:35.100"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:35.277",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:35.341"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:35.503",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:35.582"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:35.761",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:35.823"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:35.991",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:36.064"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:36.250",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:36.305"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:36.482",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:36.545"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:36.758",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:36.786"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:37.002",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:37.027"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:37.266",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:37.268"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:37.497",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:37.509"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:37.753",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:37.871"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:37.993",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:38.112"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:38.255",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:38.353"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:38.489",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:38.594"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:38.749",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:38.835"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:38.979",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:39.076"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:39.236",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:39.317"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:39.469",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:39.559"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:39.712",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:39.800"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:39.955",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:40.041"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:40.186",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:40.282"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:40.427",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:40.523"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:40.668",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:40.764"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:40.904",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:41.005"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:41.139",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:41.246"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:41.377",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:41.487"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:41.614",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:41.728"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:41.849",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:41.969"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:42.086",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:42.089"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:42.320",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:42.330"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:42.554",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:42.571"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:42.781",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:42.812"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:43.019",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:43.053"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:43.252",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:43.294"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:43.480",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:43.535"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:43.719",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:43.776"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:43.956",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:44.017"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:44.187",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:44.258"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:44.419",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:44.499"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:44.650",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:44.740"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:44.883",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:44.981"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:45.111",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:45.222"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:45.344",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:45.463"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:45.575",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:45.584"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:45.808",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:45.824"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:46.044",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:46.065"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:46.285",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:46.306"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:46.513",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:46.547"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:46.749",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:46.788"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:46.983",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:47.029"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:47.215",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:47.270"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:47.452",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:47.511"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:47.685",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:47.752"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:47.918",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:47.993"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:48.154",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:48.234"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:48.398",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:48.476"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:48.639",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:48.717"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:48.883",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:48.958"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:49.131",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:49.199"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:49.379",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:49.439"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:49.605",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:49.680"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:49.831",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:49.922"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:50.131",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:50.163"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:50.353",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:50.404"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:50.580",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:50.645"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:50.801",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:50.886"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:51.047",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:51.127"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:51.265",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:51.368"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:51.517",
+    "query": "FETCH FORWARD 100000 FROM \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:51.609"
+   },
+   {
+    "pid": 135200,
+    "query_start_db": "2026-07-13T22:05:51.877",
+    "query": "CLOSE \"pool_sql_stream\"",
+    "first_seen": "2026-07-13T22:05:51.971"
+   }
+  ],
+  "landing_line": "✓ 落库 batch=13 行数=8066(frozen_digest=b88a43ef7bd8…,pool_batch=5)",
+  "log_file": "/root/r3disc/pret_seed2.log",
+  "new_batch_id": 13,
+  "out_rows": 8066,
+  "anchor_trade_cal": "8",
+  "anchor_source_manifest": {
+   "digest": "4aaadb65da9d51d82d31056d38c5474d45b474d56a63835920a3402701f72643",
+   "snapshot_id": 38
+  },
+  "anchor_full": {
+   "qbase": {
+    "daily": 6,
+    "trade_cal": 8,
+    "adj_factor": 7,
+    "namechange": 7,
+    "stock_basic": 6
+   },
+   "taosha_parent": {
+    "pool_b1": 5
+   },
+   "source_manifest": {
+    "digest": "4aaadb65da9d51d82d31056d38c5474d45b474d56a63835920a3402701f72643",
+    "snapshot_id": 38
+   }
+  },
+  "content_newbatch_except_5": 0,
+  "content_5_except_newbatch": 0,
+  "flip_off_rows_present": [
+   [
+    "2000-01-04",
+    "0.03682450113159065",
+    "173"
+   ],
+   [
+    "2015-06-15",
+    "-0.019146449711778396",
+    "447"
+   ],
+   [
+    "2023-06-15",
+    "0.00702802740431636",
+    "973"
+   ]
+  ],
+  "flip_on_rows_absent": 0
+ },
+ "current_route_counterfactual": {
+  "max_trade_cal_batch_after_runs": 14,
+  "is_watermark": true,
+  "probe_is_open_on_max_batch": [
+   [
+    "1992-10-04",
+    "1"
+   ],
+   [
+    "1993-01-03",
+    "1"
+   ],
+   [
+    "2000-01-04",
+    "0"
+   ],
+   [
+    "2015-06-15",
+    "0"
+   ],
+   [
+    "2023-06-15",
+    "0"
+   ]
+  ]
+ },
+ "production_untouched": {
+  "prod_qbase_trade_cal_batches": "5,8,9,10",
+  "prod_taosha_max_batches_mret/pret": "39/5",
+  "prod_git_porcelain_lines": 0
+ }
+}
