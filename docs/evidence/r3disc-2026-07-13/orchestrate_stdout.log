@@ -1,0 +1,11 @@
+2026-07-13T21:30:33.047 == 判别力并发补测开始(隔离环境 qbase_iso/taosha_iso)==
+2026-07-13T21:30:33.057 RUN1-mret: 启动 taosha.ingest.seed_market_return(--source-snapshot-id 38)
+2026-07-13T21:32:02.068 RUN1-mret: 水印批 11 已提交(13162 行) commit≈2026-07-13 21:32:02.066382+08:00
+2026-07-13T21:34:31.737 RUN1-mret: seed 退出 rc=0;SQL复算相位起点=2026-07-13T21:33:17.536;✓ 落库 batch=64 行数=8186(frozen_digest=b88a43ef7bd8…)
+2026-07-13T21:34:31.749 RUN2-pret: 启动 taosha.ingest.seed_pool_b1_return(--source-snapshot-id 38)
+2026-07-13T21:35:24.177 RUN2-pret: 水印批 12 已提交(13162 行) commit≈2026-07-13 21:35:24.175052+08:00
+2026-07-13T21:38:10.554 RUN2-pret: seed 退出 rc=0;SQL复算相位起点=2026-07-13T21:36:39.536;✓ 落库 batch=12 行数=8066(frozen_digest=b88a43ef7bd8…,pool_batch=5)
+2026-07-13T21:38:14.466 == 证据已写 /root/r3disc/evidence.json ==
+2026-07-13T21:38:14.466 R1: batch=64 rows=8186 anchor_tc=8 except39=0/0 flip_on_absent=0
+2026-07-13T21:38:14.466 R2: batch=12 rows=8066 anchor_tc=8 except5=0/0 flip_on_absent=0
+2026-07-13T21:38:14.466 == 全部完成 ==

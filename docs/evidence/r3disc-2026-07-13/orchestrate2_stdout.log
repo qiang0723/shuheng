@@ -1,0 +1,11 @@
+2026-07-13T21:58:03.622 == 判别力并发补测 v2(时序修正)开始 ==
+2026-07-13T21:58:03.634 RUN3-mret: 启动 taosha.ingest.seed_market_return(--source-snapshot-id 38);跑前 max(trade_cal)=12(水印内容)
+2026-07-13T21:58:03.839 RUN3-mret: 锚读完成 2026-07-13T21:58:03.743 → 水印批 13 commit 2026-07-13T21:58:03.837(13162 行)
+2026-07-13T22:02:14.325 RUN3-mret: rc=0;✓ 落库 batch=65 行数=8186(frozen_digest=b88a43ef7bd8…);主读 query_start=2026-07-13T21:59:41.335(水印后 97.497809s)
+2026-07-13T22:02:14.391 RUN4-pret: 启动 taosha.ingest.seed_pool_b1_return(--source-snapshot-id 38);跑前 max(trade_cal)=13(水印内容)
+2026-07-13T22:02:17.458 RUN4-pret: 锚读完成 2026-07-13T22:02:17.357 → 水印批 14 commit 2026-07-13T22:02:17.455(13162 行)
+2026-07-13T22:05:52.360 RUN4-pret: rc=0;✓ 落库 batch=13 行数=8066(frozen_digest=b88a43ef7bd8…,pool_batch=5);主读 query_start=2026-07-13T22:03:04.344(水印后 46.888067s)
+2026-07-13T22:05:52.598 == 证据已写 /root/r3disc/evidence2.json ==
+2026-07-13T22:05:52.598 RUN3-mret: batch=65 rows=8186 anchor_tc=8 序=True/True/True/True 余量=97.497809s
+2026-07-13T22:05:52.598 RUN4-pret: batch=13 rows=8066 anchor_tc=8 序=True/True/True/True 余量=46.888067s
+2026-07-13T22:05:52.598 == 全部完成 ==
