@@ -95,7 +95,21 @@ _LAYER_LABEL = {"good": "预喜", "bad": "预亏", "turnaround": "扭亏"}
 _LAYER_ORDER = {"good": 0, "预喜": 0, "bad": 1, "预亏": 1, "turnaround": 2, "扭亏": 2}
 
 
-def _stats_for_subset(sub: list, main_len: int, robust_len: int, alpha: float) -> dict:
+def _secondary_car(ses: list, aar: list, secondary_lens: tuple, rho_bar) -> dict:
+    """预注册次级报告窗块(人裁 2026-07-15 三窗判点①:检验窗>2 时中间窗完整产出,不参与判决)。
+    与 main/robust 同一 compute 原语(caar/naive_t/_car_test)→ "真实计算"而非字段占位;
+    secondary_lens 为空(两窗 pap,#4/#2b/合成)→ 调用方不产出此键,既有 result 逐字节不变。"""
+    return {
+        "note": "预注册次级报告窗(人裁 2026-07-15):完整产出、不参与判决,不得据三窗结果择优改判。",
+        "windows": [{"taus": f"[0,+{L-1}]",
+                     "caar": sum(a for a in aar[:L] if a is not None),
+                     "naive_t": _naive_t([se.event_abnormal for se in ses], L),
+                     **_car_test(ses, L, rho_bar)} for L in secondary_lens],
+    }
+
+
+def _stats_for_subset(sub: list, main_len: int, robust_len: int, alpha: float,
+                      secondary_lens: tuple = ()) -> dict:
     """对一子集(某层)跑与 combined 同一流水线(per_tau/主稳健窗 CAR/三法/verdict/n_eff_rho)。
     复用 combined 同一 compute 原语、同一顺序 → 层内结果与"若单独喂该层"一致。纯读取,不改 pap。"""
     ses = [v[0] for v in sub]
@@ -125,6 +139,8 @@ def _stats_for_subset(sub: list, main_len: int, robust_len: int, alpha: float) -
                               "naive_t": _naive_t([se.event_abnormal for se in ses], robust_len),
                               **_car_test(ses, robust_len, rho["rho_bar"])},
         }
+        if secondary_lens:
+            car["secondary_windows"] = _secondary_car(ses, aar, secondary_lens, rho["rho_bar"])
         robustness = {
             "corrado_rank": corrado_rank(rank_secs, main_len, robust_len),
             "calendar_time": calendar_time(cal_evs, main_len, robust_len),
@@ -136,7 +152,8 @@ def _stats_for_subset(sub: list, main_len: int, robust_len: int, alpha: float) -
             "verdict": verdict, "verdict_note": verdict_note}
 
 
-def _type_strata(valid_events: list, main_len: int, robust_len: int, alpha: float) -> dict:
+def _type_strata(valid_events: list, main_len: int, robust_len: int, alpha: float,
+                 secondary_lens: tuple = ()) -> dict:
     """三层分解(预喜/预亏/扭亏;pap layers/event_def 冻结定义)。预喜(期望+漂移)与预亏(期望-漂移)
     方向相反,合并池化可相互抵消→合并 verdict 不可读作各层均无漂移;分层是冻结定义核心。
     层外(不确定/其他)已在 explore_reader_events 视图排除;若仍现意外层,如实上报不静默。"""
@@ -147,7 +164,7 @@ def _type_strata(valid_events: list, main_len: int, robust_len: int, alpha: floa
                    "预喜+漂移 vs 预亏-漂移方向相反,合并结果可抵消,不可读作各层均无漂移。",
            "n_valid_sum": sum(len(g) for g in groups.values()), "layers": {}}
     for lay in sorted(groups, key=lambda k: (_LAYER_ORDER.get(k, 9), k)):
-        blk = _stats_for_subset(groups[lay], main_len, robust_len, alpha)
+        blk = _stats_for_subset(groups[lay], main_len, robust_len, alpha, secondary_lens)
         blk["layer_key"] = lay
         blk["layer_label"] = _LAYER_LABEL.get(lay, lay)
         out["layers"][lay] = blk
@@ -209,6 +226,9 @@ def run_study(reader, pap: dict, *, benchmark_mode: str = "market",
     # ── 检验窗从 pap 读(裁定 2026-07-07):main/robust = 首/末检验窗点数(#4/#2b=(20,60))──
     test_win = parse_test_windows(pap)
     main_len, robust_len = test_win[0], test_win[-1]
+    # 三窗判点①(人裁 2026-07-15):首=主检验(唯一进 verdict)、末=稳健、中间=预注册次级报告窗
+    #   完整产出不判决;两窗 pap(#4/#2b/合成)→ 空元组 → result 无新键,逐字节零回归。
+    secondary_lens = test_win[1:-1]
 
     # 事件源:#2b 显式传入生成事件(价格模式 PIT);#4 走 reader.events()(台账)。
     event_src = list(events) if events is not None else list(reader.events())
@@ -318,11 +338,13 @@ def run_study(reader, pap: dict, *, benchmark_mode: str = "market",
 
     return _assemble(pap, cleaned, valid_events, benchmark_mode, main_len, robust_len,
                      strata_enabled=strata_enabled,
-                     drawdown_events=(event_src if is_drawdown else None))
+                     drawdown_events=(event_src if is_drawdown else None),
+                     secondary_lens=secondary_lens)
 
 
 def _assemble(pap, cleaned, valid_events, benchmark_mode, main_len, robust_len,
-              *, strata_enabled: bool = True, drawdown_events=None) -> dict:
+              *, strata_enabled: bool = True, drawdown_events=None,
+              secondary_lens: tuple = ()) -> dict:
     ses = [v[0] for v in valid_events]
     rank_secs = [v[2] for v in valid_events]
     cal_evs = [v[3] for v in valid_events]
@@ -354,6 +376,8 @@ def _assemble(pap, cleaned, valid_events, benchmark_mode, main_len, robust_len,
                               "naive_t": _naive_t([se.event_abnormal for se in ses], robust_len),
                               **_car_test(ses, robust_len, rho["rho_bar"])},
         }
+        if secondary_lens:
+            car["secondary_windows"] = _secondary_car(ses, aar, secondary_lens, rho["rho_bar"])
         # 稳健性两道(spec §6):Corrado 秩 + 日历时间组合法
         robustness = {
             "corrado_rank": corrado_rank(rank_secs, main_len, robust_len),
@@ -365,7 +389,8 @@ def _assemble(pap, cleaned, valid_events, benchmark_mode, main_len, robust_len,
     # 各层独立跑同一流水线(不碰上面 combined 计算路径 → combined 既有键逐字节不变,约束③)。
     # #2b(strata_enabled=False):单信号事件、pap event_def 无 layers → 三层不适用,不误入 'unknown' 层。
     if strata_enabled:
-        type_strata = _type_strata(valid_events, main_len, robust_len, alpha) if n >= 1 else {}
+        type_strata = _type_strata(valid_events, main_len, robust_len, alpha,
+                                   secondary_lens) if n >= 1 else {}
     else:
         type_strata = {"applicable": False,
                        "note": "#2b 单信号事件:三层(预喜/预亏/扭亏)不适用(pap event_def 无 layers 维度)"}

@@ -83,6 +83,10 @@ def render(result: dict) -> str:
             w = car[wk]
             L.append(f"  {wk} {w['taus']}: CAAR={_fmt(w['caar'],5)} N={w['n']} "
                      f"BMP_CAR={_fmt(w.get('bmp_car'),3)} ADJ-BMP_CAR={_fmt(w.get('adj_bmp_car'),3)}")
+        # 预注册次级报告窗(人裁 2026-07-15,三窗 pap 时才有;不参与判决)——两窗 result 无此键零回归
+        for w in (car.get("secondary_windows") or {}).get("windows", ()):
+            L.append(f"  secondary_window {w['taus']}(预注册次级报告窗·不判决): CAAR={_fmt(w['caar'],5)} "
+                     f"N={w['n']} BMP_CAR={_fmt(w.get('bmp_car'),3)} ADJ-BMP_CAR={_fmt(w.get('adj_bmp_car'),3)}")
         L.append("")
 
     # ④ 板块分层(item 8)
