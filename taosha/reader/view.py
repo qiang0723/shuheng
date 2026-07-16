@@ -27,6 +27,7 @@ import os
 from typing import Iterator, Optional
 
 from .contract import (
+    HOLDOUT_START,
     CalendarRow, EventRow, PriceRow,
     enforce_holdout_calendar, enforce_holdout_event, enforce_holdout_price,
 )
@@ -118,6 +119,40 @@ class ViewReader:
 
     def events(self) -> Iterator[EventRow]:
         return enforce_holdout_event(self._raw_events())
+
+    # ── holder_sell 原始公告行(§5 最小适配器,2026-07-16;事件判别在 L2 规则不在此)──
+    def holder_sell_rows(self) -> list[dict]:
+        """explore_reader_holder_sell_snap 全行(忠实传递;holdout 视图焊死+此处再挡一道)。
+        valid_time 转 ISO 串=holder_sell_rules 消费口径;行序=(ts_code,announcement_id) 钉死确定性。"""
+        out: list[dict] = []
+        with self._connect(self._qdsn) as c, c.cursor() as cur:
+            cur.execute(
+                "SELECT ts_code, stock_code, announcement_id, title, holder_name, "
+                "       reduce_ratio_max_pct, reduce_period_start, reduce_period_end, "
+                "       valid_time, ann_date_bj, snapshot_batch "
+                "FROM explore_reader_holder_sell_snap ORDER BY ts_code, announcement_id")
+            for (ts, sc, aid, title, holder, ratio, ps, pe, vt, abj, batch) in cur.fetchall():
+                if abj >= HOLDOUT_START:   # 视图已焊死,结构上再挡一道(与 events/prices 面对称)
+                    continue
+                out.append({
+                    "ts_code": ts, "stock_code": sc, "announcement_id": aid,
+                    "title": title, "holder_name": holder,
+                    "reduce_ratio_max_pct": None if ratio is None else float(ratio),
+                    "reduce_period_start": None if ps is None else ps.isoformat(),
+                    "reduce_period_end": None if pe is None else pe.isoformat(),
+                    "valid_time": vt.isoformat(), "snapshot_batch": str(batch)})
+        return out
+
+    def listing(self) -> dict[str, dict]:
+        """explore_reader_listing_snap → {ts_code: {list_status, list_date, delist_date}}。
+        PIT 上市窗(跨代码同 announcement_id 归属裁定的 L2 依据,人令 2026-07-16 窄闸③)。"""
+        out: dict[str, dict] = {}
+        with self._connect(self._qdsn) as c, c.cursor() as cur:
+            cur.execute("SELECT ts_code, list_status, list_date, delist_date "
+                        "FROM explore_reader_listing_snap")
+            for ts, status, ld, dd in cur.fetchall():
+                out[ts] = {"list_status": status, "list_date": ld, "delist_date": dd}
+        return out
 
     def _sample_codes(self) -> list:
         """样本证券 = 显式 sample,否则 events 视图证券全集(事件票取数,非全宇宙)。"""
