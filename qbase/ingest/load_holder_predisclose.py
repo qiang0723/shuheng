@@ -39,8 +39,19 @@ def _dsn() -> str:
     return dsn
 
 
+_invalid_dates: list = []
+
+
 def _date(s):
-    return dt.date.fromisoformat(s) if s else None
+    """ISO 串→date;非法日历日期(公告原文笔误如 2017-09-31,L3 如实抄录)→ NULL+留痕不静默,
+    原文串仍在 reduce_period_text 列保真(L1 忠实:date 列只装真日期,不猜不改)。"""
+    if not s:
+        return None
+    try:
+        return dt.date.fromisoformat(s)
+    except ValueError:
+        _invalid_dates.append(s)
+        return None
 
 
 def load(hits_path: str, note: str = "") -> None:
@@ -84,6 +95,8 @@ def load(hits_path: str, note: str = "") -> None:
                 "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)", rows)
         conn.commit()   # 单事务一次性 COMMIT
         print(f"✅ batch_id={batch_id} 入库 {len(rows)} 条(单事务 COMMIT;append-only 焊死)")
+        if _invalid_dates:
+            print(f"⚠ 非法日历日期置 NULL {len(_invalid_dates)} 项(原文在 reduce_period_text 保真): {_invalid_dates}")
     finally:
         conn.close()
 
