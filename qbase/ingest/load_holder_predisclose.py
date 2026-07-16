@@ -1,7 +1,10 @@
 """#3 loader:减持预披露 JSONL staging → qbase `holder_sell_predisclose_snap`(单事务批入)。
 
 承 seed_holder_predisclose.py 的 hits.jsonl:建一个 fact_batch(lineage)+ 一次性 COMMIT 全量插入。
-append-only 触发器焊死(011);去重 scope = announcement_id(逐次独立事件,keep first)。
+append-only 触发器焊死(011);去重 scope = (announcement_id, stock_code)=同一原始记录重复才去,keep first。
+⚠口径修订(2026-07-16 人令,§3 窄闸):跨代码同 announcement_id(实体代码变更,如 600087→601975)两行
+**均为原始事实,全部保留**;事件日归属判断=L2 适配器 PIT 规则,L1 零判断不得依输入顺序取舍。
+旧 scope "announcement_id keep first" 就此作废。
 双时戳:valid_time=公告时点(采集侧已转 UTC)、observed_time=DB now()(=采集批时刻由 batch 记)。
 
 秘钥:DSN 只从 .env 读(QBASE_APP_DSN),不回显。用法(aliyun):
@@ -41,7 +44,7 @@ def _date(s):
 
 
 def load(hits_path: str, note: str = "") -> None:
-    # 读 + 去重(announcement_id,keep first;逐次独立事件)
+    # 读 + 去重((announcement_id, stock_code) keep first;跨代码同 id 两行均保留=原始事实,归属属 L2)
     recs, seen = [], set()
     with open(hits_path, encoding="utf-8") as f:
         for line in f:
@@ -49,12 +52,12 @@ def load(hits_path: str, note: str = "") -> None:
             if not line:
                 continue
             r = json.loads(line)
-            aid = r.get("announcement_id")
-            if aid in seen:
+            key = (r.get("announcement_id"), r.get("stock_code"))
+            if key in seen:
                 continue
-            seen.add(aid)
+            seen.add(key)
             recs.append(r)
-    print(f"staging 命中 {len(recs)} 条(announcement_id 去重后)")
+    print(f"staging 命中 {len(recs)} 条((announcement_id,stock_code) 去重后)")
 
     conn = psycopg.connect(_dsn())
     try:
