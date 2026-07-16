@@ -227,6 +227,20 @@ def render(result: dict) -> str:
     L.append(f"【verdict(统计终态,非交易判断)】{result['verdict']}")
     L.append(f"  {result['verdict_note']}")
     L.append("")
+
+    # ⑥ 数据质量敏感性(exp4 专属键,人令 2026-07-16 五.5;无此键 → 段落不出=既有 result 渲染零回归)
+    sb = result.get("sensitivity_holder_resolved_only")
+    if sb:
+        st = sb["study"]
+        L.append("【数据质量敏感性(report-only · NOT_FOR_VERDICT)】")
+        L.append(f"  {sb['basis']}")
+        L.append(f"  事件面: 主跑={sb['n_events_main']} 排除(holder未解析)={sb['n_events_excluded']} "
+                 f"保留={sb['n_events_kept']}(排除占比={_fmt(sb['excluded_share'], 4)})")
+        mw = (st.get("car") or {}).get("main_window") or {}
+        L.append(f"  复算: N_valid={st['n_valid']} 主窗CAAR={_fmt(mw.get('caar'))} "
+                 f"主窗ADJ-BMP={_fmt(mw.get('adj_bmp_car'), 3)}")
+        L.append(f"  {sb['label']}")
+        L.append("")
     L.append(NO_ADVICE_FOOTER)
     return "\n".join(L)
 

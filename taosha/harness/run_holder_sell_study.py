@@ -45,6 +45,40 @@ def events_from_rows(rows: list[dict], listing: dict | None = None,
     return events, sel
 
 
+def split_sensitivity_events(sel_events: list[dict], rows: list[dict],
+                             batch: str) -> tuple[list[EventRow], int]:
+    """敏感性事件子集(人令 2026-07-16 五.5):排除全部含 holder 未解析公告的事件(纯函数)。"""
+    unresolved = {r.get("announcement_id") for r in rows if not r.get("holder_name")}
+    kept = [e for e in sel_events if not (set(e["announcement_ids"]) & unresolved)]
+    events = [EventRow(ts_code=e["ts_code"],
+                       event_id=f"{e['ts_code']}:{e['event_date'].replace('-', '')}",
+                       first_ann_date=dt.date.fromisoformat(e["event_date"]),
+                       event_type_layer="holder_sell",
+                       snapshot_batch=batch)
+              for e in kept]
+    return events, len(sel_events) - len(kept)
+
+
+def sensitivity_block(sens_result: dict, n_events_main: int, n_excluded: int) -> dict:
+    """敏感性块(report-only,NOT_FOR_VERDICT;人令 2026-07-16 五.5+批复边界:同 manifest 同一次运行,
+    删除整块后主 result 逐字节不变——本函数只读 sens_result、只构造新键,不触碰主 result 任何既有键)。
+    显式不含 verdict/verdict_note:不产判决,不得在两套结果间择优改判。"""
+    study = {k: sens_result[k] for k in
+             ("n_events_total", "n_events_valid", "n_valid", "n_eff_rho",
+              "sample_gate", "coverage", "car", "robustness")}
+    n_kept = n_events_main - n_excluded
+    return {
+        "not_for_verdict": True,
+        "label": "NOT_FOR_VERDICT · 数据质量敏感性复算,不产判决、不参与判决、不得择优改判",
+        "basis": "人令2026-07-16五.5: 排除全部holder未解析事件后复算,观察身份缺失样本是否改变结论方向",
+        "n_events_main": n_events_main,
+        "n_events_excluded": n_excluded,
+        "n_events_kept": n_kept,
+        "excluded_share": (n_excluded / n_events_main) if n_events_main else None,
+        "study": study,
+    }
+
+
 def main():
     # DB 依赖延迟导入:fixture(verify_holder_sell_adapter)零 DB 消费 events_from_rows
     from taosha.engine import report, runner
@@ -103,6 +137,18 @@ def main():
         "midkey_candidates_30d": sel["diagnostics"]["midkey_candidates_30d"],
         "adjudication_sha256": ADJUDICATION_SHA256,
     }
+
+    # 敏感性块(人令 2026-07-16 五.5):同 manifest 同一次运行,主 result 键零触碰(仅新增一键)
+    batch = rows_hs[0]["snapshot_batch"] if rows_hs else "batch?"
+    sens_events, n_excl = split_sensitivity_events(sel["events"], rows_hs, batch)
+    sens_reader = ViewReader(snapshot_id=a.snapshot_id,
+                             sample={e.ts_code for e in sens_events})
+    print(f"敏感性复算(NOT_FOR_VERDICT): 主事件={len(events)} 排除(holder未解析)={n_excl} "
+          f"保留={len(sens_events)}", flush=True)
+    sens_result = runner.run_study(sens_reader, pap, benchmark_mode="market",
+                                   events=sens_events, strata_enabled=False, st_mode=a.st_mode)
+    result["sensitivity_holder_resolved_only"] = sensitivity_block(
+        sens_result, len(sel["events"]), n_excl)
     if a.diagnostic:
         result["diagnostic"] = {"diagnostic": True, "reason": a.reason, "st_mode": a.st_mode,
                                 "exp_status_at_run": row["status"],
