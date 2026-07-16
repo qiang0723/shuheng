@@ -16,14 +16,25 @@ import argparse
 import datetime as dt
 import json
 
-from taosha.compute.holder_sell_rules import select_first_events
+from taosha.compute.holder_sell_rules import (
+    ADJUDICATION_FILE, ADJUDICATION_SHA256, load_adjudication, select_first_events)
 from taosha.reader.contract import EventRow
 
 
-def events_from_rows(rows: list[dict]) -> tuple[list[EventRow], dict]:
-    """冻结语料行 → EventRow 显式事件源(纯函数,零I/O;规则=§2B 冻结件,口径唯一在 rules 模块)。
-    返回 (events, selection)——selection 全量留痕(counters/rejects/conflicts)入 result.audit。"""
-    sel = select_first_events(rows)
+def read_adjudication() -> dict:
+    """冻结裁决表装载(规则 v2,人裁 2026-07-16):SHA256 前置断言在 load_adjudication,改动即拒。"""
+    import os
+    from taosha.compute import holder_sell_rules
+    path = os.path.join(os.path.dirname(holder_sell_rules.__file__), ADJUDICATION_FILE)
+    with open(path, "rb") as fh:
+        return load_adjudication(fh.read())
+
+
+def events_from_rows(rows: list[dict], listing: dict | None = None,
+                     adjudication: dict | None = None) -> tuple[list[EventRow], dict]:
+    """冻结语料行 → EventRow 显式事件源(纯函数,零I/O;规则 v2=人裁 2026-07-16 冻结件)。
+    返回 (events, selection)——selection 全量留痕(counters/rejects/conflicts/diagnostics)入 result.audit。"""
+    sel = select_first_events(rows, listing=listing, adjudication=adjudication)
     batch = rows[0]["snapshot_batch"] if rows else "batch?"
     events = [EventRow(ts_code=e["ts_code"],
                        event_id=f"{e['ts_code']}:{e['event_date'].replace('-', '')}",
@@ -73,8 +84,10 @@ def main():
           f"family_trial={row['family_trial']} verdict_power={row['verdict_power']}", flush=True)
     print(f"pap window={pap.get('window')!r} benchmark=market(全市场等权单跑,人裁② 2026-07-15)", flush=True)
 
-    rows_hs = ViewReader(snapshot_id=a.snapshot_id).holder_sell_rows()
-    events, sel = events_from_rows(rows_hs)
+    vr = ViewReader(snapshot_id=a.snapshot_id)
+    rows_hs = vr.holder_sell_rows()
+    events, sel = events_from_rows(rows_hs, listing=vr.listing(),
+                                   adjudication=read_adjudication())
     # 事件票取数(非全宇宙),两次构造承 #2b sample=池宇宙范式
     reader = ViewReader(snapshot_id=a.snapshot_id, sample={e.ts_code for e in events})
     print(f"holder_sell 行={sel['counters']['input']} → 事件={len(events)}"
@@ -87,6 +100,8 @@ def main():
         "counters": sel["counters"],
         "reject_reasons": _reason_counts(sel["rejects"]),
         "cross_stock_id_conflicts": sel["conflicts"],
+        "midkey_candidates_30d": sel["diagnostics"]["midkey_candidates_30d"],
+        "adjudication_sha256": ADJUDICATION_SHA256,
     }
     if a.diagnostic:
         result["diagnostic"] = {"diagnostic": True, "reason": a.reason, "st_mode": a.st_mode,

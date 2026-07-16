@@ -1,0 +1,1397 @@
+{
+ "first_with_progress": {
+  "1209325249": {
+   "basis": "后续被动减持计划:90日窗竞价1%/大宗2%总股本口径,取下限1.0",
+   "new_plan_ratio_pct": 1.0,
+   "pass": true
+  },
+  "1210253848": {
+   "basis": "集中竞价不超过总股本2%",
+   "new_plan_ratio_pct": 2.0,
+   "pass": true
+  },
+  "1210903030": {
+   "basis": "被动处置计划:90日窗集中竞价不超过总股本1%/大宗2%(计划总量未另标,取明示总股本口径下限1.0)",
+   "new_plan_ratio_pct": 1.0,
+   "pass": true
+  },
+  "1211337885": {
+   "basis": "不超过1%=新计划上限,PDF证实无既往进展成分;原扫描无不超过防护误入候选;正常首次类,不经fwp门",
+   "new_plan_ratio_pct": null,
+   "pass": false,
+   "reason": "not_fwp_plain_first"
+  },
+  "1211848627": {
+   "basis": "计划减持不超过2,700万股占总股本2.76%;title超过1%=进展数",
+   "new_plan_ratio_pct": 2.76,
+   "pass": true
+  },
+  "1211876317": {
+   "basis": "拟减持不超过6,100万股=总股本5.99%",
+   "new_plan_ratio_pct": 5.99,
+   "pass": true
+  },
+  "1213674379": {
+   "basis": "拟发起新计划,两股东各不超过总股本0.50%(公告级max=0.50,<1%门将被正常拒)",
+   "new_plan_ratio_pct": 0.5,
+   "pass": true
+  },
+  "1213856212": {
+   "basis": "PDF正文无计划/进展锚定句可抽取(版式/扫描),两比例来源无法可靠区分,fail-closed",
+   "new_plan_ratio_pct": null,
+   "pass": false,
+   "reason": "pdf_text_unextractable"
+  },
+  "1215306292": {
+   "basis": "含减持计划提前终止并披=A6定义外(非纯进展+首披),combo_ambiguous类拒照旧",
+   "new_plan_ratio_pct": null,
+   "pass": false,
+   "reason": "not_fwp_combo_termination"
+  },
+  "1217395310": {
+   "basis": "计划减持不超过839.28万股占总股本1.08%;进展句累计达到2.25%另列,两源可区分",
+   "new_plan_ratio_pct": 1.08,
+   "pass": true
+  },
+  "1217606808": {
+   "basis": "计划总量14,510,635股(由披露持股71,542,543股=总股本9.67%推得占总股本约1.96%)+90日窗总股本口径明示1%;保守登记1.0;语料parsed 1.0系进展/窗口数字,人令陷阱案坐实但计划比例可靠可区分",
+   "new_plan_ratio_pct": 1.0,
+   "pass": true
+  },
+  "1219449438": {
+   "basis": "计划句:合计减持不超过6,535,793股即不超过总股本1%;title超过1%=进展数,两源可区分",
+   "new_plan_ratio_pct": 1.0,
+   "pass": true
+  }
+ },
+ "pair_drops": [
+  {
+   "drop": "1202044023",
+   "evidence": "2016-03-12 vs 2016-03-15: auto=SAME_PLAN | final=SAME | 股东/比例/相对期间文本全同",
+   "keep": "1202039871",
+   "stock": "000010",
+   "tag": "item1_mid",
+   "verdict": "same_plan_adjudicated"
+  },
+  {
+   "drop": "1206381477",
+   "evidence": "2019-06-01 vs 2019-06-24: SAME_PLAN",
+   "keep": "1206322445",
+   "stock": "000662",
+   "tag": "item2b",
+   "verdict": "same_plan_adjudicated"
+  },
+  {
+   "drop": "1205919730",
+   "evidence": "2019-03-20 vs 2019-03-20: auto=SAME_PLAN | final=SAME | 已取消/更新后同日",
+   "keep": "1205918028",
+   "stock": "000821",
+   "tag": "item1_mid",
+   "verdict": "same_plan_adjudicated"
+  },
+  {
+   "drop": "1203155059",
+   "evidence": "2017-03-07 vs 2017-03-14: SAME_PLAN_LIKELY",
+   "keep": "1203135293",
+   "stock": "002528",
+   "tag": "item2b",
+   "verdict": "ambiguous_possible_duplicate"
+  },
+  {
+   "drop": "1209359135",
+   "evidence": "2021-02-10 vs 2021-03-10: SAME_PLAN_LIKELY",
+   "keep": "1209264851",
+   "stock": "002776",
+   "tag": "item2b",
+   "verdict": "ambiguous_possible_duplicate"
+  },
+  {
+   "drop": "1205184230",
+   "evidence": "2018-07-12 vs 2018-07-18: SAME_PLAN",
+   "keep": "1205141888",
+   "stock": "002873",
+   "tag": "item2b",
+   "verdict": "same_plan_adjudicated"
+  },
+  {
+   "drop": "1216577530",
+   "evidence": "2023-04-25 vs 2023-04-26: auto=SAME_PLAN | final=SAME | 更新前/更新后,保更新前=真实首披日",
+   "keep": "1216555486",
+   "stock": "002941",
+   "tag": "item1_mid",
+   "verdict": "same_plan_adjudicated"
+  },
+  {
+   "drop": "1213674634",
+   "evidence": "2022-05-18 vs 2022-06-11: SAME_PLAN",
+   "keep": "1213381013",
+   "stock": "002984",
+   "tag": "item2b",
+   "verdict": "same_plan_adjudicated"
+  },
+  {
+   "drop": "1211973063",
+   "evidence": "2021-12-21 vs 2021-12-21: auto=SAME_PLAN | final=SAME | 已取消/更新后同日",
+   "keep": "1211968608",
+   "stock": "003008",
+   "tag": "item1_mid",
+   "verdict": "same_plan_adjudicated"
+  },
+  {
+   "drop": "1207875402",
+   "evidence": "2020-05-22 vs 2020-05-29: SAME_PLAN",
+   "keep": "1207851347",
+   "stock": "300194",
+   "tag": "item2b",
+   "verdict": "same_plan_adjudicated"
+  },
+  {
+   "drop": "1205326164",
+   "evidence": "2018-08-06 vs 2018-08-25: auto=SAME_PLAN_LIKELY | final=AMBIG | 自动判定SAME_PLAN_LIKELY(被动平仓减持对,期间无法双边确认);按A5处置=剔后续标ambiguous",
+   "keep": "1205263074",
+   "stock": "300266",
+   "tag": "item1_mid",
+   "verdict": "ambiguous_possible_duplicate"
+  },
+  {
+   "drop": "1206313796",
+   "evidence": "2019-04-30 vs 2019-05-30: SAME_PLAN",
+   "keep": "1206200711",
+   "stock": "300366",
+   "tag": "item2b",
+   "verdict": "same_plan_adjudicated"
+  },
+  {
+   "drop": "1202642931",
+   "evidence": "2016-08-24 vs 2016-08-29: auto=SAME_PLAN | final=SAME | 同上",
+   "keep": "1202613376",
+   "stock": "300482",
+   "tag": "item1_mid",
+   "verdict": "same_plan_adjudicated"
+  },
+  {
+   "drop": "1210125189",
+   "evidence": "2021-05-29 vs 2021-05-31: auto=DIFFERENT_PLAN | final=SAME | 修正公告=同计划;v2下b侧由A3 revision类拒,本条为带保险留痕",
+   "keep": "1210120663",
+   "stock": "300505",
+   "tag": "item1_mid",
+   "verdict": "same_plan_adjudicated"
+  },
+  {
+   "drop": "1214042871",
+   "evidence": "2022-07-14 vs 2022-07-14: auto=SAME_PLAN | final=SAME | 同题同日双发相邻id",
+   "keep": "1214042872",
+   "stock": "300526",
+   "tag": "item1_mid",
+   "verdict": "same_plan_adjudicated"
+  },
+  {
+   "drop": "1217179361",
+   "evidence": "2023-06-12 vs 2023-06-30: UNDETERMINED",
+   "keep": "1217043949",
+   "stock": "300615",
+   "tag": "item2b",
+   "verdict": "ambiguous_possible_duplicate"
+  },
+  {
+   "drop": "1206556119",
+   "evidence": "2019-07-26 vs 2019-08-23: SAME_PLAN_LIKELY",
+   "keep": "1206473346",
+   "stock": "300664",
+   "tag": "item2b",
+   "verdict": "ambiguous_possible_duplicate"
+  },
+  {
+   "drop": "1206650232",
+   "evidence": "2019-08-23 vs 2019-08-28: SAME_PLAN",
+   "keep": "1206556119",
+   "stock": "300664",
+   "tag": "item2b",
+   "verdict": "same_plan_adjudicated"
+  },
+  {
+   "drop": "1206949960",
+   "evidence": "2019-08-28 vs 2019-09-25: SAME_PLAN_LIKELY",
+   "keep": "1206650232",
+   "stock": "300664",
+   "tag": "item2b",
+   "verdict": "ambiguous_possible_duplicate"
+  },
+  {
+   "drop": "1207194704",
+   "evidence": "2019-12-25 vs 2019-12-26: SAME_PLAN",
+   "keep": "1207191628",
+   "stock": "300707",
+   "tag": "item2b",
+   "verdict": "same_plan_adjudicated"
+  },
+  {
+   "drop": "1205852081",
+   "evidence": "2019-02-22 vs 2019-02-27: SAME_PLAN_LIKELY",
+   "keep": "1205845377",
+   "stock": "300709",
+   "tag": "item2b",
+   "verdict": "ambiguous_possible_duplicate"
+  },
+  {
+   "drop": "1212136858",
+   "evidence": "2021-12-28 vs 2022-01-11: SAME_PLAN_LIKELY",
+   "keep": "1212033431",
+   "stock": "300709",
+   "tag": "item2b",
+   "verdict": "ambiguous_possible_duplicate"
+  },
+  {
+   "drop": "1207214917",
+   "evidence": "2019-12-21 vs 2019-12-31: UNDETERMINED",
+   "keep": "1207183112",
+   "stock": "300745",
+   "tag": "item2b",
+   "verdict": "ambiguous_possible_duplicate"
+  },
+  {
+   "drop": "1207916333",
+   "evidence": "2020-05-30 vs 2020-06-10: SAME_PLAN_LIKELY",
+   "keep": "1207875679",
+   "stock": "300770",
+   "tag": "item2b",
+   "verdict": "ambiguous_possible_duplicate"
+  },
+  {
+   "drop": "1216177093",
+   "evidence": "2023-03-21 vs 2023-03-22: SAME_PLAN",
+   "keep": "1216165588",
+   "stock": "300828",
+   "tag": "item2b",
+   "verdict": "same_plan_adjudicated"
+  },
+  {
+   "drop": "1210795430",
+   "evidence": "2021-08-03 vs 2021-08-19: SAME_PLAN",
+   "keep": "1210652376",
+   "stock": "300842",
+   "tag": "item2b",
+   "verdict": "same_plan_adjudicated"
+  },
+  {
+   "drop": "1216297029",
+   "evidence": "2023-03-23 vs 2023-03-31: UNDETERMINED",
+   "keep": "1216200570",
+   "stock": "300964",
+   "tag": "item2b",
+   "verdict": "ambiguous_possible_duplicate"
+  },
+  {
+   "drop": "1216827986",
+   "evidence": "2023-05-04 vs 2023-05-16: UNDETERMINED",
+   "keep": "1216747831",
+   "stock": "301259",
+   "tag": "item2b",
+   "verdict": "ambiguous_possible_duplicate"
+  },
+  {
+   "drop": "1217013934",
+   "evidence": "2023-05-16 vs 2023-06-07: UNDETERMINED",
+   "keep": "1216827986",
+   "stock": "301259",
+   "tag": "item2b",
+   "verdict": "ambiguous_possible_duplicate"
+  },
+  {
+   "drop": "1214188790",
+   "evidence": "2022-07-15 vs 2022-08-02: UNDETERMINED",
+   "keep": "1214041653",
+   "stock": "600243",
+   "tag": "item2b",
+   "verdict": "ambiguous_possible_duplicate"
+  },
+  {
+   "drop": "1216865953",
+   "evidence": "2023-05-10 vs 2023-05-20: SAME_PLAN",
+   "keep": "1216782091",
+   "stock": "600661",
+   "tag": "item2b",
+   "verdict": "same_plan_adjudicated"
+  },
+  {
+   "drop": "1215265904",
+   "evidence": "2022-11-08 vs 2022-12-03: SAME_PLAN_LIKELY",
+   "keep": "1215044682",
+   "stock": "600738",
+   "tag": "item2b",
+   "verdict": "ambiguous_possible_duplicate"
+  },
+  {
+   "drop": "1204979425",
+   "evidence": "2018-05-03 vs 2018-05-22: UNDETERMINED",
+   "keep": "1204888027",
+   "stock": "600847",
+   "tag": "item2b",
+   "verdict": "ambiguous_possible_duplicate"
+  },
+  {
+   "drop": "1214137056",
+   "evidence": "2022-07-16 vs 2022-07-27: UNDETERMINED",
+   "keep": "1214057081",
+   "stock": "600909",
+   "tag": "item2b",
+   "verdict": "ambiguous_possible_duplicate"
+  },
+  {
+   "drop": "1208274529",
+   "evidence": "2020-08-20 vs 2020-08-28: UNDETERMINED",
+   "keep": "1208205863",
+   "stock": "600979",
+   "tag": "item2b",
+   "verdict": "ambiguous_possible_duplicate"
+  },
+  {
+   "drop": "1208791517",
+   "evidence": "2020-10-29 vs 2020-11-25: SAME_PLAN_LIKELY",
+   "keep": "1208635322",
+   "stock": "603026",
+   "tag": "item2b",
+   "verdict": "ambiguous_possible_duplicate"
+  },
+  {
+   "drop": "1211979933",
+   "evidence": "2021-11-22 vs 2021-12-22: SAME_PLAN",
+   "keep": "1211660685",
+   "stock": "603030",
+   "tag": "item2b",
+   "verdict": "same_plan_adjudicated"
+  },
+  {
+   "drop": "1205525215",
+   "evidence": "2018-09-26 vs 2018-10-24: UNDETERMINED",
+   "keep": "1205464758",
+   "stock": "603183",
+   "tag": "item2b",
+   "verdict": "ambiguous_possible_duplicate"
+  },
+  {
+   "drop": "1204299155",
+   "evidence": "2017-12-29 vs 2018-01-03: SAME_PLAN_LIKELY",
+   "keep": "1204275661",
+   "stock": "603218",
+   "tag": "item2b",
+   "verdict": "ambiguous_possible_duplicate"
+  },
+  {
+   "drop": "1204336705",
+   "evidence": "2018-01-16 vs 2018-01-17: SAME_PLAN_LIKELY",
+   "keep": "1204332903",
+   "stock": "603579",
+   "tag": "item2b",
+   "verdict": "ambiguous_possible_duplicate"
+  },
+  {
+   "drop": "1204615912",
+   "evidence": "2018-03-28 vs 2018-04-12: UNDETERMINED",
+   "keep": "1204524024",
+   "stock": "603616",
+   "tag": "item2b",
+   "verdict": "ambiguous_possible_duplicate"
+  },
+  {
+   "drop": "1204698037",
+   "evidence": "2018-04-12 vs 2018-04-24: UNDETERMINED",
+   "keep": "1204615912",
+   "stock": "603616",
+   "tag": "item2b",
+   "verdict": "ambiguous_possible_duplicate"
+  },
+  {
+   "drop": "1209049343",
+   "evidence": "2020-12-24 vs 2021-01-06: UNDETERMINED",
+   "keep": "1208971548",
+   "stock": "603729",
+   "tag": "item2b",
+   "verdict": "ambiguous_possible_duplicate"
+  },
+  {
+   "drop": "1216203210",
+   "evidence": "2023-03-14 vs 2023-03-24: SAME_PLAN",
+   "keep": "1216110295",
+   "stock": "603881",
+   "tag": "item2b",
+   "verdict": "same_plan_adjudicated"
+  },
+  {
+   "drop": "1208401796",
+   "evidence": "2020-08-15 vs 2020-09-07: SAME_PLAN",
+   "keep": "1208177399",
+   "stock": "688022",
+   "tag": "item2b",
+   "verdict": "same_plan_adjudicated"
+  },
+  {
+   "drop": "1216027126",
+   "evidence": "2023-02-22 vs 2023-03-02: UNDETERMINED",
+   "keep": "1215925763",
+   "stock": "688030",
+   "tag": "item2b",
+   "verdict": "ambiguous_possible_duplicate"
+  },
+  {
+   "drop": "1208698585",
+   "evidence": "2020-11-03 vs 2020-11-06: UNDETERMINED",
+   "keep": "1208675250",
+   "stock": "688108",
+   "tag": "item2b",
+   "verdict": "ambiguous_possible_duplicate"
+  },
+  {
+   "drop": "1210140207",
+   "evidence": "2021-05-28 vs 2021-06-02: UNDETERMINED",
+   "keep": "1210116134",
+   "stock": "688108",
+   "tag": "item2b",
+   "verdict": "ambiguous_possible_duplicate"
+  },
+  {
+   "drop": "1215683422",
+   "evidence": "2022-12-29 vs 2023-01-21: UNDETERMINED",
+   "keep": "1215468736",
+   "stock": "688123",
+   "tag": "item2b",
+   "verdict": "ambiguous_possible_duplicate"
+  },
+  {
+   "drop": "1211129018",
+   "evidence": "2021-09-04 vs 2021-09-23: SAME_PLAN_LIKELY",
+   "keep": "1210969445",
+   "stock": "688156",
+   "tag": "item2b",
+   "verdict": "ambiguous_possible_duplicate"
+  },
+  {
+   "drop": "1213939292",
+   "evidence": "2022-06-10 vs 2022-07-05: SAME_PLAN_LIKELY",
+   "keep": "1213658983",
+   "stock": "688359",
+   "tag": "item2b",
+   "verdict": "ambiguous_possible_duplicate"
+  },
+  {
+   "drop": "1215357743",
+   "evidence": "2022-12-10 vs 2022-12-15: SAME_PLAN_LIKELY",
+   "keep": "1215317548",
+   "stock": "688509",
+   "tag": "item2b",
+   "verdict": "ambiguous_possible_duplicate"
+  },
+  {
+   "drop": "1217358963",
+   "evidence": "2023-07-04 vs 2023-07-22: UNDETERMINED",
+   "keep": "1217202184",
+   "stock": "688553",
+   "tag": "item2b",
+   "verdict": "ambiguous_possible_duplicate"
+  },
+  {
+   "drop": "1213132509",
+   "evidence": "2022-04-25 vs 2022-04-27: SAME_PLAN_LIKELY",
+   "keep": "1213087087",
+   "stock": "688639",
+   "tag": "item2b",
+   "verdict": "ambiguous_possible_duplicate"
+  }
+ ],
+ "pair_keeps_different": [
+  {
+   "a": "1207054696",
+   "b": "1207105505",
+   "stock": "000538",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1208130692",
+   "b": "1208153737",
+   "stock": "000710",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1206243348",
+   "b": "1206325609",
+   "stock": "002160",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1203894572",
+   "b": "1203956455",
+   "stock": "002298",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1206234629",
+   "b": "1207703833",
+   "note": "b侧=前次计划到期公告,v2下由A1 result类拒;非同计划对,无pair处置",
+   "stock": "002426",
+   "tag": "item1_mid",
+   "verdict": "LEAK"
+  },
+  {
+   "a": "1206409352",
+   "b": "1206445060",
+   "stock": "002470",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1208699103",
+   "b": "1208743766",
+   "stock": "002652",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1216620628",
+   "b": "1216689507",
+   "stock": "002654",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1214540558",
+   "b": "1214664602",
+   "stock": "002861",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1211696475",
+   "b": "1211894583",
+   "stock": "002882",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1209865058",
+   "b": "1209950040",
+   "stock": "300061",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1204004927",
+   "b": "1204015080",
+   "stock": "300108",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1207021029",
+   "b": "1207087923",
+   "stock": "300110",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1207309526",
+   "b": "1207383278",
+   "stock": "300140",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1207730637",
+   "b": "1207901152",
+   "note": "PDF期间2020-06-01..11-30 vs 06-30..12-29不同,06-05新增一致行动人=真实新计划,人令必须恢复",
+   "stock": "300143",
+   "tag": "item1_mid",
+   "verdict": "RESTORE"
+  },
+  {
+   "a": "1208015887",
+   "b": "1208024157",
+   "stock": "300301",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1212018455",
+   "b": "1212046406",
+   "stock": "300301",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1207451476",
+   "b": "1207457191",
+   "stock": "300417",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1207471205",
+   "b": "1207550662",
+   "stock": "300484",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1207822989",
+   "b": "1207837195",
+   "stock": "300548",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1209892691",
+   "b": "1210104610",
+   "stock": "300548",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1210793716",
+   "b": "1210977756",
+   "stock": "300555",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1212351222",
+   "b": "1212472135",
+   "stock": "300555",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1212472135",
+   "b": "1212566359",
+   "stock": "300555",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1214309292",
+   "b": "1214540393",
+   "stock": "300555",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1207198938",
+   "b": "1207232738",
+   "stock": "300609",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1207857127",
+   "b": "1207889160",
+   "stock": "300642",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1215267852",
+   "b": "1215330789",
+   "stock": "300649",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1217207120",
+   "b": "1217451786",
+   "stock": "300649",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1204948140",
+   "b": "1205033032",
+   "stock": "300651",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1207514680",
+   "b": "1207587228",
+   "stock": "300674",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1207587228",
+   "b": "1207678765",
+   "stock": "300674",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1206002592",
+   "b": "1206006130",
+   "stock": "300675",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1206006130",
+   "b": "1206041719",
+   "stock": "300675",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1214289781",
+   "b": "1214408543",
+   "stock": "300681",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1205489536",
+   "b": "1205522324",
+   "stock": "300707",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1205892422",
+   "b": "1205912385",
+   "stock": "300707",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1207194704",
+   "b": "1207241297",
+   "stock": "300707",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1208569524",
+   "b": "1208637443",
+   "stock": "300707",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1205852081",
+   "b": "1205920682",
+   "stock": "300709",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1206336412",
+   "b": "1206360382",
+   "stock": "300709",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1206360382",
+   "b": "1206444397",
+   "stock": "300709",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1216296932",
+   "b": "1217314662",
+   "note": "b侧=达到1%第二发,v2下由A2 progress_reached类拒;无pair处置",
+   "stock": "300736",
+   "tag": "item1_mid",
+   "verdict": "LEAK"
+  },
+  {
+   "a": "1208015666",
+   "b": "1208035213",
+   "stock": "300783",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1208585959",
+   "b": "1208698925",
+   "stock": "300792",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1215525068",
+   "b": "1215638443",
+   "stock": "300798",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1216244763",
+   "b": "1216523305",
+   "stock": "301178",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1218915369",
+   "b": "1220023184",
+   "note": "05-09=新计划预披露(01-16旧计划04-22已到期,状态链完整)=真实新计划,人令必须恢复;自动判定SAME_PLAN被报告§1.2终版人工判读覆写",
+   "stock": "301182",
+   "tag": "item1_mid",
+   "verdict": "RESTORE"
+  },
+  {
+   "a": "1216896811",
+   "b": "1216992491",
+   "stock": "301183",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1215924441",
+   "b": "1216180018",
+   "stock": "301236",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1206009440",
+   "b": "1206066894",
+   "stock": "600155",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1207383779",
+   "b": "1207467996",
+   "stock": "600155",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1206429265",
+   "b": "1206431685",
+   "stock": "600165",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1214343477",
+   "b": "1214356940",
+   "stock": "600242",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1213300845",
+   "b": "1213357716",
+   "stock": "600267",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1207368793",
+   "b": "1207383654",
+   "stock": "600338",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1207383654",
+   "b": "1207423814",
+   "stock": "600338",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1208158311",
+   "b": "1208373642",
+   "stock": "600338",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1211989318",
+   "b": "1212201216",
+   "stock": "600363",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1210454662",
+   "b": "1210664931",
+   "stock": "600418",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1214295321",
+   "b": "1214351684",
+   "stock": "600556",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1207299582",
+   "b": "1207303893",
+   "stock": "600661",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1209105348",
+   "b": "1209113048",
+   "stock": "600707",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1206880537",
+   "b": "1206917416",
+   "stock": "600862",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1207257523",
+   "b": "1207262889",
+   "stock": "600882",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1207930608",
+   "b": "1208031155",
+   "stock": "600909",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1208133701",
+   "b": "1208205863",
+   "stock": "600979",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1208147425",
+   "b": "1208378635",
+   "stock": "600984",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1208378635",
+   "b": "1208388613",
+   "stock": "600984",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1213688016",
+   "b": "1213875149",
+   "stock": "601696",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1216919733",
+   "b": "1217099899",
+   "stock": "603028",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1216521686",
+   "b": "1216855626",
+   "stock": "603032",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1219579601",
+   "b": "1219688503",
+   "stock": "603061",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1207372449",
+   "b": "1207451239",
+   "stock": "603069",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1208104483",
+   "b": "1208119394",
+   "stock": "603069",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1208119394",
+   "b": "1208214873",
+   "stock": "603069",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1208214873",
+   "b": "1208454407",
+   "stock": "603069",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1208635329",
+   "b": "1208805253",
+   "stock": "603069",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1210427993",
+   "b": "1210649766",
+   "stock": "603077",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1214964557",
+   "b": "1215115314",
+   "stock": "603083",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1212324480",
+   "b": "1212526756",
+   "stock": "603117",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1214583946",
+   "b": "1214594537",
+   "stock": "603117",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1216842504",
+   "b": "1216933334",
+   "stock": "603191",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1218792182",
+   "b": "1218809634",
+   "stock": "603196",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1211164098",
+   "b": "1211180123",
+   "stock": "603200",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1206349298",
+   "b": "1206407437",
+   "stock": "603269",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1205870871",
+   "b": "1205930589",
+   "stock": "603603",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1206455123",
+   "b": "1206496506",
+   "stock": "603603",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1205254709",
+   "b": "1205363258",
+   "stock": "603690",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1211895364",
+   "b": "1211933205",
+   "stock": "603779",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1204088302",
+   "b": "1204116938",
+   "stock": "603843",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1210267759",
+   "b": "1210442553",
+   "stock": "603876",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1210442553",
+   "b": "1210649895",
+   "stock": "603876",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1207206664",
+   "b": "1207214169",
+   "stock": "603878",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1210716170",
+   "b": "1210941571",
+   "stock": "603879",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1209258923",
+   "b": "1209330503",
+   "stock": "603880",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1210987554",
+   "b": "1211217681",
+   "stock": "603880",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1215220017",
+   "b": "1215427786",
+   "stock": "603880",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1205713972",
+   "b": "1205821107",
+   "stock": "603882",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1205584812",
+   "b": "1205606120",
+   "stock": "603903",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1209049364",
+   "b": "1209152091",
+   "stock": "603991",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1212015579",
+   "b": "1212196339",
+   "stock": "605009",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1216072151",
+   "b": "1216165650",
+   "stock": "605287",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1214901520",
+   "b": "1215165754",
+   "stock": "605566",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1208118739",
+   "b": "1208147523",
+   "stock": "688020",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1215058316",
+   "b": "1215167110",
+   "stock": "688029",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1211054207",
+   "b": "1211094016",
+   "stock": "688065",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1216493556",
+   "b": "1216596505",
+   "stock": "688072",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1209345903",
+   "b": "1209436230",
+   "stock": "688158",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1210977089",
+   "b": "1211165454",
+   "stock": "688158",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1216854011",
+   "b": "1217002145",
+   "stock": "688165",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1217002145",
+   "b": "1217116707",
+   "stock": "688165",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1216177583",
+   "b": "1216232905",
+   "stock": "688207",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1216232905",
+   "b": "1216472410",
+   "stock": "688207",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1214146250",
+   "b": "1214188818",
+   "stock": "688226",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1216238342",
+   "b": "1216246243",
+   "stock": "688316",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1210841134",
+   "b": "1210987864",
+   "stock": "688393",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1220159869",
+   "b": "1220299391",
+   "stock": "688393",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1214999626",
+   "b": "1215081255",
+   "stock": "688468",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1215050939",
+   "b": "1215302127",
+   "stock": "688517",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1215000230",
+   "b": "1215140040",
+   "stock": "688553",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1215140040",
+   "b": "1215281838",
+   "stock": "688553",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1216145400",
+   "b": "1216167557",
+   "stock": "688553",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1210759514",
+   "b": "1210958756",
+   "stock": "688556",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1214978043",
+   "b": "1215050737",
+   "stock": "688613",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  },
+  {
+   "a": "1213803806",
+   "b": "1213899568",
+   "stock": "688690",
+   "tag": "item2b",
+   "verdict": "DIFFERENT_PLAN"
+  }
+ ],
+ "provenance": {
+  "gate_a6_fwp_sha256": "1f1f58aff109fed35cb7af72d11c51e3286a7c993a6830d27eb44faa37756dde",
+  "gate_pdf_verdicts3_sha256": "e1225fb496762e07f7896138fca122dfb628852ffa26ebf115e3523bb068bf01",
+  "immutable": "人令2026-07-16:本表于本次exp4冻结;正式运行后即使获新PDF证据亦不得修改本次manifest/result/verdict,只能另建版本重跑留痕差异",
+  "narrow_gate_report": "taosha/docs/holder-sell-narrow-gate-report-2026-07-16.md §1.2 终版人工判读=item1_mid权威;§1.4(c)=item2b权威"
+ },
+ "ruling": "docs/holder-sell-rules-v2-ruling-2026-07-16.md",
+ "version": "exp4-adjudication-v1-2026-07-16"
+}
