@@ -103,6 +103,12 @@ check("fwp·超过1%暨预披露(语料000034)",
       classify_event_title("关于股东减持比例超过1%暨减持股份的预披露公告"), CLS_FWP)
 check("fwp·改判注记:v1'暨字但无污染词→FIRST'按A6改CLS_FWP(人裁2026-07-16)",
       classify_event_title("关于股东减持股份达到1%暨减持计划的预披露公告"), CLS_FWP)
+check("fwp·无预披露字面但含新计划指示(语料实物,A2原文'不含指示'才归进展;表外fail-closed)",
+      classify_event_title("关于持股5%以上股东减持股份超过1%及未来减持计划的公告"), CLS_FWP)
+check("fwp·暨后续减持计划(语料实物,同上)",
+      classify_event_title("关于持股5%以上股东通过大宗交易减持公司股份超过1%暨后续减持计划的公告"), CLS_FWP)
+check("拒·A2纯进展:达到1%无任何新计划指示(语料实物)",
+      classify_event_title("关于股东减持计划减持股份比例达到1%的公告"), CLS_PROGRESS_REACHED)
 
 # ── 证三:流水线(A4/A5/A6/强键/比例门/确定性) ────────────────────────────────
 ROW = dict(ts_code="000001.SZ", stock_code="000001", holder_name="张三",
