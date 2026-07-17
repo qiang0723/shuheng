@@ -105,10 +105,18 @@
 - 状态闸(接令核,只读):exp8=registered/frozen_at 空/result 空;台账 25 行
   =registered18/frozen2/done4/closed1;无 exp8 manifest。
 
-## 8. 两台核验(交付 commit 后补记)
+## 8. 两台核验(交付 commit 后补记,实测)
 
-- commit 链:`f659c82`(回修三令留痕)→ 施工 commit → 交付 commit(本档);两台 HEAD 一致、
-  `git status` 净;aliyun 全家福实测结果照跑照录。
+- commit 链:`f659c82`(回修三令留痕)→ `7334252`(施工)→ `cc3c8e1`(交付);
+  push origin + aliyun `git pull --ff-only`,两台 HEAD `cc3c8e1`、`git status` 净。
+- aliyun 全家福实测(钉版 venv `/opt/venvs/qbase-ingest/bin/python3`,DB 套件带 `.env`):
+  rules **40/40**/engine **102/102**/三窗 **5/5**/holder 规则 **81/81**/适配 **10/10**/
+  敏感性 **6/6**/状态机 **46/46**/pap 硬门 **23/23**/addendum **14/14**/镜像 **11/11**/
+  血缘 **24/24**/fail-closed 探针 **19/19**/**集成 7/7(S6 双跑 result sha `63e2c9fc…`
+  逐字节同=回修前基线不变)**/pap_vs_spec 全 MATCH/运行时钉版 ALL PASS。
+- 合成 e2e:**两台四跑全=`3116ba9b74f7c53b…` 逐字节**(AWS 双跑+aliyun 双跑,=历史基线)。
+- AWS 非 DB 套件同清单全绿(rules 40/engine 102/三窗 5/holder 81/适配 10/敏感 6/
+  runtime ALL PASS;AWS 无本地 PG,DB 套件历史即 aliyun 域)。
 
 ## 9. 停交验点
 
