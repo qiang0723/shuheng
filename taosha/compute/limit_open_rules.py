@@ -17,8 +17,12 @@
     不进事件集,逐条上报(不猜、不合并;操作化待人核,见 PAP 草案复核点)。
 
 裁决二(样本范围)转录:2007-01-01 ≤ event_date < 2024-07-01(右界与 holdout 焊死线重合,
-此处再挡一道);recent_listing = 链起点上市交易龄 ≤30(草案操作化 = 链起点行在该票自身
-真实交易行序中的序号,上市首个 bar = 第 1 行;仅作标记,不改事件集,待人核)。
+此处再挡一道);recent_listing = 链起点上市交易龄 ≤30(操作化 = 链起点行在该票自身
+真实交易行序中的序号,上市首个 bar = 第 1 行;仅作标记,不改事件集;人裁 2026-07-17 回修单元 C5 维持)。
+
+回修单元(人令 2026-07-17 深夜二,P1-2/C5)listing 锚定 fail-closed:调用方必须给该票
+listing 信息({list_date, delist_date});缺 listing / 缺 list_date / 上市日前存在历史 bar /
+上市区间异常(delist≤list、bar 越出退市日)→ 该票全部候选事件 fail-closed 剔除留痕,不猜不补。
 
 依赖:仅标准库。输入行 = dict{trade_date: date, limit_status: str, open_limit_status: str};
 消费方(driver)负责 PriceRow → dict 映射与按票分组;本模块单票处理,跨票聚合在调用方。
@@ -90,18 +94,39 @@ def resolve_event_day(rows: list[dict], end_i: int) -> tuple[int | None, int]:
     return None, skipped
 
 
-def select_limit_open_events(ts_code: str, rows: list[dict]) -> dict:
-    """单票事件识别全流水线:链检测 → 事件日顺延 → 范围过滤 → 唯一性 fail-closed。
+def _listing_anomaly(rows: list[dict], listing: dict | None) -> str | None:
+    """listing 锚定核验(回修单元 P1-2/C5,fail-closed):异常 → 返回剔除 reason,健康 → None。
+    异常三类:①缺 listing/缺 list_date(不可证上市锚,不猜)②上市日前历史 bar(数据异常)
+    ③上市区间异常(delist_date≤list_date 或 bar 落在退市日当日及之后)。"""
+    if listing is None or listing.get("list_date") is None:
+        return "listing_missing_fail_closed"
+    ld, dd = listing["list_date"], listing.get("delist_date")
+    if rows and rows[0]["trade_date"] < ld:
+        return "pre_listing_bar_fail_closed"
+    if dd is not None and (dd <= ld or (rows and rows[-1]["trade_date"] >= dd)):
+        return "listing_window_anomaly_fail_closed"
+    return None
 
+
+def select_limit_open_events(ts_code: str, rows: list[dict],
+                             listing: dict | None = None) -> dict:
+    """单票事件识别全流水线:listing 锚定核验 → 链检测 → 事件日顺延 → 范围过滤 → 唯一性 fail-closed。
+
+    listing = {"list_date": date|None, "delist_date": date|None}(explore_reader_listing_snap 行);
+    缺/异常 → 该票全部候选事件 fail-closed(回修单元 P1-2/C5;链几何仍如实留痕入 rejects)。
     返回 {"events": [...], "rejects": [...], "counters": {...}}——全量留痕供 audit;
     events 已按 event_date 升序;确定性 = 输入行序唯一决定输出(纯函数,双跑同)。
-    事件字段含 chain_* 全量几何 + recent_listing 草案标记(不改事件集,裁决二.5)。
+    事件字段含 chain_* 全量几何 + recent_listing 标记(不改事件集,裁决二.5;C5 维持行序号≤30)。
     """
     counters = {"input_rows": len(rows),
                 "one_word_up_rows": sum(1 for r in rows if is_one_word_up(r)),
                 "chains_ge_n": 0, "events": 0,
                 "deferred_rows_total": 0,
-                "chains_pre_regime": 0}
+                "chains_pre_regime": 0,
+                "listing_anomaly_securities": 0}
+    listing_reason = _listing_anomaly(rows, listing)
+    if listing_reason is not None and rows:
+        counters["listing_anomaly_securities"] = 1
     chains = detect_chains(rows)
     counters["chains_ge_n"] = len(chains)
     counters["chains_pre_regime"] = sum(
@@ -116,6 +141,10 @@ def select_limit_open_events(ts_code: str, rows: list[dict]) -> dict:
                 "chain_start_rank": c["start_rank"],
                 "recent_listing": c["start_rank"] <= RECENT_LISTING_MAX_AGE,
                 "deferred_one_word_rows": skipped}
+        if listing_reason is not None:
+            # listing fail-closed(P1-2/C5):不可证上市锚 → 不进事件集,链几何如实留痕
+            rejects.append(dict(base, reason=listing_reason))
+            continue
         if ev_i is None:
             rejects.append(dict(base, reason="right_censored_no_event_day"))
             continue

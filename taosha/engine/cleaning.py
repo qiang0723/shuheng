@@ -63,7 +63,7 @@ def _est_window_idx(t_idx: int) -> tuple[int, int]:
 
 
 def clean_event(rows: list[PriceRow], event, date_index: dict,
-                st_mode: str = "event_day") -> CleanedEvent:
+                st_mode: str = "event_day", st_policy: str = "reject") -> CleanedEvent:
     """对一个事件做清洗几何 + 前置剔除(停牌/ST/顺延)。覆盖门槛留 compute 回填。
 
     rows: 该证券按 trade_date 升序的全期 PriceRow;event: EventRow;date_index: {date: idx}。
@@ -72,9 +72,15 @@ def clean_event(rows: list[PriceRow], event, date_index: dict,
         事件日行缺失(停牌缺行)→ ST 判定不可得,is_st=False 留注,事件走停牌剔除路径。
       'legacy_row0'(仅只读诊断 diff 用,driver --diagnostic 域)= 旧实现 rows[0].is_st(缺陷原样),
         供硬化③ 旧 vs 新受控语义 diff;生产路径禁用。
+    st_policy(回修单元 C2 乙案,人裁 2026-07-17 深夜二,显式参数化):ST 事件处置——
+      'reject'(默认)= spec §5 ST 剔除(既有全部实验行为,零回归);
+      'keep' = ST 事件保留入主样本(exp8 冻结值:ST/非ST 作报告分层,不分别产生判决);
+        is_st 判定源仍由 st_mode 辖,本参数只辖"判定为 ST 后剔或留"。
     """
     if st_mode not in ("event_day", "legacy_row0"):
         raise ValueError(f"st_mode 非法: {st_mode}")
+    if st_policy not in ("reject", "keep"):
+        raise ValueError(f"st_policy 非法: {st_policy}(合法={{'reject','keep'}})")
     yr = event.first_ann_date.year
     layer = getattr(event, "event_type_layer", "unknown")   # 层维度(合成自检 _Ev 无此属性 → unknown)
 
@@ -135,11 +141,14 @@ def clean_event(rows: list[PriceRow], event, date_index: dict,
             return True                # 缺行 = 停牌(calendar 断档;真实数据)
         return row.is_suspended        # flag(合成 fixture 停牌行)
 
-    # ST 剔除(spec §5);板块分层里作"ST 已剔除层"留痕(item 8 调和)
+    # ST 处置(spec §5 剔除=默认;回修单元 C2 乙案 'keep'=保留入主样本,ST/非ST 分层报告)
     if ce.is_st:
-        ce.rejected, ce.reject_reason, ce.reject_year = True, "st", yr
-        ce.notes.append("ST 剔除(spec §5);板块分层计入 ST 已剔除层")
-        return ce
+        if st_policy == "reject":
+            ce.rejected, ce.reject_reason, ce.reject_year = True, "st", yr
+            ce.notes.append("ST 剔除(spec §5);板块分层计入 ST 已剔除层")
+            return ce
+        ce.notes.append("ST 保留(st_policy='keep',人裁 2026-07-17 回修单元 C2 乙案):"
+                        "入主样本;ST/非ST 分层报告,不分别产生判决")
 
     # 事件落停牌期(item 7):事件日 T 或首个拟交易日 T+1 停牌 → 剔除
     if _suspended(t_idx) or _suspended(t_idx + 1):

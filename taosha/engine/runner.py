@@ -109,9 +109,13 @@ def _secondary_car(ses: list, aar: list, secondary_lens: tuple, rho_bar) -> dict
 
 
 def _stats_for_subset(sub: list, main_len: int, robust_len: int, alpha: float,
-                      secondary_lens: tuple = ()) -> dict:
+                      secondary_lens: tuple = (), *, verdict_policy: str = "three_method",
+                      nfv: bool = False) -> dict:
     """对一子集(某层)跑与 combined 同一流水线(per_tau/主稳健窗 CAR/三法/verdict/n_eff_rho)。
-    复用 combined 同一 compute 原语、同一顺序 → 层内结果与"若单独喂该层"一致。纯读取,不改 pap。"""
+    复用 combined 同一 compute 原语、同一顺序 → 层内结果与"若单独喂该层"一致。纯读取,不改 pap。
+    nfv(回修单元 C6,2026-07-17):True → 层块结构化 NOT_FOR_VERDICT——verdict/verdict_note 键
+    改名 sig_state_report_only/sig_state_note + not_for_verdict=True(全文档唯一 verdict 键留顶层);
+    False(默认)→ 键名不变,既有输出逐字节零回归。"""
     ses = [v[0] for v in sub]
     rank_secs = [v[2] for v in sub]
     cal_evs = [v[3] for v in sub]
@@ -146,14 +150,21 @@ def _stats_for_subset(sub: list, main_len: int, robust_len: int, alpha: float,
             "calendar_time": calendar_time(cal_evs, main_len, robust_len),
         }
         n_eff_rho = _n_eff_rho(n, rho["rho_bar"])
-    verdict, verdict_note = _verdict(sample_state, car, robustness, alpha)
-    return {"n_valid": n, "sample_state": sample_state, "n_eff_rho": n_eff_rho,
-            "per_tau": per_tau, "car": car, "robustness": robustness,
-            "verdict": verdict, "verdict_note": verdict_note}
+    verdict, verdict_note = _verdict(sample_state, car, robustness, alpha,
+                                     policy=verdict_policy)
+    out = {"n_valid": n, "sample_state": sample_state, "n_eff_rho": n_eff_rho,
+           "per_tau": per_tau, "car": car, "robustness": robustness}
+    if nfv:
+        out.update({"not_for_verdict": True,
+                    "sig_state_report_only": verdict, "sig_state_note": verdict_note})
+    else:
+        out.update({"verdict": verdict, "verdict_note": verdict_note})
+    return out
 
 
 def _type_strata(valid_events: list, main_len: int, robust_len: int, alpha: float,
-                 secondary_lens: tuple = ()) -> dict:
+                 secondary_lens: tuple = (), *, verdict_policy: str = "three_method",
+                 nfv: bool = False) -> dict:
     """三层分解(预喜/预亏/扭亏;pap layers/event_def 冻结定义)。预喜(期望+漂移)与预亏(期望-漂移)
     方向相反,合并池化可相互抵消→合并 verdict 不可读作各层均无漂移;分层是冻结定义核心。
     层外(不确定/其他)已在 explore_reader_events 视图排除;若仍现意外层,如实上报不静默。"""
@@ -164,7 +175,8 @@ def _type_strata(valid_events: list, main_len: int, robust_len: int, alpha: floa
                    "预喜+漂移 vs 预亏-漂移方向相反,合并结果可抵消,不可读作各层均无漂移。",
            "n_valid_sum": sum(len(g) for g in groups.values()), "layers": {}}
     for lay in sorted(groups, key=lambda k: (_LAYER_ORDER.get(k, 9), k)):
-        blk = _stats_for_subset(groups[lay], main_len, robust_len, alpha, secondary_lens)
+        blk = _stats_for_subset(groups[lay], main_len, robust_len, alpha, secondary_lens,
+                                verdict_policy=verdict_policy, nfv=nfv)
         blk["layer_key"] = lay
         blk["layer_label"] = _LAYER_LABEL.get(lay, lay)
         out["layers"][lay] = blk
@@ -213,7 +225,9 @@ def _tradeable(valid_events: list, cost: Optional[dict], main_len: int, robust_l
 
 def run_study(reader, pap: dict, *, benchmark_mode: str = "market",
               pool: Optional[set] = None, events: Optional[list] = None,
-              strata_enabled: bool = True, st_mode: str = "event_day") -> dict:
+              strata_enabled: bool = True, st_mode: str = "event_day",
+              st_policy: str = "reject", verdict_policy: str = "three_method",
+              nfv_structured: bool = False) -> dict:
     """跑一条已冻结假设的事件研究,返回 result 字典(供 report + 落库)。
 
     benchmark_mode: 'market'(全市场等权)/'pool'(静态池等权)/'pool_pit'(#2b b1池等权PIT活基准,
@@ -222,7 +236,18 @@ def run_study(reader, pap: dict, *, benchmark_mode: str = "market",
     events: 显式事件源(#2b=价格模式生成的 DrawdownEventRow 列表);None → reader.events()(#4 台账事件)。
     strata_enabled: 三层(预喜/预亏/扭亏)分解开关;#2b 单信号事件 → False(三层不适用)。
     st_mode: ST 判定源(硬化③;'event_day' 生产默认 / 'legacy_row0' 仅只读诊断 diff)。
+    ── 回修单元三参数(人裁 2026-07-17 深夜二;全部显式参数化,默认值=既有行为逐字节零回归)──
+    st_policy: ST 处置(C2 乙案):'reject' 默认=spec §5 剔除 / 'keep'=保留入主样本(exp8 冻结值)。
+    verdict_policy: 判决口径:'three_method' 默认=spec §6 三法一致裁决 /
+      'adj_bmp_main_only'=唯一判据=主窗 ADJ-BMP,辅助方法(朴素t/秩/日历)反向只报告分歧不得改判(exp8)。
+    nfv_structured: True → 全部非权威结果块结构化 NOT_FOR_VERDICT 标记+分层块 verdict 键改名
+      (C6;全文档唯一 verdict 键=顶层);False 默认=不加键,既有 result 逐字节不变。
     """
+    if st_policy not in ("reject", "keep"):
+        raise ValueError(f"st_policy 非法: {st_policy}(合法={{'reject','keep'}})")
+    if verdict_policy not in ("three_method", "adj_bmp_main_only"):
+        raise ValueError(f"verdict_policy 非法: {verdict_policy}"
+                         "(合法={'three_method','adj_bmp_main_only'})")
     # ── 检验窗从 pap 读(裁定 2026-07-07):main/robust = 首/末检验窗点数(#4/#2b=(20,60))──
     test_win = parse_test_windows(pap)
     main_len, robust_len = test_win[0], test_win[-1]
@@ -267,7 +292,8 @@ def run_study(reader, pap: dict, *, benchmark_mode: str = "market",
     cleaned: list[CleanedEvent] = []
     valid_events: list[SecurityEvent] = []
     for ce, sv in iter_survivors(event_src, by_sec, all_dates, date_index, mkt, robust_len,
-                                 st_mode=st_mode, sec_returns=sec_returns, reject_notes=True):
+                                 st_mode=st_mode, st_policy=st_policy,
+                                 sec_returns=sec_returns, reject_notes=True):
         cleaned.append(ce)
         if sv is None:
             continue
@@ -339,12 +365,14 @@ def run_study(reader, pap: dict, *, benchmark_mode: str = "market",
     return _assemble(pap, cleaned, valid_events, benchmark_mode, main_len, robust_len,
                      strata_enabled=strata_enabled,
                      drawdown_events=(event_src if is_drawdown else None),
-                     secondary_lens=secondary_lens)
+                     secondary_lens=secondary_lens, st_policy=st_policy,
+                     verdict_policy=verdict_policy, nfv_structured=nfv_structured)
 
 
 def _assemble(pap, cleaned, valid_events, benchmark_mode, main_len, robust_len,
               *, strata_enabled: bool = True, drawdown_events=None,
-              secondary_lens: tuple = ()) -> dict:
+              secondary_lens: tuple = (), st_policy: str = "reject",
+              verdict_policy: str = "three_method", nfv_structured: bool = False) -> dict:
     ses = [v[0] for v in valid_events]
     rank_secs = [v[2] for v in valid_events]
     cal_evs = [v[3] for v in valid_events]
@@ -390,7 +418,8 @@ def _assemble(pap, cleaned, valid_events, benchmark_mode, main_len, robust_len,
     # #2b(strata_enabled=False):单信号事件、pap event_def 无 layers → 三层不适用,不误入 'unknown' 层。
     if strata_enabled:
         type_strata = _type_strata(valid_events, main_len, robust_len, alpha,
-                                   secondary_lens) if n >= 1 else {}
+                                   secondary_lens, verdict_policy=verdict_policy,
+                                   nfv=nfv_structured) if n >= 1 else {}
     else:
         type_strata = {"applicable": False,
                        "note": "#2b 单信号事件:三层(预喜/预亏/扭亏)不适用(pap event_def 无 layers 维度)"}
@@ -398,8 +427,8 @@ def _assemble(pap, cleaned, valid_events, benchmark_mode, main_len, robust_len,
     # 可交易口径(选项2;pap cost 冻结;新增键,不碰统计路径 → 既有键零回归)
     tradeable = _tradeable(valid_events, pap.get("cost"), main_len, robust_len) if n >= 1 else {}
 
-    # 板块分层(item 8):有效事件按 board 计数 + 主窗 CAAR;ST 层为已剔除层
-    strata = _board_strata(cleaned, valid_events)
+    # 板块分层(item 8):有效事件按 board 计数 + 主窗 CAAR;ST 层处置随 st_policy(C2)
+    strata = _board_strata(cleaned, valid_events, st_policy=st_policy)
 
     # 删失诊断窗(步3b,R5;报告项不进 verdict)
     censor_diag = _censor_diagnostic(valid_events) if n >= 1 else {}
@@ -410,8 +439,9 @@ def _assemble(pap, cleaned, valid_events, benchmark_mode, main_len, robust_len,
     # 剔除率按年份(item 7)
     rej = year_breakdown(cleaned)
 
-    # verdict(spec §6 三法一致:ADJ-BMP 截面 + Corrado 秩 + 日历时间组合)
-    verdict, verdict_note = _verdict(sample_state, car, robustness, alpha)
+    # verdict(policy 辖:spec §6 三法一致 默认 / adj_bmp_main_only=回修单元 P1-1)
+    verdict, verdict_note = _verdict(sample_state, car, robustness, alpha,
+                                     policy=verdict_policy)
 
     # 覆盖统计(item 6):有效事件估计窗有效交易日分布(分母 160,门槛 112)
     cov_days = [ce.coverage_valid_days for ce in cleaned
@@ -463,11 +493,37 @@ def _assemble(pap, cleaned, valid_events, benchmark_mode, main_len, robust_len,
     }
     if drawdown_diag is not None:      # #2b 专属键(#4 不含 → 约束③ result 逐字节不变)
         result["drawdown_diagnostic"] = drawdown_diag
+
+    # 回修单元 C6(2026-07-17,nfv_structured=True 才生效;默认 False → 零新键零回归):
+    # 全部非权威结果块注入结构化 not_for_verdict 标记;审计记三参数;唯一 verdict 键=顶层
+    # (分层块内已由 _stats_for_subset nfv 改名 sig_state_report_only)。
+    if nfv_structured:
+        marked = []
+        for key in ("per_tau", "n_eff_rho", "robustness", "type_strata", "tradeable",
+                    "board_strata", "censor_diagnostic", "industry_coverage"):
+            blk = result.get(key)
+            if isinstance(blk, dict) and blk:
+                blk["not_for_verdict"] = True
+                marked.append(key)
+        for wkey in ("robust_window", "secondary_windows"):
+            blk = result["car"].get(wkey) if result.get("car") else None
+            if isinstance(blk, dict) and blk:
+                blk["not_for_verdict"] = True
+                marked.append(f"car.{wkey}")
+        result["not_for_verdict_policy"] = {
+            "enabled": True, "marked_blocks": marked,
+            "label": "NOT_FOR_VERDICT · 非权威结果:报告项,不判决、不参与判决、不得择优改判"
+                     "(人裁 2026-07-17 回修单元 C6);唯一判决=顶层 verdict(主窗 ADJ-BMP)。"}
+    if st_policy != "reject" or verdict_policy != "three_method" or nfv_structured:
+        result["audit"]["premend_params"] = {           # 非默认参数如实入审计(默认跑零新键)
+            "st_policy": st_policy, "verdict_policy": verdict_policy,
+            "nfv_structured": nfv_structured}
     return result
 
 
-def _board_strata(cleaned, valid_events) -> dict:
-    """板块分层报告(item 8):main/chinext/star/ST。ST=已剔除层(spec §5 剔除,分层留痕)。
+def _board_strata(cleaned, valid_events, st_policy: str = "reject") -> dict:
+    """板块分层报告(item 8):main/chinext/star/ST。ST 层语义随 st_policy(回修单元 C2):
+    'reject' 默认=已剔除层(spec §5,分层留痕,注记原文不变)/'keep'=保留层(计数含 valid)。
     创业板另报 regime 分段(2020-08-24 前/后)计数。"""
     strata: dict = {}
     for ce in cleaned:
@@ -485,7 +541,11 @@ def _board_strata(cleaned, valid_events) -> dict:
         if m["board"] == "chinext":
             cx_seg[m["regime_segment"]] += 1
     strata["_chinext_regime"] = {"boundary": fa.CHINEXT_REGIME_DATE.isoformat(), **cx_seg}
-    strata["_st_note"] = "ST 为已剔除层(spec §5 ST 剔除);不进池化检验,分层仅计数留痕(item 8 调和)"
+    if st_policy == "keep":
+        strata["_st_note"] = ("ST 为保留层(st_policy='keep',人裁 2026-07-17 回修单元 C2 乙案):"
+                              "入主样本与主判决;ST/非ST 分层报告,不分别产生判决")
+    else:
+        strata["_st_note"] = "ST 为已剔除层(spec §5 ST 剔除);不进池化检验,分层仅计数留痕(item 8 调和)"
     return strata
 
 
@@ -565,13 +625,21 @@ def _sig_dir(stat, z_crit):
     return abs(stat) > z_crit, (1 if stat > 0 else (-1 if stat < 0 else 0))
 
 
-def _verdict(sample_state, car, robustness, alpha) -> tuple[str, str]:
-    """spec §6 三法一致裁决(写死):
+def _verdict(sample_state, car, robustness, alpha,
+             policy: str = "three_method") -> tuple[str, str]:
+    """判决裁决(policy 辖,回修单元 2026-07-17 显式参数化):
+    policy='three_method'(默认,spec §6 三法一致裁决,原行为逐字保留):
       · 三法(ADJ-BMP 截面 / Corrado 秩 / 日历时间组合)方向一致才确认效应;
       · 朴素 t 显著而 ADJ-BMP 不显著 → 聚集假阳性,以 ADJ-BMP 为准(NOT_SIG);
       · 日历时间法与截面法方向相反 → 事件密集期,verdict=AMBIGUOUS(报告应补事件加权,Loughran-Ritter);
       · 三法方向不一致 → AMBIGUOUS,报告分歧,不许挑有利的。
+    policy='adj_bmp_main_only'(exp8,人裁 2026-07-17 冻结前裁决三.4+回修 P1-1):
+      · 唯一判据=主窗 ADJ-BMP 显著性;辅助方法(朴素 t/Corrado 秩/日历时间)反向或反显著
+        **不得改变判决**,分歧只入 verdict_note 如实报告;
+      · INSUFFICIENT 样本量闸与主窗不可得(AMBIGUOUS)两个前置门不变(非辅助法之改判)。
     显著性取自主检验 ADJ-BMP(双侧 α=family_alpha);终态 ∈ {SIG,NOT_SIG,INSUFFICIENT,AMBIGUOUS}。"""
+    if policy not in ("three_method", "adj_bmp_main_only"):
+        raise ValueError(f"verdict policy 非法: {policy}")
     if sample_state == "INSUFFICIENT":
         return "INSUFFICIENT", f"有效事件 < {gates.SAMPLE_GATE}(样本量闸;合法终态,非报错)"
     if not car or car["main_window"].get("adj_bmp_car") is None:
@@ -589,6 +657,19 @@ def _verdict(sample_state, car, robustness, alpha) -> tuple[str, str]:
             f"Corrado秩t={_fnum(rk.get('t_rank'))}[dir{rank_dir}] / "
             f"日历t={_fnum(cal.get('t_cal'))}[dir{cal_dir}]。")
 
+    if policy == "adj_bmp_main_only":
+        v = "SIG" if adj_sig else "NOT_SIG"
+        note = base + ("判决口径=adj_bmp_main_only(人裁 2026-07-17):唯一判据=主窗 ADJ-BMP;"
+                       "辅助方法仅报告、不得改判。")
+        divergent = [lab for lab, d in (("Corrado秩", rank_dir), ("日历时间", cal_dir))
+                     if d != 0 and adj_dir != 0 and d != adj_dir]
+        if divergent:
+            note += f"⚠辅助方法方向分歧如实报告(不改判):{'/'.join(divergent)}与 ADJ-BMP 反向。"
+        if naive_sig and not adj_sig:
+            note += "朴素 t 显著而 ADJ-BMP 不显著 → 疑聚集假阳性(判决已以 ADJ-BMP 为准)。"
+        return v, note
+
+    # ── policy='three_method'(spec §6 原行为,逐字保留)──────────────────────────
     # 聚集假阳性:朴素 t 显著而 ADJ-BMP 不显著 → 以 ADJ-BMP 为准
     if naive_sig and not adj_sig:
         return "NOT_SIG", base + "朴素 t 显著而 ADJ-BMP 不显著 → 聚集假阳性,以 ADJ-BMP 为准。"

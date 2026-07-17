@@ -93,7 +93,7 @@ def render(result: dict) -> str:
     st = result.get("board_strata") or {}
     L.append("【板块分层(item 8)】")
     for k, v in st.items():
-        if k.startswith("_"):
+        if k.startswith("_") or not isinstance(v, dict):   # 非板块行(如 C6 not_for_verdict 标记)跳过
             continue
         L.append(f"  {k}: 总{v['total']} 有效{v['valid']} 剔{v['rejected']}")
     cx = st.get("_chinext_regime")
@@ -157,12 +157,15 @@ def render(result: dict) -> str:
             mw = (blk.get("car") or {}).get("main_window") or {}
             adj = mw.get("adj_bmp_car")
             lab = f"{blk.get('layer_label','')}({key})"
+            # 回修单元 C6:nfv 结构化时层块键=sig_state_report_only(报告项);默认键名不变零回归
+            sig = blk.get("verdict", blk.get("sig_state_report_only", ""))
             L.append(f"  {lab:<14} {blk.get('n_valid',0):>7}  "
                      f"{_fmt(mw.get('caar'),5):>16}  {_fmt(adj,3):>10}  "
-                     f"{_fmt(mw.get('naive_t'),3):>8}   {blk.get('verdict','')}")
+                     f"{_fmt(mw.get('naive_t'),3):>8}   {sig}")
         # 各层 verdict_note 全文(不省;分歧不许挑有利的)
         for key, blk in layers.items():
-            L.append(f"    · {blk.get('layer_label','')}({key}): {blk.get('verdict_note','')}")
+            note = blk.get("verdict_note", blk.get("sig_state_note", ""))
+            L.append(f"    · {blk.get('layer_label','')}({key}): {note}")
         nvs = ts.get("n_valid_sum")
         if nvs is not None:
             L.append(f"  三层存活合计={nvs}(应=合并 N_valid={result.get('n_valid')};层外已在视图排除)")
@@ -223,7 +226,12 @@ def render(result: dict) -> str:
         L.append(f"  注: {tr.get('note','')}")
         L.append("")
 
-    # ⑤ verdict(统计事实)
+    # ⑤ verdict(统计事实)。nfv 结构化水印(回修单元 C6):有键才渲染 → 既有 result 渲染零回归
+    nfvp = result.get("not_for_verdict_policy")
+    if nfvp:
+        L.append(f"【NOT_FOR_VERDICT 结构化(回修单元 C6)】{nfvp.get('label','')}")
+        L.append(f"  已标记块: {', '.join(nfvp.get('marked_blocks', []))}")
+        L.append("")
     L.append(f"【verdict(统计终态,非交易判断)】{result['verdict']}")
     L.append(f"  {result['verdict_note']}")
     L.append("")

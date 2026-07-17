@@ -50,8 +50,12 @@ def _rows(spec, base=_BASE):
     return out
 
 
-def sel(spec, ts="000001.SZ", base=_BASE):
-    return select_limit_open_events(ts, _rows(spec, base))
+def sel(spec, ts="000001.SZ", base=_BASE, listing="auto"):
+    """listing='auto' → 健康上市窗(list_date=首bar日,无退市);显式传 dict/None 测 fail-closed。"""
+    rows = _rows(spec, base)
+    if listing == "auto":
+        listing = {"list_date": rows[0]["trade_date"] if rows else base, "delist_date": None}
+    return select_limit_open_events(ts, rows, listing=listing)
 
 
 def ev_dates(s):
@@ -161,6 +165,31 @@ check("recent_listing:链起点第31行→False且事件照收",
 pre = [(i, "none") for i in range(29)]                      # 边界:链起点=第30行
 s = sel(pre + [(29, "up"), (30, "up"), (31, "none")])
 check("recent_listing:边界第30行→True(≤30含)", s["events"][0]["recent_listing"], True)
+
+# ── listing 锚定 fail-closed(回修单元 2026-07-17 P1-2/C5;三类异常,不猜不补)────────
+_ok_chain = [(0, "up"), (1, "up"), (2, "none")]
+s = sel(_ok_chain, listing=None)
+check("listing:缺listing整票fail-closed(链几何留痕)",
+      ([r["reason"] for r in s["rejects"]], len(s["events"]), s["counters"]["listing_anomaly_securities"]),
+      (["listing_missing_fail_closed"], 0, 1))
+s = sel(_ok_chain, listing={"list_date": None, "delist_date": None})
+check("listing:缺list_date同fail-closed", [r["reason"] for r in s["rejects"]],
+      ["listing_missing_fail_closed"])
+s = sel(_ok_chain, listing={"list_date": _BASE + dt.timedelta(days=1), "delist_date": None})
+check("listing:上市日前历史bar→fail-closed", [r["reason"] for r in s["rejects"]],
+      ["pre_listing_bar_fail_closed"])
+s = sel(_ok_chain, listing={"list_date": _BASE, "delist_date": _BASE})
+check("listing:上市区间异常(delist≤list)→fail-closed", [r["reason"] for r in s["rejects"]],
+      ["listing_window_anomaly_fail_closed"])
+s = sel(_ok_chain, listing={"list_date": _BASE, "delist_date": _BASE + dt.timedelta(days=2)})
+check("listing:bar落在退市日当日及之后→fail-closed", [r["reason"] for r in s["rejects"]],
+      ["listing_window_anomaly_fail_closed"])
+s = sel(_ok_chain, listing={"list_date": _BASE, "delist_date": _BASE + dt.timedelta(days=3)})
+check("listing:健康退市窗(末bar<delist)→事件照收", (ev_dates(s), s["counters"]["listing_anomaly_securities"]),
+      ([d(2)], 0))
+s = sel([(0, "none"), (1, "none")], listing=None)
+check("listing:无链票缺listing→零事件零剔除(无候选可剔,计数留痕)",
+      (len(s["events"]), len(s["rejects"]), s["counters"]["listing_anomaly_securities"]), (0, 0, 1))
 
 # ── 跨票聚合(merge_selections:counters 求和 + reject_reasons 计数)────────────────
 sa = sel([(0, "up"), (1, "up"), (2, "none")], ts="000001.SZ")

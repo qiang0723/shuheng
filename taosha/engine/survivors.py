@@ -18,19 +18,21 @@ from taosha.engine.cleaning import CleanedEvent, clean_event
 
 
 def iter_survivors(event_src, by_sec, all_dates, date_index, mkt, robust_len, *,
-                   st_mode: str, sec_returns: Optional[dict] = None,
+                   st_mode: str, st_policy: str = "reject", sec_returns: Optional[dict] = None,
                    reject_notes: bool = False) -> Iterator[tuple[CleanedEvent, Optional[tuple]]]:
     """逐事件产出 (ce, survivor):剔除 → (ce, None);存活 → (ce, (ev, ce, fit, est_ar_by_date, rows))。
 
     sec_returns: 预物化收益字典(pool/合成域);None → 惰性单键缓存(events 按 ts_code 有序,
       免同票重算、内存 O(1票),同提取前 runner/策略版)。
     reject_notes: True=剔除原因落 ce.notes(事件版既有文案逐字);False=不落(策略版既有行为)。
+    st_policy: ST 处置(回修单元 C2 乙案,2026-07-17):'reject' 默认=spec §5 剔除(零回归)/
+      'keep'=保留入主样本(exp8);穿线至 clean_event,本函数零判断。
     """
     n_dates = len(all_dates)
     _ret_cache: dict = {}
     for ev in event_src:
         rows = by_sec.get(ev.ts_code, [])
-        ce = clean_event(rows, ev, date_index, st_mode=st_mode)
+        ce = clean_event(rows, ev, date_index, st_mode=st_mode, st_policy=st_policy)
         if ce.rejected:
             yield ce, None
             continue
