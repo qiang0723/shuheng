@@ -1,0 +1,107 @@
+# 合成域样例(SYNTHETIC;exp8 回修二交验实物,非正式运行、非真实数据、零收益读取;
+# 参数=PAP v2 engine_params 冻结值;人令§七交验清单第6项)
+
+═══ 淘沙 · 事件研究体检报告(切片2 合成验收)═══
+快照批次: SYNTH  |  基准口径: market(口径②)
+冻结口径审计: frozen_config=b88a43ef7bd88b8e… frozen_ashare=c795b21ebc1a9d21…
+
+【样本与剔除(存活数与剔除率同报,item 11)】
+  事件总数=48  有效存活 N_valid=41  剔除=7  剔除率=0.1458  ⚠告警(>5%)
+  相关性折算有效 N(ρ̄=0.1015,口径④): Kish=8.1  KP=7.3  (N_valid=41 为存活事件数;ADJ-BMP 已内嵌此坍缩)
+  样本量闸=30 → OK
+  估计窗覆盖: 分母=160 门槛=112(70%) 有效日[min/mean/max]=157/158.5/160
+  剔除率按年份分解(item 7):
+    2020: 总24 剔5 率0.208 原因{'event_day_anomaly': 4, 'coverage': 1}
+    2021: 总8 剔2 率0.250 原因{'event_day_anomaly': 2}
+    2022: 总8 剔0 率0.000 原因{}
+    2023: 总8 剔0 率0.000 原因{}
+
+【偏差方向声明(冻结 PAP bias_statement,report 直接消费;P1-4 二次回修)】
+  清洗剔除与listing fail-closed产生样本选择,偏差方向未知;估计对象仅限清洗存活样本,不得外推为全体一字涨停链事件的效应。
+  来源锚: pap['bias_statement'](冻结 PAP 唯一权威来源,P1-4;runner 原样携带,report 直接消费)
+
+【逐日 AR 标准输出(item 8;τ=0:=T+1(首个可交易日,S2-DEC3))】 [NOT_FOR_VERDICT]
+  ρ̄=0.1015(行业内,119 对;口径④)
+  τ    N    AAR        BMP       ADJ-BMP
+   0   41    0.02539    15.936     6.714
+   1   41   -0.00108    -0.868    -0.366
+   2   41   -0.00209    -1.385    -0.584
+   3   41   -0.00107    -0.667    -0.281
+   4   41   -0.00192    -1.033    -0.435
+   5   41    0.00162     0.958     0.404
+  main_window [0,+2]: CAAR=0.02222 N=41 BMP_CAR=8.636 ADJ-BMP_CAR=3.638 [字段角色: adj_bmp_car=VERDICT_AUTHORITY,其余统计=NOT_FOR_VERDICT]
+  robust_window [0,+5]: CAAR=0.02086 N=41 BMP_CAR=4.982 ADJ-BMP_CAR=2.099 [NOT_FOR_VERDICT]
+
+【板块分层(item 8)】 [NOT_FOR_VERDICT]
+  main: 总18 有效15 剔3
+  chinext: 总16 有效13 剔3
+  star: 总8 有效7 剔1
+  ST: 总6 有效6 剔0
+  创业板 regime 边界 2020-08-24: 前(±10%)6 后(±20%)7
+  注: ST 为保留层(st_policy='keep',人裁 2026-07-17 回修单元 C2 乙案):入主样本与主判决;ST/非ST 分层报告,不分别产生判决
+  行业覆盖(口径④): 'unknown' 残余组 0/41 (0.000) [NOT_FOR_VERDICT]
+
+【删失诊断窗(R5;报告项·不进 verdict;删失诊断窗 主[0,+2]/稳健[0,+5](frozen,R5;报告项不进 verdict;检验窗见 car))】 [NOT_FOR_VERDICT]
+  ① 各 τ 逐日 AR(全体;反应时间形状/延迟价格发现):
+     τ   N     AAR        BMP     ADJ-BMP
+     0   41    0.02539  15.936   6.714
+     1   41   -0.00108  -0.868  -0.366
+     2   41   -0.00209  -1.385  -0.584
+     3   41   -0.00107  -0.667  -0.281
+     4   41   -0.00192  -1.033  -0.435
+     5   41    0.00162   0.958   0.404
+  ② 各 τ 删失计数占比(全体;一字板/涨停/跌停/停牌):
+     τ   N   一字板  涨停  跌停  停牌   删失占比
+     0  41      0     0     0     0   0.000
+     1  41      0     0     0     0   0.000
+     2  41      0     0     0     0   0.000
+     3  41      0     0     0     0   0.000
+     4  41      0     0     0     0   0.000
+     5  41      0     0     0     0   0.000
+  ③ 板块四层分拆(main/chinext/star/ST;ST=已剔除层→有效0;τ=0 概况,全量见 result_json):
+    main: 有效15  τ=0[一字0/涨停0/停牌0/删失占比0.000]
+    chinext: 有效13  τ=0[一字0/涨停0/停牌0/删失占比0.000]
+    star: 有效7  τ=0[一字0/涨停0/停牌0/删失占比0.000]
+    ST: 有效6  τ=0[一字0/涨停0/停牌0/删失占比0.000]
+
+【稳健性两道(spec §6;三法之秩/日历)】 [NOT_FOR_VERDICT]
+  Corrado 秩检验: 主窗 t_rank=3.360 稳健窗 t_rank=2.309(非参,对非正态/事件方差稳健)
+  日历时间组合法: 主窗 t_cal=5.264(日历日 122) 稳健窗 t_cal=3.650(日历日 227)(聚集并单观测)
+
+【三层分解】不适用 —— type_strata 不适用(非 forecast 分层事件);分层诊断走 diagnostic_dimensions 两条独立轴(C6 二次回修)
+
+【可交易口径净收益(选项2;pap cost 冻结;报告项·不改统计判决)】 [NOT_FOR_VERDICT]
+  成本(冻结率): 佣金=0.00025 印花(卖)=0.00100 滑点(单边)=0.00100 → 买费=0.00125 卖费=0.00225
+  口径: 进场=τ=0 后复权 open,出场=窗尾后复权 close,净额=close_exit*(1-卖费)/(open_entry*(1+买费))-1
+  合并         main  [0,+2]    N=41     净:均值=0.01109 中位=0.01259 胜率=0.780 | 毛均=0.01464 | 排除(窗尾缺close)=0 出场删失[一字0/跌停0/停牌0]
+  合并         robust[0,+5]    N=41     净:均值=0.01677 中位=0.01547 胜率=0.610 | 毛均=0.02033 | 排除(窗尾缺close)=0 出场删失[一字0/跌停0/停牌0]
+  recent_listing(recent_listing) main  [0,+2]    N=17     净:均值=0.00818 中位=0.00888 胜率=0.706 | 毛均=0.01172 | 排除(窗尾缺close)=0 出场删失[一字0/跌停0/停牌0]
+  recent_listing(recent_listing) robust[0,+5]    N=17     净:均值=0.01455 中位=0.00787 胜率=0.588 | 毛均=0.01811 | 排除(窗尾缺close)=0 出场删失[一字0/跌停0/停牌0]
+  seasoned(seasoned) main  [0,+2]    N=24     净:均值=0.01315 中位=0.01626 胜率=0.833 | 毛均=0.01671 | 排除(窗尾缺close)=0 出场删失[一字0/跌停0/停牌0]
+  seasoned(seasoned) robust[0,+5]    N=24     净:均值=0.01834 中位=0.02418 胜率=0.625 | 毛均=0.02191 | 排除(窗尾缺close)=0 出场删失[一字0/跌停0/停牌0]
+  注: pap 既定可交易口径(cost 冻结):进场=τ=0 后复权 open、出场=窗尾后复权 close、成本乘式净额(买费=佣金+滑点/卖费=佣金+印花+滑点);一字涨停不可成交由 cleaning 顺延/放弃处置进场侧;窗尾不可成交按字面'收盘出'计、单列诊断。报告与锚对照用途,不改统计判决。
+
+【正交诊断维度(C6 二次回修;两条独立轴,每层 NOT_FOR_VERDICT·不判决不改判)】
+  轴 listing_age [NOT_FOR_VERDICT]: 上市交易龄维度:recent_listing=链起点自身真实交易行序号≤30 / seasoned=其余;两层一律同一估计窗与覆盖门槛(112/160),不预判任何层无CAR、不预限主结论适用域(C3)
+    recent_listing [NOT_FOR_VERDICT]: 事件N=24 存活=17 剔除=7
+      主窗[0,+2]: CAAR=0.02260 ADJ-BMP_CAR=2.591 朴素t=4.855(预注册报告统计,非判决)
+      稳健窗[0,+5]: CAAR=0.01572 ADJ-BMP_CAR=1.199
+    seasoned [NOT_FOR_VERDICT]: 事件N=24 存活=24 剔除=0
+      主窗[0,+2]: CAAR=0.02195 ADJ-BMP_CAR=4.550 朴素t=7.396(预注册报告统计,非判决)
+      稳健窗[0,+5]: CAAR=0.02450 ADJ-BMP_CAR=2.926
+  轴 st [NOT_FOR_VERDICT]: ST/非ST 维度:is_st=事件日行判定(st_mode 辖);明确正交诊断维度,不藏于板块计数(C6)
+    ST [NOT_FOR_VERDICT]: 事件N=6 存活=6 剔除=0
+      主窗[0,+2]: CAAR=0.02341 ADJ-BMP_CAR=2.841 朴素t=3.699(预注册报告统计,非判决)
+      稳健窗[0,+5]: CAAR=0.02320 ADJ-BMP_CAR=1.581
+    non_ST [NOT_FOR_VERDICT]: 事件N=42 存活=35 剔除=7
+      主窗[0,+2]: CAAR=0.02201 ADJ-BMP_CAR=3.658 朴素t=7.772(预注册报告统计,非判决)
+      稳健窗[0,+5]: CAAR=0.02045 ADJ-BMP_CAR=2.116
+  二维计数核对(仅计数,不计统计/判决): {'recent_listing×non_ST': {'n_events': 24, 'n_valid': 17}, 'seasoned×ST': {'n_events': 6, 'n_valid': 6}, 'seasoned×non_ST': {'n_events': 18, 'n_valid': 18}}
+
+【NOT_FOR_VERDICT 结构化(回修单元 C6)】NOT_FOR_VERDICT · 非权威结果:报告项,不判决、不参与判决、不得择优改判(人裁 2026-07-17 回修单元 C6);唯一判决=顶层 verdict(主窗 ADJ-BMP)。
+  已标记块: per_tau, n_eff_rho, robustness, type_strata, tradeable, board_strata, censor_diagnostic, industry_coverage, diagnostic_dimensions, car.robust_window
+
+【verdict(统计终态,非交易判断)】SIG
+  主窗(双侧 α=0.0500,临界±1.960):ADJ-BMP_CAR=3.638[显著] / 朴素t=8.675 / Corrado秩t=3.360[dir1] / 日历t=5.264[dir1]。判决口径=adj_bmp_main_only(人裁 2026-07-17):唯一判据=主窗 ADJ-BMP;辅助方法仅报告、不得改判。
+
+【口吻声明】本报告只陈述统计事实(CAR/检验统计量/样本数/校正门槛/verdict),不含任何交易建议或'该信号有 alpha'类判断(铁律⑤:用其手不引其忆)。

@@ -1,0 +1,355 @@
+{
+  "_note": "SYNTHETIC 合成域样例(交验清单6/7/8 实物;非正式运行)",
+  "diagnostic_dimensions": {
+    "not_for_verdict": true,
+    "label": "正交诊断维度(C6 二次回修):两条独立轴分别结构化输出(禁四格交叉统计);层块零判决字段,不产生独立判决、不改变顶层判决;零存活层状态按真实原因命名(NO_EVENTS_IN_LAYER / UNESTIMABLE_BY_FROZEN_COVERAGE / UNESTIMABLE_AFTER_FROZEN_CLEANING)且块不缺席。",
+    "dims": {
+      "listing_age": {
+        "not_for_verdict": true,
+        "note": "上市交易龄维度:recent_listing=链起点自身真实交易行序号≤30 / seasoned=其余;两层一律同一估计窗与覆盖门槛(112/160),不预判任何层无CAR、不预限主结论适用域(C3)",
+        "layers": {
+          "recent_listing": {
+            "not_for_verdict": true,
+            "n_events": 24,
+            "n_valid": 17,
+            "n_rejected": 7,
+            "rejections": {
+              "by_year": {
+                "2020": {
+                  "total": 14,
+                  "rejected": 5,
+                  "by_reason": {
+                    "event_day_anomaly": 4,
+                    "coverage": 1
+                  },
+                  "reject_ratio": 0.35714285714285715
+                },
+                "2021": {
+                  "total": 4,
+                  "rejected": 2,
+                  "by_reason": {
+                    "event_day_anomaly": 2
+                  },
+                  "reject_ratio": 0.5
+                },
+                "2022": {
+                  "total": 3,
+                  "rejected": 0,
+                  "by_reason": {},
+                  "reject_ratio": 0.0
+                },
+                "2023": {
+                  "total": 3,
+                  "rejected": 0,
+                  "by_reason": {},
+                  "reject_ratio": 0.0
+                }
+              },
+              "total": 24,
+              "rejected": 7,
+              "reject_ratio": 0.2916666666666667,
+              "alert": true,
+              "alert_threshold": 0.05
+            },
+            "rejections_by_reason_total": {
+              "event_day_anomaly": 6,
+              "coverage": 1
+            },
+            "stats": {
+              "rho_bar": 0.12226480295654864,
+              "main_window": {
+                "taus": "[0,+2]",
+                "caar": 0.022597022390282183,
+                "naive_t": 4.8546846895263975,
+                "n": 17,
+                "csar_mean": 2.2336223904444235,
+                "csar_sd": 1.936736965473511,
+                "bmp_car": 4.755142906716482,
+                "kp_factor": 0.5448941483272748,
+                "adj_bmp_car": 2.591049544329759
+              },
+              "robust_window": {
+                "taus": "[0,+5]",
+                "caar": 0.0157181682538838,
+                "naive_t": 2.281236254552009,
+                "n": 17,
+                "csar_mean": 1.5082583804818261,
+                "csar_sd": 2.825891954519088,
+                "bmp_car": 2.2006179689583716,
+                "kp_factor": 0.5448941483272748,
+                "adj_bmp_car": 1.199103853989269
+              }
+            }
+          },
+          "seasoned": {
+            "not_for_verdict": true,
+            "n_events": 24,
+            "n_valid": 24,
+            "n_rejected": 0,
+            "rejections": {
+              "by_year": {
+                "2020": {
+                  "total": 10,
+                  "rejected": 0,
+                  "by_reason": {},
+                  "reject_ratio": 0.0
+                },
+                "2021": {
+                  "total": 4,
+                  "rejected": 0,
+                  "by_reason": {},
+                  "reject_ratio": 0.0
+                },
+                "2022": {
+                  "total": 5,
+                  "rejected": 0,
+                  "by_reason": {},
+                  "reject_ratio": 0.0
+                },
+                "2023": {
+                  "total": 5,
+                  "rejected": 0,
+                  "by_reason": {},
+                  "reject_ratio": 0.0
+                }
+              },
+              "total": 24,
+              "rejected": 0,
+              "reject_ratio": 0.0,
+              "alert": false,
+              "alert_threshold": 0.05
+            },
+            "rejections_by_reason_total": {},
+            "stats": {
+              "rho_bar": 0.06623016638512949,
+              "main_window": {
+                "taus": "[0,+2]",
+                "caar": 0.021951411596848037,
+                "naive_t": 7.396211222291463,
+                "n": 24,
+                "csar_mean": 2.2001424925814237,
+                "csar_sd": 1.4410306169150364,
+                "bmp_car": 7.479683505652208,
+                "kp_factor": 0.6083254795361411,
+                "adj_bmp_car": 4.550082055354444
+              },
+              "robust_window": {
+                "taus": "[0,+5]",
+                "caar": 0.02449551482457355,
+                "naive_t": 4.729367693777774,
+                "n": 24,
+                "csar_mean": 2.430021270278695,
+                "csar_sd": 2.4746067823431845,
+                "bmp_car": 4.81071353943063,
+                "kp_factor": 0.6083254795361411,
+                "adj_bmp_car": 2.9264796207851447
+              }
+            }
+          }
+        }
+      },
+      "st": {
+        "not_for_verdict": true,
+        "note": "ST/非ST 维度:is_st=事件日行判定(st_mode 辖);明确正交诊断维度,不藏于板块计数(C6)",
+        "layers": {
+          "ST": {
+            "not_for_verdict": true,
+            "n_events": 6,
+            "n_valid": 6,
+            "n_rejected": 0,
+            "rejections": {
+              "by_year": {
+                "2020": {
+                  "total": 1,
+                  "rejected": 0,
+                  "by_reason": {},
+                  "reject_ratio": 0.0
+                },
+                "2021": {
+                  "total": 1,
+                  "rejected": 0,
+                  "by_reason": {},
+                  "reject_ratio": 0.0
+                },
+                "2022": {
+                  "total": 2,
+                  "rejected": 0,
+                  "by_reason": {},
+                  "reject_ratio": 0.0
+                },
+                "2023": {
+                  "total": 2,
+                  "rejected": 0,
+                  "by_reason": {},
+                  "reject_ratio": 0.0
+                }
+              },
+              "total": 6,
+              "rejected": 0,
+              "reject_ratio": 0.0,
+              "alert": false,
+              "alert_threshold": 0.05
+            },
+            "rejections_by_reason_total": {},
+            "stats": {
+              "rho_bar": 0.1098007827179155,
+              "main_window": {
+                "taus": "[0,+2]",
+                "caar": 0.023410220555762078,
+                "naive_t": 3.6992676472289947,
+                "n": 6,
+                "csar_mean": 2.4473094794556767,
+                "csar_sd": 1.5994044219072716,
+                "bmp_car": 3.7480573301117643,
+                "kp_factor": 0.758084027842819,
+                "adj_bmp_car": 2.8413423973969287
+              },
+              "robust_window": {
+                "taus": "[0,+5]",
+                "caar": 0.02319725735617045,
+                "naive_t": 2.0520340620642816,
+                "n": 6,
+                "csar_mean": 2.3687649663552297,
+                "csar_sd": 2.782343845949697,
+                "bmp_car": 2.0853876477552284,
+                "kp_factor": 0.758084027842819,
+                "adj_bmp_car": 1.5808990676239454
+              }
+            }
+          },
+          "non_ST": {
+            "not_for_verdict": true,
+            "n_events": 42,
+            "n_valid": 35,
+            "n_rejected": 7,
+            "rejections": {
+              "by_year": {
+                "2020": {
+                  "total": 23,
+                  "rejected": 5,
+                  "by_reason": {
+                    "event_day_anomaly": 4,
+                    "coverage": 1
+                  },
+                  "reject_ratio": 0.21739130434782608
+                },
+                "2021": {
+                  "total": 7,
+                  "rejected": 2,
+                  "by_reason": {
+                    "event_day_anomaly": 2
+                  },
+                  "reject_ratio": 0.2857142857142857
+                },
+                "2022": {
+                  "total": 6,
+                  "rejected": 0,
+                  "by_reason": {},
+                  "reject_ratio": 0.0
+                },
+                "2023": {
+                  "total": 6,
+                  "rejected": 0,
+                  "by_reason": {},
+                  "reject_ratio": 0.0
+                }
+              },
+              "total": 42,
+              "rejected": 7,
+              "reject_ratio": 0.16666666666666666,
+              "alert": true,
+              "alert_threshold": 0.05
+            },
+            "rejections_by_reason_total": {
+              "event_day_anomaly": 6,
+              "coverage": 1
+            },
+            "stats": {
+              "rho_bar": 0.08956825760885279,
+              "main_window": {
+                "taus": "[0,+2]",
+                "caar": 0.0220149124464165,
+                "naive_t": 7.771922341578882,
+                "n": 35,
+                "csar_mean": 2.17403267379358,
+                "csar_sd": 1.6681661919697146,
+                "bmp_car": 7.710113543328364,
+                "kp_factor": 0.47440276762396594,
+                "adj_bmp_car": 3.6576992036499987
+              },
+              "robust_window": {
+                "taus": "[0,+5]",
+                "caar": 0.02045479062767906,
+                "naive_t": 4.497395393242496,
+                "n": 35,
+                "csar_mean": 1.9928089473356672,
+                "csar_sd": 2.6437447829916154,
+                "bmp_car": 4.45943829402914,
+                "kp_factor": 0.47440276762396594,
+                "adj_bmp_car": 2.1155698687357214
+              }
+            }
+          }
+        }
+      }
+    },
+    "cross_counts": {
+      "note": "二维计数矩阵:仅计数核对(审计用),不计算 CAR/显著性/判决(人令调整四)",
+      "cells": {
+        "recent_listing×non_ST": {
+          "n_events": 24,
+          "n_valid": 17
+        },
+        "seasoned×ST": {
+          "n_events": 6,
+          "n_valid": 6
+        },
+        "seasoned×non_ST": {
+          "n_events": 18,
+          "n_valid": 18
+        }
+      }
+    }
+  },
+  "bias_statement": {
+    "text": "清洗剔除与listing fail-closed产生样本选择,偏差方向未知;估计对象仅限清洗存活样本,不得外推为全体一字涨停链事件的效应。",
+    "source_anchor": "pap['bias_statement'](冻结 PAP 唯一权威来源,P1-4;runner 原样携带,report 直接消费)"
+  },
+  "car_main_window_field_roles": {
+    "taus": "CONTEXT",
+    "caar": "NOT_FOR_VERDICT",
+    "naive_t": "NOT_FOR_VERDICT",
+    "n": "CONTEXT",
+    "csar_mean": "NOT_FOR_VERDICT",
+    "csar_sd": "NOT_FOR_VERDICT",
+    "bmp_car": "NOT_FOR_VERDICT",
+    "kp_factor": "NOT_FOR_VERDICT",
+    "adj_bmp_car": "VERDICT_AUTHORITY"
+  },
+  "not_for_verdict_policy": {
+    "enabled": true,
+    "marked_blocks": [
+      "per_tau",
+      "n_eff_rho",
+      "robustness",
+      "type_strata",
+      "tradeable",
+      "board_strata",
+      "censor_diagnostic",
+      "industry_coverage",
+      "diagnostic_dimensions",
+      "car.robust_window"
+    ],
+    "label": "NOT_FOR_VERDICT · 非权威结果:报告项,不判决、不参与判决、不得择优改判(人裁 2026-07-17 回修单元 C6);唯一判决=顶层 verdict(主窗 ADJ-BMP)。"
+  },
+  "audit_premend_params": {
+    "st_policy": "keep",
+    "verdict_policy": "adj_bmp_main_only",
+    "nfv_structured": true,
+    "postpone_policy": "unified",
+    "diagnostic_dims": [
+      "listing_age",
+      "st"
+    ]
+  }
+}
