@@ -71,13 +71,15 @@ def render(result: dict) -> str:
                  f"原因{d['by_reason']}")
     L.append("")
 
-    # ① 偏差方向声明(item 9;P1-4 二次回修:result 携带冻结 PAP bias_statement 时直接消费
-    #    渲染〔权威来源唯一=pap,runner 已锚定〕;默认无键 → 原固定段逐字节不变)
+    # ① 偏差方向声明(item 9;P1-4 二次回修+回修三:result 携带冻结 PAP bias_statement 时
+    #    直接消费渲染〔权威来源唯一=pap,runner 已锚定〕;来源锚必须直接显示实际 PAP digest
+    #    (真锚三元组 pap_sha256/key/text,禁描述性占位);默认无键 → 原固定段逐字节不变)
     bs = result.get("bias_statement")
     if bs:
         L.append("【偏差方向声明(冻结 PAP bias_statement,report 直接消费;P1-4 二次回修)】")
         L.append(f"  {bs['text']}")
-        L.append(f"  来源锚: {bs['source_anchor']}")
+        L.append(f"  来源锚: pap_sha256={bs['pap_sha256']} key={bs['key']}"
+                 f"(引擎自实收冻结 PAP 内容重算 canonical digest,非调用方填写;回修三)")
     else:
         L.append(BIAS_DECLARATION)
     L.append("")

@@ -27,7 +27,7 @@ from taosha.engine.cleaning import (
 )
 from taosha.engine.survivors import iter_survivors
 from taosha.experiment import gates
-from taosha.experiment.pap import parse_test_windows
+from taosha.experiment.pap import canonical_pap_sha256, parse_test_windows
 
 Num = Optional[float]
 # 检验窗从 pap 读取(裁定 2026-07-07:事件窗属事件定义、台账为唯一事实源),运行时解析,
@@ -234,7 +234,8 @@ def _diag_layer_stats(sub_valid: list, main_len: int, robust_len: int,
 def _diagnostic_dimensions(cleaned: list, valid_events: list, main_len: int, robust_len: int,
                            secondary_lens: tuple, dims: tuple) -> dict:
     """两条独立诊断轴(C6;禁四格交叉统计)+ 零存活按真实原因命名(人令调整五)。
-    层集合=预注册必出层 ∪ 实际观测层(意外层如实上报不静默);必出层零事件也出块。
+    层集合=预注册必出层,零事件也出块;观测到白名单外层 → fail-closed raise(回修三·
+    窄阻塞二:意外层不得追加入报告后继续研究;主校验在 run_study 事件源处先行,此为兜底)。
     状态命名(仅零存活层;n_valid>0 出统计块、不产生任何状态判决):
       n_events=0 → NO_EVENTS_IN_LAYER;
       n_events>0 且剔因全 ⊆ {coverage,history}(冻结覆盖/历史门槛)→ UNESTIMABLE_BY_FROZEN_COVERAGE;
@@ -245,8 +246,10 @@ def _diagnostic_dimensions(cleaned: list, valid_events: list, main_len: int, rob
         spec = _DIAG_DIM_SPECS[dim]
         keys = list(spec["layers"])
         observed = {_diag_dim_key(dim, ce) for ce in cleaned}
-        for k in sorted(observed - set(keys)):
-            keys.append(k)                      # 意外层如实上报
+        unexpected = sorted(observed - set(keys))
+        if unexpected:                          # 回修三·窄阻塞二:意外层禁追加,fail-closed
+            raise ValueError(f"诊断维度 {dim} 观测到预注册白名单外层 {unexpected} → fail-closed"
+                             f"(合法={keys};意外层不得追加入报告后继续研究)")
         layers: dict = {}
         for key in keys:
             sub_cleaned = [ce for ce in cleaned if _diag_dim_key(dim, ce) == key]
@@ -374,7 +377,8 @@ def run_study(reader, pap: dict, *, benchmark_mode: str = "market",
               st_policy: str = "reject", verdict_policy: str = "three_method",
               nfv_structured: bool = False, postpone_policy: str = "legacy",
               diagnostic_dims: tuple = (),
-              bias_statement_assert: Optional[str] = None) -> dict:
+              bias_statement_assert: Optional[str] = None,
+              pap_sha256_assert: Optional[str] = None) -> dict:
     """跑一条已冻结假设的事件研究,返回 result 字典(供 report + 落库)。
 
     benchmark_mode: 'market'(全市场等权)/'pool'(静态池等权)/'pool_pit'(#2b b1池等权PIT活基准,
@@ -398,6 +402,10 @@ def run_study(reader, pap: dict, *, benchmark_mode: str = "market",
       =pap['bias_statement'],runner 直接从 pap 读取原样携带、report 直接消费;本参数提供时
       与 pap 不逐字相等 → fail-closed 拒。回修新策略启用(unified/diagnostic_dims/nfv)而
       pap 缺 bias_statement → 拒绝运行。默认旧路径(pap 无此键)零新键,报告固定段不变。
+    pap_sha256_assert: **仅作与引擎重算值逐字断言,非来源**(回修三·窄阻塞一):PAP digest
+      唯一权威=引擎对实收 pap 内容重算 canonical_pap_sha256(pap.py 单一口径:词典序排序键+
+      紧凑分隔符+UTF-8+末尾单换行,顶层 "_" 前缀运行时键不进 digest);本参数提供时与重算值
+      不逐字相等 → fail-closed 拒。result.bias_statement 携带 {pap_sha256,key,text} 真锚三元组。
     """
     if st_policy not in ("reject", "keep"):
         raise ValueError(f"st_policy 非法: {st_policy}(合法={{'reject','keep'}})")
@@ -418,6 +426,14 @@ def run_study(reader, pap: dict, *, benchmark_mode: str = "market",
     if bias_statement_assert is not None and bias_statement_assert != pap_bias:
         raise ValueError("bias_statement_assert 与 pap['bias_statement'] 不逐字相等 → fail-closed"
                          "(P1-4:本参数仅作断言,不得作为第二来源覆盖 PAP)")
+    # 回修三·窄阻塞一:PAP digest 唯一权威=引擎重算(canonical_pap_sha256,pap.py 单一口径);
+    # 调用方另传 digest 仅逐字断言,不一致 fail-closed;真锚三元组随 bias_statement 入 result。
+    pap_sha256 = (canonical_pap_sha256(pap)
+                  if (pap_bias or pap_sha256_assert is not None) else None)
+    if pap_sha256_assert is not None and pap_sha256_assert != pap_sha256:
+        raise ValueError(f"pap_sha256_assert 与引擎重算 canonical digest 不逐字相等 → fail-closed"
+                         f"(回修三:调用方 digest 仅作断言,不得作为来源;"
+                         f"引擎重算={pap_sha256} / 调用方={pap_sha256_assert})")
     # ── 检验窗从 pap 读(裁定 2026-07-07):main/robust = 首/末检验窗点数(#4/#2b=(20,60))──
     test_win = parse_test_windows(pap)
     main_len, robust_len = test_win[0], test_win[-1]
@@ -427,6 +443,26 @@ def run_study(reader, pap: dict, *, benchmark_mode: str = "market",
 
     # 事件源:#2b 显式传入生成事件(价格模式 PIT);#4 走 reader.events()(台账)。
     event_src = list(events) if events is not None else list(reader.events())
+    # 回修三·窄阻塞二(人转外部复核令 2026-07-17):listing_age 诊断启用时,全部事件层键须
+    # 严格∈PAP 白名单 diagnostic_dimensions.axes.listing_age(逐项一致对账);None/空串/unknown/
+    # forecast 旧层名及任何白名单外值一律 fail-closed 拒绝运行——校验先于一切清洗/CAR 计算与
+    # 顶层 _verdict() 调用,意外层不得追加入报告、不得进入主样本与顶层判决。
+    if "listing_age" in diagnostic_dims:
+        frozen_layers = _DIAG_DIM_SPECS["listing_age"]["layers"]
+        pap_layers = ((pap.get("diagnostic_dimensions") or {}).get("axes") or {}).get("listing_age")
+        if list(pap_layers or ()) != list(frozen_layers):
+            raise ValueError(f"listing_age 层白名单与 PAP diagnostic_dimensions.axes.listing_age "
+                             f"不逐项一致 → fail-closed(引擎={list(frozen_layers)} / "
+                             f"PAP={pap_layers!r};回修三·窄阻塞二)")
+        bad: dict = {}
+        for ev in event_src:
+            lay = getattr(ev, "event_type_layer", None)
+            if lay not in frozen_layers:
+                bad[repr(lay)] = bad.get(repr(lay), 0) + 1
+        if bad:
+            raise ValueError(f"listing_age 层键出现白名单外值 → fail-closed 拒绝运行"
+                             f"(合法={list(frozen_layers)};违例计数={bad};"
+                             f"回修三·窄阻塞二:意外层不得入主样本/报告/顶层判决)")
     # #2b drawdown 事件带 D1/D2/D3 诊断属性(报告项,不进 verdict)——据此启用诊断聚合与 se_meta 带出。
     is_drawdown = bool(event_src) and hasattr(event_src[0], "d1_never_broke_ma10")
 
@@ -538,14 +574,16 @@ def run_study(reader, pap: dict, *, benchmark_mode: str = "market",
                      drawdown_events=(event_src if is_drawdown else None),
                      secondary_lens=secondary_lens, st_policy=st_policy,
                      verdict_policy=verdict_policy, nfv_structured=nfv_structured,
-                     postpone_policy=postpone_policy, diagnostic_dims=diagnostic_dims)
+                     postpone_policy=postpone_policy, diagnostic_dims=diagnostic_dims,
+                     pap_bias=pap_bias, pap_sha256=pap_sha256)
 
 
 def _assemble(pap, cleaned, valid_events, benchmark_mode, main_len, robust_len,
               *, strata_enabled: bool = True, drawdown_events=None,
               secondary_lens: tuple = (), st_policy: str = "reject",
               verdict_policy: str = "three_method", nfv_structured: bool = False,
-              postpone_policy: str = "legacy", diagnostic_dims: tuple = ()) -> dict:
+              postpone_policy: str = "legacy", diagnostic_dims: tuple = (),
+              pap_bias: Optional[str] = None, pap_sha256: Optional[str] = None) -> dict:
     ses = [v[0] for v in valid_events]
     rank_secs = [v[2] for v in valid_events]
     cal_evs = [v[3] for v in valid_events]
@@ -679,13 +717,17 @@ def _assemble(pap, cleaned, valid_events, benchmark_mode, main_len, robust_len,
         result["diagnostic_dimensions"] = _diagnostic_dimensions(
             cleaned, valid_events, main_len, robust_len, secondary_lens, diagnostic_dims)
 
-    # P1-4(人令调整二):偏差声明唯一权威=pap['bias_statement'],原样携带+来源锚;
-    # 既有冻结 pap 均无此键 → 默认路径零新键、报告固定段不变。
-    if pap.get("bias_statement"):
+    # P1-4(人令调整二+回修三·窄阻塞一):偏差声明唯一权威=pap['bias_statement'],原样携带;
+    # 来源锚=真锚三元组 {pap_sha256,key,text}——pap_sha256 由引擎对实收 PAP 内容重算
+    # (canonical_pap_sha256,调用方不得填写),source_anchor 直接显示实际 digest,
+    # 禁描述性占位文本。既有冻结 pap 均无此键 → 默认路径零新键、报告固定段不变。
+    if pap_bias:
         result["bias_statement"] = {
-            "text": pap["bias_statement"],
-            "source_anchor": "pap['bias_statement'](冻结 PAP 唯一权威来源,P1-4;"
-                             "runner 原样携带,report 直接消费)"}
+            "key": "bias_statement",
+            "text": pap_bias,
+            "pap_sha256": pap_sha256,
+            "source_anchor": f"pap_sha256={pap_sha256} key=bias_statement"
+                             f"(引擎自实收冻结 PAP 内容重算 canonical digest,回修三)"}
 
     # 回修单元 C6(2026-07-17,nfv_structured=True 才生效;默认 False → 零新键零回归):
     # 全部非权威结果块注入结构化 not_for_verdict 标记;审计记三参数;唯一 verdict 键=顶层
