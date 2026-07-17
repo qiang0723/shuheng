@@ -1,10 +1,24 @@
-"""exp8 回修单元 engine 适配自检(人令 2026-07-17 深夜二;零 DB,合成域)。
-必验覆盖:①T+1 顺延 1/5/6 日边界(一字/一字+停牌混合;T/T+1 纯停牌=item7 'suspension' 剔除
-如实验证)②st_policy='reject'/'keep' 两态+非法值拒 ③辅助方法反向不得改变 adj_bmp_main_only
-判决(_verdict 两策略可区分用例)④NOT_FOR_VERDICT 结构化(全 result 扫描:唯一 verdict 键=顶层)
-⑤默认参数路径结构零回归(不加键、双跑相等;逐字节 sha 硬证=合成 e2e 3116ba9b 随件另跑)。
+"""exp8 冻结前回修二 engine 适配自检(人令 2026-07-17 深夜三 + 中途调整令;零 DB,合成域)。
+
+必验覆盖(执行令§四-§七 + 调整令一~六):
+  ①C1:postpone_policy 参数化——unified 下纯停牌 1/5/6 日、一字 1/5/6 日、混合 5/6 日统一顺延
+    计数(1/5 留、6 剔 postpone);T 缺行/停牌=event_day_anomaly fail-closed 单独留痕;notes 写
+    "不可交易状态顺延"并列停牌/一字数量;legacy 默认行为逐字保留(T/T+1 停牌=item7 suspension)。
+  ②st_policy 两态+非法值拒(C2 保留,不重开)。
+  ③辅助方法反向不得改变 adj_bmp_main_only 判决(P1-1 保留,不重开)。
+  ④C3:诊断层三态 fixture——有存活(统计块,无状态判决)/有事件覆盖归零
+    (UNESTIMABLE_BY_FROZEN_COVERAGE)/零事件(NO_EVENTS_IN_LAYER);另证清洗致零存活
+    =UNESTIMABLE_AFTER_FROZEN_CLEANING;块不缺席。
+  ⑤C6 攻击:诊断路径禁调 _verdict(monkeypatch 计数=顶层恰 1 次+诊断构建器在 _verdict 炸弹下
+    照常工作);result 递归唯一顶层 verdict;零 sig_state_report_only 及等价判决字段;诊断子树
+    无 SIG/NOT_SIG/AMBIGUOUS/INSUFFICIENT 值;两条独立轴无四格交叉统计(cross_counts 仅计数)。
+  ⑥field_roles:与主窗实际字段集合逐项对账、无漏项;未分类新字段 fail-closed。
+  ⑦P1-4:偏差声明逐字来自 pap['bias_statement'](唯一权威);exp8 报告旧"保守下界"类措辞
+    零命中+新声明逐字对账;bias_statement_assert 仅作断言(不等 fail-closed);新策略启用而
+    pap 缺键拒跑;默认旧路径固定段+渲染逐字节零回归。
 用法: python taosha/harness/verify_limit_open_engine.py
 """
+import dataclasses
 import datetime as dt
 import json
 import os
@@ -15,7 +29,9 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspa
 
 from taosha.engine import runner as rn                       # noqa: E402
 from taosha.engine import report as report_mod               # noqa: E402
-from taosha.engine.cleaning import MAX_POSTPONE, clean_event  # noqa: E402
+from taosha.engine.cleaning import (                          # noqa: E402
+    MAX_POSTPONE, CleanedEvent, clean_event,
+)
 from taosha.harness.make_ashare_fixture import generate, write_csv  # noqa: E402
 from taosha.harness.run_ashare_study import synth_pap        # noqa: E402
 from taosha.reader.contract import EventRow, PriceRow        # noqa: E402
@@ -34,7 +50,7 @@ def check(name, got, want):
     print(f"[{'PASS' if ok else 'FAIL'}] {name}: got={got!r} want={want!r}")
 
 
-# ── 证①② 公共台架:320 交易日轴,事件日 T=idx260(估计窗 [T-250,T-91] 完整)─────────
+# ── 公共台架:320 交易日轴,事件日 T=idx260(估计窗 [T-250,T-91] 完整)──────────────
 def _biz_days(start, n):
     out, d = [], start
     while len(out) < n:
@@ -51,38 +67,85 @@ _EV = EventRow(ts_code="A", event_id="A:e1", first_ann_date=_DS[_T],
                event_type_layer="预喜", snapshot_batch="S")
 
 
-def _mk(i, one_word=False, is_st=False):
-    return PriceRow("A", _DS[i], 10.0, False, ("one_word" if one_word else "none"),
-                    "main", is_st, "I")
+def _mk(i, one_word=False, is_st=False, susp_flag=False):
+    return PriceRow("A", _DS[i], (None if susp_flag else 10.0), susp_flag,
+                    ("one_word" if one_word else "none"), "main", is_st, "I")
 
 
-def _rows(one_word_idx=(), missing_idx=(), st_event_day=False):
-    """全轴 320 行,one_word_idx 置一字、missing_idx 缺行(=停牌)、st_event_day 置事件日行 is_st。"""
+def _rows(one_word_idx=(), missing_idx=(), flag_idx=(), st_event_day=False):
+    """全轴 320 行:one_word_idx 置一字、missing_idx 缺行(=停牌)、flag_idx 停牌 flag 行、
+    st_event_day 置事件日行 is_st。"""
     out = []
     for i in range(320):
         if i in missing_idx:
             continue
-        out.append(_mk(i, one_word=(i in one_word_idx), is_st=(st_event_day and i == _T)))
+        out.append(_mk(i, one_word=(i in one_word_idx), is_st=(st_event_day and i == _T),
+                       susp_flag=(i in flag_idx)))
     return out
 
 
-# ── 证①:T+1 顺延 1/5/6 日边界(必验第 1 项)──────────────────────────────────────
-check("MAX_POSTPONE 实物=5(冻结口径,边界基准)", MAX_POSTPONE, 5)
-c = clean_event(_rows(one_word_idx={_T + 1}), _EV, _DI)
-check("①顺延1日(T+1一字):留,τ0=T+2", (c.rejected, c.tau0_idx, c.postponed), (False, _T + 2, 1))
-c = clean_event(_rows(one_word_idx=set(range(_T + 1, _T + 6))), _EV, _DI)
-check("①顺延5日(T+1..T+5一字)=上限:留,τ0=T+6", (c.rejected, c.tau0_idx, c.postponed), (False, _T + 6, 5))
-c = clean_event(_rows(one_word_idx=set(range(_T + 1, _T + 7))), _EV, _DI)
-check("①顺延6日(T+1..T+6一字)=超限:剔postpone", (c.rejected, c.reject_reason), (True, "postpone"))
-c = clean_event(_rows(one_word_idx={_T + 1}, missing_idx=set(range(_T + 2, _T + 6))), _EV, _DI)
-check("①混合:一字1+停牌缺行4=顺延5:留,τ0=T+6", (c.rejected, c.tau0_idx, c.postponed), (False, _T + 6, 5))
-c = clean_event(_rows(one_word_idx={_T + 1}, missing_idx=set(range(_T + 2, _T + 7))), _EV, _DI)
-check("①混合:一字1+停牌缺行5=顺延6:剔postpone", (c.rejected, c.reject_reason), (True, "postpone"))
-c = clean_event(_rows(missing_idx={_T + 1}), _EV, _DI)
-check("①T+1纯停牌=item7先剔suspension(不进顺延;实物如实验证)",
-      (c.rejected, c.reject_reason), (True, "suspension"))
+# ── 证①:C1 postpone_policy(legacy 逐字保留 / unified 统一顺延)────────────────────
+check("①MAX_POSTPONE 实物=5(冻结口径,边界基准)", MAX_POSTPONE, 5)
 
-# ── 证②:st_policy 两态 + 非法值拒(必验第 2 项;C2 乙案)────────────────────────────
+# ①a legacy 默认行为逐字保留(既有实验零回归面)
+c = clean_event(_rows(one_word_idx={_T + 1}), _EV, _DI)
+check("①a legacy顺延1日(T+1一字):留,τ0=T+2", (c.rejected, c.tau0_idx, c.postponed), (False, _T + 2, 1))
+check("①a legacy notes=旧'一字板顺延'文案逐字", any(n.startswith("一字板顺延 1 交易日") for n in c.notes), True)
+c = clean_event(_rows(one_word_idx=set(range(_T + 1, _T + 6))), _EV, _DI)
+check("①a legacy顺延5日=上限:留,τ0=T+6", (c.rejected, c.tau0_idx, c.postponed), (False, _T + 6, 5))
+c = clean_event(_rows(one_word_idx=set(range(_T + 1, _T + 7))), _EV, _DI)
+check("①a legacy顺延6日=超限:剔postpone", (c.rejected, c.reject_reason), (True, "postpone"))
+c = clean_event(_rows(missing_idx={_T + 1}), _EV, _DI)
+check("①a legacy T+1纯停牌=item7 suspension(既有默认行为固化,仅辖默认路径)",
+      (c.rejected, c.reject_reason), (True, "suspension"))
+c = clean_event(_rows(missing_idx={_T}), _EV, _DI)
+check("①a legacy T缺行=item7 suspension(既有默认行为固化)", (c.rejected, c.reject_reason), (True, "suspension"))
+try:
+    clean_event(_rows(), _EV, _DI, postpone_policy="bogus")
+    check("①postpone_policy 非法值拒", "未拒", "ValueError")
+except ValueError:
+    check("①postpone_policy 非法值拒", "ValueError", "ValueError")
+
+# ①b unified:纯停牌 1/5/6 日(缺行;人令§四:不得用混合替代纯停牌)
+c = clean_event(_rows(missing_idx={_T + 1}), _EV, _DI, postpone_policy="unified")
+check("①b unified纯停牌1日:留,τ0=T+2,postpone=1", (c.rejected, c.tau0_idx, c.postponed), (False, _T + 2, 1))
+check("①b unified notes='不可交易状态顺延'+停牌/一字分计",
+      any("不可交易状态顺延 1 交易日(停牌1/一字0)" in n for n in c.notes), True)
+c = clean_event(_rows(missing_idx=set(range(_T + 1, _T + 6))), _EV, _DI, postpone_policy="unified")
+check("①b unified纯停牌5日=上限:留,τ0=T+6", (c.rejected, c.tau0_idx, c.postponed), (False, _T + 6, 5))
+c = clean_event(_rows(missing_idx=set(range(_T + 1, _T + 7))), _EV, _DI, postpone_policy="unified")
+check("①b unified纯停牌6日=超限:剔postpone", (c.rejected, c.reject_reason), (True, "postpone"))
+check("①b unified超限notes列停牌/一字数量", any("(停牌6/一字0)" in n for n in c.notes), True)
+c = clean_event(_rows(flag_idx={_T + 1}), _EV, _DI, postpone_policy="unified")
+check("①b unified纯停牌1日(flag行变体):留,τ0=T+2", (c.rejected, c.tau0_idx, c.postponed), (False, _T + 2, 1))
+
+# ①c unified:一字 1/5/6 日(一字路径在 unified 下同样成立)
+c = clean_event(_rows(one_word_idx={_T + 1}), _EV, _DI, postpone_policy="unified")
+check("①c unified一字1日:留,τ0=T+2", (c.rejected, c.tau0_idx, c.postponed), (False, _T + 2, 1))
+c = clean_event(_rows(one_word_idx=set(range(_T + 1, _T + 6))), _EV, _DI, postpone_policy="unified")
+check("①c unified一字5日=上限:留,τ0=T+6", (c.rejected, c.tau0_idx, c.postponed), (False, _T + 6, 5))
+c = clean_event(_rows(one_word_idx=set(range(_T + 1, _T + 7))), _EV, _DI, postpone_policy="unified")
+check("①c unified一字6日=超限:剔postpone", (c.rejected, c.reject_reason), (True, "postpone"))
+
+# ①d unified:混合合计 5/6 日(一字1+停牌4=5留;一字1+停牌5=6剔)
+c = clean_event(_rows(one_word_idx={_T + 1}, missing_idx=set(range(_T + 2, _T + 6))),
+                _EV, _DI, postpone_policy="unified")
+check("①d unified混合5日(一字1+停牌4):留,τ0=T+6", (c.rejected, c.tau0_idx, c.postponed), (False, _T + 6, 5))
+check("①d unified混合notes分计(停牌4/一字1)", any("(停牌4/一字1)" in n for n in c.notes), True)
+c = clean_event(_rows(one_word_idx={_T + 1}, missing_idx=set(range(_T + 2, _T + 7))),
+                _EV, _DI, postpone_policy="unified")
+check("①d unified混合6日(一字1+停牌5):剔postpone", (c.rejected, c.reject_reason), (True, "postpone"))
+
+# ①e unified:T 事件日缺行/停牌 = event_day_anomaly fail-closed(单独留痕,不与 T+1 顺延混淆)
+c = clean_event(_rows(missing_idx={_T}), _EV, _DI, postpone_policy="unified")
+check("①e unified T缺行=event_day_anomaly fail-closed", (c.rejected, c.reject_reason),
+      (True, "event_day_anomaly"))
+check("①e unified T异常单独留痕(不混淆顺延)", any("event_day_anomaly" in n and "不与 T+1 顺延混淆" in n
+                                                   for n in c.notes), True)
+c = clean_event(_rows(flag_idx={_T}), _EV, _DI, postpone_policy="unified")
+check("①e unified T停牌flag=event_day_anomaly", (c.rejected, c.reject_reason), (True, "event_day_anomaly"))
+
+# ── 证②:st_policy 两态 + 非法值拒(C2 保留,不重开)────────────────────────────────
 c = clean_event(_rows(st_event_day=True), _EV, _DI)
 check("②默认(不传)=reject:ST剔除零回归", (c.rejected, c.reject_reason, c.is_st), (True, "st", True))
 c = clean_event(_rows(st_event_day=True), _EV, _DI, st_policy="reject")
@@ -95,7 +158,7 @@ try:
 except ValueError:
     check("②st_policy 非法值拒", "ValueError", "ValueError")
 
-# ── 证③:辅助方法反向不得改变 adj_bmp_main_only 判决(必验第 3 项;P1-1)──────────────
+# ── 证③:辅助方法反向不得改变 adj_bmp_main_only 判决(P1-1 保留,不重开)──────────────
 _A = 0.05  # 双侧临界 ±1.960
 
 
@@ -130,7 +193,7 @@ try:
 except ValueError:
     check("③verdict policy 非法值拒", "ValueError", "ValueError")
 
-# ── 证④⑤:全流水线 NFV 结构化 + 默认路径结构零回归(必验第 5 项;C6)───────────────────
+# ── 递归扫描工具 ───────────────────────────────────────────────────────────────────
 def _scan_key(obj, key):
     n = 0
     if isinstance(obj, dict):
@@ -142,45 +205,223 @@ def _scan_key(obj, key):
     return n
 
 
+def _scan_values(obj, targets: set) -> int:
+    n = 0
+    if isinstance(obj, dict):
+        for v in obj.values():
+            n += _scan_values(v, targets)
+    elif isinstance(obj, list):
+        for v in obj:
+            n += _scan_values(v, targets)
+    elif isinstance(obj, str) and obj in targets:
+        n += 1
+    return n
+
+
+# exp8 偏差声明固定口径(人令§六原文;唯一权威=pap['bias_statement'])
+EXP8_BIAS = ("清洗剔除与listing fail-closed产生样本选择,偏差方向未知;"
+             "估计对象仅限清洗存活样本,不得外推为全体一字涨停链事件的效应。")
+FORBIDDEN_PHRASES = ("保守处置", "倾向缩小效应", "真实效应不小于报告值", "保守下界")
+EXP8_KW = dict(st_policy="keep", verdict_policy="adj_bmp_main_only", nfv_structured=True,
+               postpone_policy="unified", diagnostic_dims=("listing_age", "st"),
+               strata_enabled=False)
+
+# PAP v2 实物对账(逐字):fixture 期望声明/参数须与冻结候选 PAP 实物一致,防两套口径
+_PAP_V2_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                            "docs", "limit-open-pap-final-v2-2026-07-17.json")
+with open(_PAP_V2_PATH, encoding="utf-8") as _fh:
+    _PAP_V2 = json.load(_fh)
+check("⑦PAP v2 实物 bias_statement 与 fixture 期望逐字相等", _PAP_V2["bias_statement"], EXP8_BIAS)
+_ep = _PAP_V2["engine_params"]
+check("⑦PAP v2 engine_params 冻结值与 EXP8_KW 逐项一致(driver 逐字消费面)",
+      (_ep["st_policy"], _ep["verdict_policy"], _ep["nfv_structured"], _ep["postpone_policy"],
+       tuple(_ep["diagnostic_dims"]), _ep["strata_enabled"], _ep["st_mode"], _ep["benchmark_mode"]),
+      ("keep", "adj_bmp_main_only", True, "unified", ("listing_age", "st"), False,
+       "event_day", "market"))
+
+# ── 证④~⑧:全流水线(合成域)────────────────────────────────────────────────────────
 with tempfile.TemporaryDirectory() as td:
     p, e, m = (os.path.join(td, x) for x in ("p.csv", "e.csv", "m.json"))
     write_csv(generate(), p, e, m)
     pap = synth_pap()
     pap["_family_trial"] = 1
+    pap8 = dict(synth_pap(), _family_trial=1, bias_statement=EXP8_BIAS)
     rd = SyntheticReader(p, e)
-    res_a1 = rn.run_study(rd, pap, benchmark_mode="market")
-    res_a2 = rn.run_study(SyntheticReader(p, e), pap, benchmark_mode="market")
-    check("⑤默认路径双跑逐字节相等(确定性)",
-          json.dumps(res_a1, sort_keys=True, default=str) == json.dumps(res_a2, sort_keys=True, default=str), True)
-    check("⑤默认路径零新键:全 result 无 not_for_verdict/premend_params",
-          (_scan_key(res_a1, "not_for_verdict"), _scan_key(res_a1, "premend_params"),
-           _scan_key(res_a1, "not_for_verdict_policy")), (0, 0, 0))
-    check("⑤默认路径分层块 verdict 键在位(既有结构不变)", _scan_key(res_a1, "verdict") > 1, True)
-    check("⑤默认路径 ST 注记原文不变",
-          res_a1["board_strata"]["_st_note"].startswith("ST 为已剔除层(spec §5"), True)
-    st_rejected_a = res_a1["board_strata"].get("ST", {}).get("rejected", 0)
+    cal_dates = [c.trade_date for c in rd.calendar()]
+    base_events = list(SyntheticReader(p, e).events())
 
-    res_b = rn.run_study(SyntheticReader(p, e), pap, benchmark_mode="market",
-                         st_policy="keep", verdict_policy="adj_bmp_main_only",
-                         nfv_structured=True)
-    check("④NFV:唯一 verdict 键=顶层(分层块改名 sig_state_report_only)",
-          (_scan_key(res_b, "verdict"), _scan_key(res_b, "sig_state_report_only") >= 1), (1, True))
-    marked = set(res_b["not_for_verdict_policy"]["marked_blocks"])
-    check("④NFV:非权威块全标记(含 car.robust_window/robustness/双分层)",
-          {"per_tau", "robustness", "type_strata", "board_strata", "car.robust_window"} <= marked, True)
-    check("④NFV:审计记三参数",
-          res_b["audit"]["premend_params"],
-          {"st_policy": "keep", "verdict_policy": "adj_bmp_main_only", "nfv_structured": True})
-    check("②keep 全流水线:ST 事件入主样本(valid>0 且旧 rejected 归零)",
-          (res_b["board_strata"].get("ST", {}).get("valid", 0) > 0,
-           res_b["board_strata"].get("ST", {}).get("rejected", 0) < st_rejected_a
-           or st_rejected_a == 0), (True, True))
-    check("②keep:N_valid 严格增(=ST 保留数并入)", res_b["n_valid"] > res_a1["n_valid"], True)
-    check("②keep:ST 注记=保留层文本", "保留层" in res_b["board_strata"]["_st_note"], True)
-    rendered_b = report_mod.render(res_b)
-    check("④NFV:报告渲染含结构化水印段", "【NOT_FOR_VERDICT 结构化(回修单元 C6)】" in rendered_b, True)
+    # ⑧ 默认路径零回归(双跑相等 + 零新键 + 渲染无新增段/标记)
+    res_a1 = rn.run_study(SyntheticReader(p, e), pap, benchmark_mode="market")
+    res_a2 = rn.run_study(SyntheticReader(p, e), pap, benchmark_mode="market")
+    check("⑧默认路径双跑逐字节相等(确定性)",
+          json.dumps(res_a1, sort_keys=True, default=str) == json.dumps(res_a2, sort_keys=True, default=str), True)
+    check("⑧默认路径零新键(nfv/premend/dims/bias/field_roles 全零)",
+          (_scan_key(res_a1, "not_for_verdict"), _scan_key(res_a1, "premend_params"),
+           _scan_key(res_a1, "not_for_verdict_policy"), _scan_key(res_a1, "diagnostic_dimensions"),
+           _scan_key(res_a1, "bias_statement"), _scan_key(res_a1, "field_roles")),
+          (0, 0, 0, 0, 0, 0))
+    check("⑧默认路径分层块 verdict 键在位(既有结构不变)", _scan_key(res_a1, "verdict") > 1, True)
+    check("⑧默认路径 ST 注记原文不变",
+          res_a1["board_strata"]["_st_note"].startswith("ST 为已剔除层(spec §5"), True)
     rendered_a = report_mod.render(res_a1)
-    check("⑤默认路径渲染无 NFV 水印段", "NOT_FOR_VERDICT 结构化" in rendered_a, False)
+    check("⑧默认渲染=原固定偏差段在位", "【偏差方向声明(固定段,item 9)】" in rendered_a, True)
+    check("⑧默认渲染零新增标记/段落",
+          ("[NOT_FOR_VERDICT]" in rendered_a, "正交诊断维度" in rendered_a,
+           "NOT_FOR_VERDICT 结构化" in rendered_a), (False, False, False))
+
+    # ④C3 三态 + ⑤C6 + ⑥field_roles + ⑦P1-4:exp8 模式(诊断路径禁调 _verdict 由计数攻击证明)
+    half = len(base_events) // 2
+    ev_split = ([dataclasses.replace(ev, event_type_layer="recent_listing") for ev in base_events[:half]]
+                + [dataclasses.replace(ev, event_type_layer="seasoned") for ev in base_events[half:]])
+    _orig_verdict = rn._verdict
+    _calls = {"n": 0}
+
+    def _counting_verdict(*a, **k):
+        _calls["n"] += 1
+        return _orig_verdict(*a, **k)
+
+    rn._verdict = _counting_verdict
+    try:
+        res8 = rn.run_study(SyntheticReader(p, e), pap8, benchmark_mode="market",
+                            events=ev_split, **EXP8_KW)
+    finally:
+        rn._verdict = _orig_verdict
+    check("⑤C6攻击:全跑 _verdict 恰调用 1 次(=顶层;诊断路径零调用)", _calls["n"], 1)
+    check("⑤C6递归:唯一 verdict 键=顶层", (_scan_key(res8, "verdict"), _scan_key(res8, "verdict_note")), (1, 1))
+    check("⑤C6递归:零 sig_state_report_only/sig_state_note(改名旁路已废)",
+          (_scan_key(res8, "sig_state_report_only"), _scan_key(res8, "sig_state_note")), (0, 0))
+    dd = res8["diagnostic_dimensions"]
+    check("⑤C6诊断子树:无 SIG/NOT_SIG/AMBIGUOUS/INSUFFICIENT 分类值",
+          _scan_values(dd, {"SIG", "NOT_SIG", "AMBIGUOUS", "INSUFFICIENT"}), 0)
+    check("⑤C6两条独立轴在场(listing_age+st,无第三维)", sorted(dd["dims"].keys()), ["listing_age", "st"])
+    la = dd["dims"]["listing_age"]["layers"]
+    stx = dd["dims"]["st"]["layers"]
+    check("④C3有存活:recent_listing 统计块在场且无状态判决键",
+          (la["recent_listing"]["n_valid"] > 0, la["recent_listing"]["stats"] is not None,
+           "status" in la["recent_listing"]), (True, True, False))
+    check("④C3有存活:seasoned 同报统计块", (la["seasoned"]["n_valid"] > 0,
+                                             la["seasoned"]["stats"] is not None), (True, True))
+    check("⑤ST轴两层在场(ST/non_ST;keep 下 ST 有存活)",
+          ("ST" in stx and "non_ST" in stx, stx["ST"]["n_valid"] > 0), (True, True))
+    check("⑤诊断层统计块无判决字段(main_window 无 verdict 类键)",
+          (_scan_key(dd, "verdict"), _scan_key(dd, "verdict_note")), (0, 0))
+    cc = dd.get("cross_counts") or {}
+    check("⑤二维矩阵=仅计数核对(cells 只有 n_events/n_valid)",
+          all(set(v.keys()) == {"n_events", "n_valid"} for v in (cc.get("cells") or {}).values())
+          and len(cc.get("cells") or {}) >= 1, True)
+    check("⑤type_strata 注记中性(无 #2b/无 forecast 文案)",
+          ("#2b" in res8["type_strata"]["note"], "预喜" in res8["type_strata"]["note"]), (False, False))
+    check("⑤审计记全参数(含实际 postpone_policy,人令调整一)",
+          res8["audit"]["premend_params"],
+          {"st_policy": "keep", "verdict_policy": "adj_bmp_main_only", "nfv_structured": True,
+           "postpone_policy": "unified", "diagnostic_dims": ["listing_age", "st"]})
+    marked = set(res8["not_for_verdict_policy"]["marked_blocks"])
+    check("⑤NFV:非权威块全标记(含 diagnostic_dimensions/car.robust_window)",
+          {"per_tau", "robustness", "type_strata", "board_strata", "car.robust_window",
+           "diagnostic_dimensions"} <= marked, True)
+    check("②keep 全流水线:ST 入主样本(board_strata ST valid>0)+N_valid 增",
+          (res8["board_strata"].get("ST", {}).get("valid", 0) > 0,
+           res8["n_valid"] > res_a1["n_valid"]), (True, True))
+
+    # ⑥ field_roles 与主窗实际字段逐项对账、无漏项
+    mw8 = res8["car"]["main_window"]
+    fr = mw8.get("field_roles") or {}
+    check("⑥field_roles=主窗实际字段全覆盖(逐项对账无漏项)",
+          set(fr.keys()) == set(mw8.keys()) - {"field_roles"}, True)
+    check("⑥角色:adj_bmp_car=VERDICT_AUTHORITY / naive_t·bmp_car·caar=NOT_FOR_VERDICT / taus·n=CONTEXT",
+          (fr.get("adj_bmp_car"), fr.get("naive_t"), fr.get("bmp_car"), fr.get("caar"),
+           fr.get("taus"), fr.get("n")),
+          ("VERDICT_AUTHORITY", "NOT_FOR_VERDICT", "NOT_FOR_VERDICT", "NOT_FOR_VERDICT",
+           "CONTEXT", "CONTEXT"))
+    try:
+        rn._main_window_field_roles({"adj_bmp_car": 1.0, "mystery_stat": 2.0})
+        check("⑥未分类新统计字段 fail-closed", "未拒", "ValueError")
+    except ValueError:
+        check("⑥未分类新统计字段 fail-closed", "ValueError", "ValueError")
+
+    # ⑦ P1-4 报告对账
+    check("⑦result 偏差声明逐字来自 pap['bias_statement']",
+          res8["bias_statement"]["text"] == pap8["bias_statement"] == EXP8_BIAS, True)
+    rendered8 = report_mod.render(res8)
+    check("⑦exp8报告渲染新声明逐字+来源锚", (EXP8_BIAS in rendered8, "来源锚" in rendered8), (True, True))
+    check("⑦exp8报告旧禁止措辞零命中(保守处置/倾向缩小效应/真实效应不小于报告值/保守下界)",
+          [ph for ph in FORBIDDEN_PHRASES if ph in rendered8], [])
+    check("⑦exp8报告无 forecast 专属文案(预喜/预亏/扭亏零命中)",
+          ("预喜" in rendered8, "预亏" in rendered8, "扭亏" in rendered8), (False, False, False))
+    check("⑦exp8报告渲染两条独立轴+NOT_FOR_VERDICT 直接标记",
+          ("【正交诊断维度(C6 二次回修;两条独立轴" in rendered8,
+           "recent_listing [NOT_FOR_VERDICT]" in rendered8,
+           "ST [NOT_FOR_VERDICT]" in rendered8), (True, True, True))
+    try:
+        rn.run_study(SyntheticReader(p, e), pap, benchmark_mode="market",
+                     events=ev_split, **EXP8_KW)   # pap 无 bias_statement
+        check("⑦新策略启用而 pap 缺 bias_statement → 拒绝运行", "未拒", "ValueError")
+    except ValueError:
+        check("⑦新策略启用而 pap 缺 bias_statement → 拒绝运行", "ValueError", "ValueError")
+    try:
+        rn.run_study(SyntheticReader(p, e), pap8, benchmark_mode="market", events=ev_split,
+                     bias_statement_assert="别的文字", **EXP8_KW)
+        check("⑦bias_statement_assert 与 pap 不等 → fail-closed", "未拒", "ValueError")
+    except ValueError:
+        check("⑦bias_statement_assert 与 pap 不等 → fail-closed", "ValueError", "ValueError")
+    res8b = rn.run_study(SyntheticReader(p, e), pap8, benchmark_mode="market", events=ev_split,
+                         bias_statement_assert=EXP8_BIAS, **EXP8_KW)
+    check("⑦bias_statement_assert 逐字相等 → 放行且结果同",
+          json.dumps(res8b, sort_keys=True, default=str) == json.dumps(res8, sort_keys=True, default=str), True)
+
+    # ④C3 覆盖归零态:recent_listing 仅 1 事件且历史门槛剔(coverage/history 类)→ BY_FROZEN_COVERAGE
+    ev_b = ([EventRow(ts_code=base_events[0].ts_code, event_id=f"{base_events[0].ts_code}:rlB",
+                      first_ann_date=cal_dates[10], event_type_layer="recent_listing",
+                      snapshot_batch="S")]
+            + [dataclasses.replace(ev, event_type_layer="seasoned") for ev in base_events])
+    res_b3 = rn.run_study(SyntheticReader(p, e), pap8, benchmark_mode="market",
+                          events=ev_b, **EXP8_KW)
+    la_b = res_b3["diagnostic_dimensions"]["dims"]["listing_age"]["layers"]["recent_listing"]
+    check("④C3覆盖归零:n_events=1/n_valid=0 → UNESTIMABLE_BY_FROZEN_COVERAGE",
+          (la_b["n_events"], la_b["n_valid"], la_b["status"]),
+          (1, 0, "UNESTIMABLE_BY_FROZEN_COVERAGE"))
+    check("④C3覆盖归零:逐因分解在场(history 门槛)",
+          la_b["rejections_by_reason_total"], {"history": 1})
+
+    # ④C3 零事件态:recent_listing 无事件 → NO_EVENTS_IN_LAYER 且块不缺席
+    ev_c = [dataclasses.replace(ev, event_type_layer="seasoned") for ev in base_events]
+    res_c3 = rn.run_study(SyntheticReader(p, e), pap8, benchmark_mode="market",
+                          events=ev_c, **EXP8_KW)
+    la_c = res_c3["diagnostic_dimensions"]["dims"]["listing_age"]["layers"]["recent_listing"]
+    check("④C3零事件:块在场 NO_EVENTS_IN_LAYER", (la_c["n_events"], la_c["status"]),
+          (0, "NO_EVENTS_IN_LAYER"))
+
+# ④C3 清洗致零存活态(直接喂构建器;顺带证:_verdict 炸弹下诊断构建器照常工作=结构性禁调)
+def _boom(*a, **k):
+    raise AssertionError("诊断路径调用了 _verdict() —— 违反人令调整三")
+
+
+_ce_d = CleanedEvent(ts_code="X", event_id="X:d", first_ann_date=dt.date(2021, 6, 1),
+                     board="main", is_st=False, industry="I", regime_segment="pre_10pct",
+                     t_idx=300, event_type_layer="recent_listing")
+_ce_d.rejected, _ce_d.reject_reason, _ce_d.reject_year = True, "event_day_anomaly", 2021
+_ce_d2 = CleanedEvent(ts_code="Y", event_id="Y:d", first_ann_date=dt.date(2022, 6, 1),
+                      board="main", is_st=False, industry="I", regime_segment="pre_10pct",
+                      t_idx=301, event_type_layer="recent_listing")
+_ce_d2.rejected, _ce_d2.reject_reason, _ce_d2.reject_year = True, "suspension", 2022
+_orig = rn._verdict
+rn._verdict = _boom
+try:
+    dd_d = rn._diagnostic_dimensions([_ce_d, _ce_d2], [], 3, 6, (), ("listing_age", "st"))
+    boom_ok = True
+except AssertionError:
+    dd_d, boom_ok = None, False
+finally:
+    rn._verdict = _orig
+check("⑤C6攻击:_verdict 炸弹下诊断构建器照常工作(结构性零调用)", boom_ok, True)
+la_d = dd_d["dims"]["listing_age"]["layers"]["recent_listing"]
+check("④C3清洗致零存活(event_day_anomaly+suspension 混合)→ UNESTIMABLE_AFTER_FROZEN_CLEANING",
+      (la_d["n_events"], la_d["n_valid"], la_d["status"]),
+      (2, 0, "UNESTIMABLE_AFTER_FROZEN_CLEANING"))
+check("④C3清洗致零存活:逐因分解在场",
+      la_d["rejections_by_reason_total"], {"event_day_anomaly": 1, "suspension": 1})
+check("④C3清洗致零存活:逐年分解在场(2021/2022)",
+      sorted(la_d["rejections"]["by_year"].keys()), [2021, 2022])
 
 print(f"\n{'='*60}\nverify_limit_open_engine: {N - FAIL}/{N} PASS"
       + ("" if FAIL == 0 else f"  ⚠ {FAIL} FAIL"))

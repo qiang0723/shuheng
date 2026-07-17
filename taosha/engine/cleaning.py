@@ -49,6 +49,7 @@ class CleanedEvent:
     event_type_layer: str = "unknown"         # 三层(预喜/预亏/扭亏);供剔除分布的层维度分解(停牌回炉议题)
     rejected: bool = False
     reject_reason: Optional[str] = None        # 'history'/'suspension'/'st'/'coverage'/'postpone'
+                                               #  /'no_price';'event_day_anomaly'(仅 unified,C1)
     reject_year: Optional[int] = None
     tau0_idx: Optional[int] = None            # τ=0(首个可交易日=T+1,含顺延)date 轴索引
     postponed: int = 0                        # 一字板顺延交易日数
@@ -63,7 +64,8 @@ def _est_window_idx(t_idx: int) -> tuple[int, int]:
 
 
 def clean_event(rows: list[PriceRow], event, date_index: dict,
-                st_mode: str = "event_day", st_policy: str = "reject") -> CleanedEvent:
+                st_mode: str = "event_day", st_policy: str = "reject",
+                postpone_policy: str = "legacy") -> CleanedEvent:
     """对一个事件做清洗几何 + 前置剔除(停牌/ST/顺延)。覆盖门槛留 compute 回填。
 
     rows: 该证券按 trade_date 升序的全期 PriceRow;event: EventRow;date_index: {date: idx}。
@@ -76,11 +78,20 @@ def clean_event(rows: list[PriceRow], event, date_index: dict,
       'reject'(默认)= spec §5 ST 剔除(既有全部实验行为,零回归);
       'keep' = ST 事件保留入主样本(exp8 冻结值:ST/非ST 作报告分层,不分别产生判决);
         is_st 判定源仍由 st_mode 辖,本参数只辖"判定为 ST 后剔或留"。
+    postpone_policy(C1 二次回修,人令 2026-07-17 深夜三,显式参数化):T+1 起不可交易处置——
+      'legacy'(默认)= 既有行为逐字:T 或 T+1 停牌(缺行/flag)→ item7 'suspension' 前置剔除,
+        顺延循环只对 T+1 非停牌起点生效(既有全部实验零回归);
+      'unified'(exp8)= 自 T+1 起,纯停牌、一字板或二者混合**均进同一顺延计数**:顺延≤MAX_POSTPONE(5)
+        保留(τ0 移至下一可交易日),顺延 6 日剔 'postpone';T+1 停牌不再被前置分支截断。
+        事件日 T 须为真实交易行:T 停牌/缺行 → fail-closed 剔 'event_day_anomaly' 单独留痕,
+        不与 T+1 顺延混淆。
     """
     if st_mode not in ("event_day", "legacy_row0"):
         raise ValueError(f"st_mode 非法: {st_mode}")
     if st_policy not in ("reject", "keep"):
         raise ValueError(f"st_policy 非法: {st_policy}(合法={{'reject','keep'}})")
+    if postpone_policy not in ("legacy", "unified"):
+        raise ValueError(f"postpone_policy 非法: {postpone_policy}(合法={{'legacy','unified'}})")
     yr = event.first_ann_date.year
     layer = getattr(event, "event_type_layer", "unknown")   # 层维度(合成自检 _Ev 无此属性 → unknown)
 
@@ -150,16 +161,26 @@ def clean_event(rows: list[PriceRow], event, date_index: dict,
         ce.notes.append("ST 保留(st_policy='keep',人裁 2026-07-17 回修单元 C2 乙案):"
                         "入主样本;ST/非ST 分层报告,不分别产生判决")
 
-    # 事件落停牌期(item 7):事件日 T 或首个拟交易日 T+1 停牌 → 剔除
-    if _suspended(t_idx) or _suspended(t_idx + 1):
-        ce.rejected, ce.reject_reason, ce.reject_year = True, "suspension", yr
-        ce.notes.append("事件落停牌期(T 或 T+1 停牌;缺行或 flag)→ 剔除(item 7)")
-        return ce
+    # 事件落停牌期(item 7,legacy 默认逐字保留):事件日 T 或首个拟交易日 T+1 停牌 → 剔除。
+    # C1 二次回修('unified',exp8):T+1 停牌不经本分支截断,统一进下方顺延计数;
+    #   事件日 T 须真实交易行,T 停牌/缺行 → fail-closed 单独留痕(不与 T+1 顺延混淆)。
+    if postpone_policy == "legacy":
+        if _suspended(t_idx) or _suspended(t_idx + 1):
+            ce.rejected, ce.reject_reason, ce.reject_year = True, "suspension", yr
+            ce.notes.append("事件落停牌期(T 或 T+1 停牌;缺行或 flag)→ 剔除(item 7)")
+            return ce
+    else:  # 'unified'
+        if _suspended(t_idx):
+            ce.rejected, ce.reject_reason, ce.reject_year = True, "event_day_anomaly", yr
+            ce.notes.append("事件日 T 停牌/缺行(事件日须为真实交易行)→ fail-closed 剔除"
+                            "(event_day_anomaly;C1 二次回修:单独留痕,不与 T+1 顺延混淆)")
+            return ce
 
     # 一字板顺延(item 8):τ=0 = 首个 T+1 起可成交(非一字板、非停牌)日。
     #   停牌(缺行/flag)与一字板(有 bar + one_word)判据**分离**(约束②);两者皆不可成交 → 顺延。
     tau0 = t_idx + 1
     postpone = 0
+    pp_susp = pp_ow = 0        # unified 文案用:顺延日内停牌/一字分计(人令调整一;legacy 不消费)
     while True:
         if tau0 >= n_dates:                      # 越出交易轴末端(数据边界,非停牌)
             break
@@ -175,16 +196,28 @@ def clean_event(rows: list[PriceRow], event, date_index: dict,
         blocked = suspended or one_word
         if not blocked:
             break
+        if suspended:              # 杂交行(one_word 且停牌信号)保守计入停牌侧(杂交注另有上报)
+            pp_susp += 1
+        else:
+            pp_ow += 1
         tau0 += 1
         postpone += 1
         if postpone > MAX_POSTPONE:
             ce.rejected, ce.reject_reason, ce.reject_year = True, "postpone", yr
-            ce.notes.append(f"一字板顺延超 {MAX_POSTPONE} 日,事件不可进场 → 剔除")
+            if postpone_policy == "legacy":
+                ce.notes.append(f"一字板顺延超 {MAX_POSTPONE} 日,事件不可进场 → 剔除")
+            else:
+                ce.notes.append(f"不可交易状态顺延超 {MAX_POSTPONE} 日(停牌{pp_susp}/一字{pp_ow}),"
+                                f"事件不可进场 → 剔除(postpone;C1 二次回修)")
             return ce
     ce.tau0_idx = tau0
     ce.postponed = postpone
     if postpone:
-        ce.notes.append(f"一字板顺延 {postpone} 交易日,τ=0 移至 idx={tau0}(item 8)")
+        if postpone_policy == "legacy":
+            ce.notes.append(f"一字板顺延 {postpone} 交易日,τ=0 移至 idx={tau0}(item 8)")
+        else:
+            ce.notes.append(f"不可交易状态顺延 {postpone} 交易日(停牌{pp_susp}/一字{pp_ow}),"
+                            f"τ=0 移至 idx={tau0}(C1 二次回修)")
     return ce
 
 

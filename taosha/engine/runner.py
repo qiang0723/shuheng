@@ -113,9 +113,10 @@ def _stats_for_subset(sub: list, main_len: int, robust_len: int, alpha: float,
                       nfv: bool = False) -> dict:
     """对一子集(某层)跑与 combined 同一流水线(per_tau/主稳健窗 CAR/三法/verdict/n_eff_rho)。
     复用 combined 同一 compute 原语、同一顺序 → 层内结果与"若单独喂该层"一致。纯读取,不改 pap。
-    nfv(回修单元 C6,2026-07-17):True → 层块结构化 NOT_FOR_VERDICT——verdict/verdict_note 键
-    改名 sig_state_report_only/sig_state_note + not_for_verdict=True(全文档唯一 verdict 键留顶层);
-    False(默认)→ 键名不变,既有输出逐字节零回归。"""
+    nfv(C6 二次回修,人令 2026-07-17 深夜三:改名不等于取消判决——旧"verdict 改名
+    sig_state_report_only"方案作废):True → 层块**不携带任何判决或等价分类字段**
+    (无 verdict/verdict_note/sig_state_report_only/sig_state_note),仅 not_for_verdict=True
+    结构化标记(全文档唯一 verdict 键=顶层);False(默认)→ 键名不变,既有输出逐字节零回归。"""
     ses = [v[0] for v in sub]
     rank_secs = [v[2] for v in sub]
     cal_evs = [v[3] for v in sub]
@@ -150,14 +151,13 @@ def _stats_for_subset(sub: list, main_len: int, robust_len: int, alpha: float,
             "calendar_time": calendar_time(cal_evs, main_len, robust_len),
         }
         n_eff_rho = _n_eff_rho(n, rho["rho_bar"])
-    verdict, verdict_note = _verdict(sample_state, car, robustness, alpha,
-                                     policy=verdict_policy)
     out = {"n_valid": n, "sample_state": sample_state, "n_eff_rho": n_eff_rho,
            "per_tau": per_tau, "car": car, "robustness": robustness}
     if nfv:
-        out.update({"not_for_verdict": True,
-                    "sig_state_report_only": verdict, "sig_state_note": verdict_note})
+        out["not_for_verdict"] = True     # C6 二次回修:层块零判决字段(不计算不携带,无等价改名)
     else:
+        verdict, verdict_note = _verdict(sample_state, car, robustness, alpha,
+                                         policy=verdict_policy)
         out.update({"verdict": verdict, "verdict_note": verdict_note})
     return out
 
@@ -181,6 +181,151 @@ def _type_strata(valid_events: list, main_len: int, robust_len: int, alpha: floa
         blk["layer_label"] = _LAYER_LABEL.get(lay, lay)
         out["layers"][lay] = blk
     return out
+
+
+# ── 正交诊断维度(C6 二次回修,人令 2026-07-17 深夜三;exp8=('listing_age','st'))─────────
+# 每维分别、明确、结构化输出;层块只报统计事实(事件数/存活数/逐因逐年剔除/CAAR/ADJ-BMP 等
+# 预注册报告统计),**零判决字段**;零存活层输出 UNESTIMABLE_BY_FROZEN_COVERAGE(C3)且块不缺席。
+_DIAG_DIM_SPECS = {
+    "listing_age": {
+        "layers": ("recent_listing", "seasoned"),
+        "note": "上市交易龄维度:recent_listing=链起点自身真实交易行序号≤30 / seasoned=其余;"
+                "两层一律同一估计窗与覆盖门槛(112/160),不预判任何层无CAR、不预限主结论适用域(C3)",
+    },
+    "st": {
+        "layers": ("ST", "non_ST"),
+        "note": "ST/非ST 维度:is_st=事件日行判定(st_mode 辖);明确正交诊断维度,不藏于板块计数(C6)",
+    },
+}
+
+
+def _diag_dim_key(dim: str, obj) -> str:
+    """取事件在某诊断维度上的层键。obj=CleanedEvent 或 se_meta dict(两者均有所需属性)。"""
+    if dim == "st":
+        is_st = obj.get("is_st") if isinstance(obj, dict) else obj.is_st
+        return "ST" if is_st else "non_ST"
+    lay = (obj.get("event_type_layer") if isinstance(obj, dict) else obj.event_type_layer)
+    return lay or "unknown"
+
+
+def _diag_layer_stats(sub_valid: list, main_len: int, robust_len: int,
+                      secondary_lens: tuple) -> Optional[dict]:
+    """诊断层预注册报告统计(CAAR/朴素t/BMP/ADJ-BMP;与 combined 同一 compute 原语)。
+    零存活 → None(层块由调用方置 UNESTIMABLE_BY_FROZEN_COVERAGE)。无任何判决字段。"""
+    ses = [v[0] for v in sub_valid]
+    if not ses:
+        return None
+    rho = adj_bmp_by_tau(ses)["rho"]
+    aar = [_mean([se.event_abnormal[t] for se in ses]) for t in range(robust_len)]
+
+    def _w(L):
+        return {"taus": f"[0,+{L-1}]",
+                "caar": sum(a for a in aar[:L] if a is not None),
+                "naive_t": _naive_t([se.event_abnormal for se in ses], L),
+                **_car_test(ses, L, rho["rho_bar"])}
+
+    out = {"rho_bar": rho["rho_bar"], "main_window": _w(main_len),
+           "robust_window": _w(robust_len)}
+    if secondary_lens:
+        out["secondary_windows"] = [_w(L) for L in secondary_lens]
+    return out
+
+
+def _diagnostic_dimensions(cleaned: list, valid_events: list, main_len: int, robust_len: int,
+                           secondary_lens: tuple, dims: tuple) -> dict:
+    """两条独立诊断轴(C6;禁四格交叉统计)+ 零存活按真实原因命名(人令调整五)。
+    层集合=预注册必出层 ∪ 实际观测层(意外层如实上报不静默);必出层零事件也出块。
+    状态命名(仅零存活层;n_valid>0 出统计块、不产生任何状态判决):
+      n_events=0 → NO_EVENTS_IN_LAYER;
+      n_events>0 且剔因全 ⊆ {coverage,history}(冻结覆盖/历史门槛)→ UNESTIMABLE_BY_FROZEN_COVERAGE;
+      其余(listing 异常/停牌/顺延超限/多因混合)→ UNESTIMABLE_AFTER_FROZEN_CLEANING。
+    本路径**不调用 _verdict()**、不产生 SIG/NOT_SIG/AMBIGUOUS/INSUFFICIENT 分类(人令调整三)。"""
+    out_dims: dict = {}
+    for dim in dims:
+        spec = _DIAG_DIM_SPECS[dim]
+        keys = list(spec["layers"])
+        observed = {_diag_dim_key(dim, ce) for ce in cleaned}
+        for k in sorted(observed - set(keys)):
+            keys.append(k)                      # 意外层如实上报
+        layers: dict = {}
+        for key in keys:
+            sub_cleaned = [ce for ce in cleaned if _diag_dim_key(dim, ce) == key]
+            sub_valid = [v for v in valid_events if _diag_dim_key(dim, v[1]) == key]
+            stats = _diag_layer_stats(sub_valid, main_len, robust_len, secondary_lens)
+            rej = year_breakdown(sub_cleaned)              # 逐年(by_year 内含逐因)剔除分解(C3)
+            by_reason_total: dict = {}
+            for d_ in rej["by_year"].values():
+                for r_, c_ in d_["by_reason"].items():
+                    by_reason_total[r_] = by_reason_total.get(r_, 0) + c_
+            blk = {
+                "not_for_verdict": True,
+                "n_events": len(sub_cleaned),
+                "n_valid": len(sub_valid),
+                "n_rejected": sum(1 for ce in sub_cleaned if ce.rejected),
+                "rejections": rej,
+                "rejections_by_reason_total": by_reason_total,
+                "stats": stats,
+            }
+            if stats is None:                  # 零存活层:状态按真实原因命名(调整五);块不缺席
+                if not sub_cleaned:
+                    blk["status"] = "NO_EVENTS_IN_LAYER"
+                elif set(by_reason_total) <= {"coverage", "history"}:
+                    blk["status"] = "UNESTIMABLE_BY_FROZEN_COVERAGE"
+                else:
+                    blk["status"] = "UNESTIMABLE_AFTER_FROZEN_CLEANING"
+            layers[key] = blk
+        out_dims[dim] = {"not_for_verdict": True, "note": spec["note"], "layers": layers}
+    out = {
+        "not_for_verdict": True,
+        "label": "正交诊断维度(C6 二次回修):两条独立轴分别结构化输出(禁四格交叉统计);"
+                 "层块零判决字段,不产生独立判决、不改变顶层判决;零存活层状态按真实原因命名"
+                 "(NO_EVENTS_IN_LAYER / UNESTIMABLE_BY_FROZEN_COVERAGE / "
+                 "UNESTIMABLE_AFTER_FROZEN_CLEANING)且块不缺席。",
+        "dims": out_dims,
+    }
+    # 二维计数矩阵(人令调整四:仅计数核对供审计,不计算 CAR/显著性/判决)
+    if {"listing_age", "st"} <= set(dims):
+        cells: dict = {}
+        for ce in cleaned:
+            k = f"{_diag_dim_key('listing_age', ce)}×{_diag_dim_key('st', ce)}"
+            cells.setdefault(k, {"n_events": 0, "n_valid": 0})["n_events"] += 1
+        for v in valid_events:
+            k = f"{_diag_dim_key('listing_age', v[1])}×{_diag_dim_key('st', v[1])}"
+            cells.setdefault(k, {"n_events": 0, "n_valid": 0})["n_valid"] += 1
+        out["cross_counts"] = {
+            "note": "二维计数矩阵:仅计数核对(审计用),不计算 CAR/显著性/判决(人令调整四)",
+            "cells": dict(sorted(cells.items()))}
+    return out
+
+
+# 字段级角色元数据(C6 二次回修+人令调整六:主窗唯一判决权=adj_bmp_car;非权威统计=
+# NOT_FOR_VERDICT;taus/n 等上下文=CONTEXT。仅 nfv_structured=True 注入,默认输出零改变)
+_MAIN_WINDOW_FIELD_ROLES = {
+    "adj_bmp_car": "VERDICT_AUTHORITY",
+    "bmp_car": "NOT_FOR_VERDICT",
+    "naive_t": "NOT_FOR_VERDICT",
+    "caar": "NOT_FOR_VERDICT",
+    "csar_mean": "NOT_FOR_VERDICT",
+    "csar_sd": "NOT_FOR_VERDICT",
+    "kp_factor": "NOT_FOR_VERDICT",
+    "taus": "CONTEXT",
+    "n": "CONTEXT",
+}
+
+
+def _main_window_field_roles(mw: dict) -> dict:
+    """主窗字段角色映射,与实际字段集合逐项对账(人令调整六):出现未分类的新统计字段
+    → fail-closed raise(不静默漏标)。"""
+    roles = {}
+    for k in mw:
+        if k == "field_roles":
+            continue
+        r = _MAIN_WINDOW_FIELD_ROLES.get(k)
+        if r is None:
+            raise ValueError(f"car.main_window 出现未分类统计字段 {k!r}:field_roles 须与实际"
+                             f"字段集合逐项对账,fail-closed(人令调整六)")
+        roles[k] = r
+    return roles
 
 
 def _tradeable(valid_events: list, cost: Optional[dict], main_len: int, robust_len: int) -> dict:
@@ -227,7 +372,9 @@ def run_study(reader, pap: dict, *, benchmark_mode: str = "market",
               pool: Optional[set] = None, events: Optional[list] = None,
               strata_enabled: bool = True, st_mode: str = "event_day",
               st_policy: str = "reject", verdict_policy: str = "three_method",
-              nfv_structured: bool = False) -> dict:
+              nfv_structured: bool = False, postpone_policy: str = "legacy",
+              diagnostic_dims: tuple = (),
+              bias_statement_assert: Optional[str] = None) -> dict:
     """跑一条已冻结假设的事件研究,返回 result 字典(供 report + 落库)。
 
     benchmark_mode: 'market'(全市场等权)/'pool'(静态池等权)/'pool_pit'(#2b b1池等权PIT活基准,
@@ -240,14 +387,37 @@ def run_study(reader, pap: dict, *, benchmark_mode: str = "market",
     st_policy: ST 处置(C2 乙案):'reject' 默认=spec §5 剔除 / 'keep'=保留入主样本(exp8 冻结值)。
     verdict_policy: 判决口径:'three_method' 默认=spec §6 三法一致裁决 /
       'adj_bmp_main_only'=唯一判据=主窗 ADJ-BMP,辅助方法(朴素t/秩/日历)反向只报告分歧不得改判(exp8)。
-    nfv_structured: True → 全部非权威结果块结构化 NOT_FOR_VERDICT 标记+分层块 verdict 键改名
-      (C6;全文档唯一 verdict 键=顶层);False 默认=不加键,既有 result 逐字节不变。
+    nfv_structured: True → 全部非权威结果块结构化 NOT_FOR_VERDICT 标记+主窗字段级角色元数据
+      (C6 二次回修:分层块**零判决字段**,旧"verdict 改名 sig_state_report_only"方案作废;
+      全文档唯一 verdict 键=顶层);False 默认=不加键,既有 result 逐字节不变。
+    ── C1/C3/C6/P1-4 二次回修参数(人令 2026-07-17 深夜三;默认值=既有行为逐字节零回归)──
+    postpone_policy: 'legacy' 默认=T/T+1 停牌 item7 前置剔除(既有)/'unified'=T+1 起停牌与
+      一字板统一顺延计数≤5、T 停牌 fail-closed 'event_day_anomaly'(exp8,C1)。
+    diagnostic_dims: 正交诊断维度元组(exp8=('listing_age','st'),C6);空默认=不产出、零新键。
+    bias_statement_assert: **仅作逐字相等断言,非第二来源**(人令调整二):偏差声明唯一权威
+      =pap['bias_statement'],runner 直接从 pap 读取原样携带、report 直接消费;本参数提供时
+      与 pap 不逐字相等 → fail-closed 拒。回修新策略启用(unified/diagnostic_dims/nfv)而
+      pap 缺 bias_statement → 拒绝运行。默认旧路径(pap 无此键)零新键,报告固定段不变。
     """
     if st_policy not in ("reject", "keep"):
         raise ValueError(f"st_policy 非法: {st_policy}(合法={{'reject','keep'}})")
     if verdict_policy not in ("three_method", "adj_bmp_main_only"):
         raise ValueError(f"verdict_policy 非法: {verdict_policy}"
                          "(合法={'three_method','adj_bmp_main_only'})")
+    if postpone_policy not in ("legacy", "unified"):
+        raise ValueError(f"postpone_policy 非法: {postpone_policy}(合法={{'legacy','unified'}})")
+    for d in diagnostic_dims:
+        if d not in _DIAG_DIM_SPECS:
+            raise ValueError(f"diagnostic_dims 非法维度: {d}(合法={sorted(_DIAG_DIM_SPECS)})")
+    # P1-4(人令调整二):偏差声明唯一权威=pap['bias_statement']——不接受任何调用方替代文本。
+    pap_bias = pap.get("bias_statement")
+    new_strategy = (postpone_policy != "legacy") or bool(diagnostic_dims) or nfv_structured
+    if new_strategy and not pap_bias:
+        raise ValueError("回修新策略已启用(unified/diagnostic_dims/nfv_structured)但 pap 缺 "
+                         "'bias_statement' → 拒绝运行(P1-4:权威来源唯一=冻结 PAP)")
+    if bias_statement_assert is not None and bias_statement_assert != pap_bias:
+        raise ValueError("bias_statement_assert 与 pap['bias_statement'] 不逐字相等 → fail-closed"
+                         "(P1-4:本参数仅作断言,不得作为第二来源覆盖 PAP)")
     # ── 检验窗从 pap 读(裁定 2026-07-07):main/robust = 首/末检验窗点数(#4/#2b=(20,60))──
     test_win = parse_test_windows(pap)
     main_len, robust_len = test_win[0], test_win[-1]
@@ -293,6 +463,7 @@ def run_study(reader, pap: dict, *, benchmark_mode: str = "market",
     valid_events: list[SecurityEvent] = []
     for ce, sv in iter_survivors(event_src, by_sec, all_dates, date_index, mkt, robust_len,
                                  st_mode=st_mode, st_policy=st_policy,
+                                 postpone_policy=postpone_policy,
                                  sec_returns=sec_returns, reject_notes=True):
         cleaned.append(ce)
         if sv is None:
@@ -366,13 +537,15 @@ def run_study(reader, pap: dict, *, benchmark_mode: str = "market",
                      strata_enabled=strata_enabled,
                      drawdown_events=(event_src if is_drawdown else None),
                      secondary_lens=secondary_lens, st_policy=st_policy,
-                     verdict_policy=verdict_policy, nfv_structured=nfv_structured)
+                     verdict_policy=verdict_policy, nfv_structured=nfv_structured,
+                     postpone_policy=postpone_policy, diagnostic_dims=diagnostic_dims)
 
 
 def _assemble(pap, cleaned, valid_events, benchmark_mode, main_len, robust_len,
               *, strata_enabled: bool = True, drawdown_events=None,
               secondary_lens: tuple = (), st_policy: str = "reject",
-              verdict_policy: str = "three_method", nfv_structured: bool = False) -> dict:
+              verdict_policy: str = "three_method", nfv_structured: bool = False,
+              postpone_policy: str = "legacy", diagnostic_dims: tuple = ()) -> dict:
     ses = [v[0] for v in valid_events]
     rank_secs = [v[2] for v in valid_events]
     cal_evs = [v[3] for v in valid_events]
@@ -420,6 +593,12 @@ def _assemble(pap, cleaned, valid_events, benchmark_mode, main_len, robust_len,
         type_strata = _type_strata(valid_events, main_len, robust_len, alpha,
                                    secondary_lens, verdict_policy=verdict_policy,
                                    nfv=nfv_structured) if n >= 1 else {}
+    elif diagnostic_dims:
+        # C6 二次回修(人令调整四):exp8 关闭 forecast 专属 type_strata 消费;注记中性、
+        # 参数驱动(diagnostic_dims,非按实验编号分支),不复用 forecast 文案。
+        type_strata = {"applicable": False,
+                       "note": "type_strata 不适用(非 forecast 分层事件);"
+                               "分层诊断走 diagnostic_dimensions 两条独立轴(C6 二次回修)"}
     else:
         type_strata = {"applicable": False,
                        "note": "#2b 单信号事件:三层(预喜/预亏/扭亏)不适用(pap event_def 无 layers 维度)"}
@@ -494,13 +673,28 @@ def _assemble(pap, cleaned, valid_events, benchmark_mode, main_len, robust_len,
     if drawdown_diag is not None:      # #2b 专属键(#4 不含 → 约束③ result 逐字节不变)
         result["drawdown_diagnostic"] = drawdown_diag
 
+    # C6 二次回修:两条独立诊断轴(exp8=('listing_age','st'));参数空默认 → 零新键零回归。
+    # 本块由独立 report-only 路径构建(结构上不调用 _verdict,人令调整三)。
+    if diagnostic_dims:
+        result["diagnostic_dimensions"] = _diagnostic_dimensions(
+            cleaned, valid_events, main_len, robust_len, secondary_lens, diagnostic_dims)
+
+    # P1-4(人令调整二):偏差声明唯一权威=pap['bias_statement'],原样携带+来源锚;
+    # 既有冻结 pap 均无此键 → 默认路径零新键、报告固定段不变。
+    if pap.get("bias_statement"):
+        result["bias_statement"] = {
+            "text": pap["bias_statement"],
+            "source_anchor": "pap['bias_statement'](冻结 PAP 唯一权威来源,P1-4;"
+                             "runner 原样携带,report 直接消费)"}
+
     # 回修单元 C6(2026-07-17,nfv_structured=True 才生效;默认 False → 零新键零回归):
     # 全部非权威结果块注入结构化 not_for_verdict 标记;审计记三参数;唯一 verdict 键=顶层
     # (分层块内已由 _stats_for_subset nfv 改名 sig_state_report_only)。
     if nfv_structured:
         marked = []
         for key in ("per_tau", "n_eff_rho", "robustness", "type_strata", "tradeable",
-                    "board_strata", "censor_diagnostic", "industry_coverage"):
+                    "board_strata", "censor_diagnostic", "industry_coverage",
+                    "diagnostic_dimensions"):
             blk = result.get(key)
             if isinstance(blk, dict) and blk:
                 blk["not_for_verdict"] = True
@@ -510,14 +704,21 @@ def _assemble(pap, cleaned, valid_events, benchmark_mode, main_len, robust_len,
             if isinstance(blk, dict) and blk:
                 blk["not_for_verdict"] = True
                 marked.append(f"car.{wkey}")
+        # 字段级角色元数据(人令调整六):主窗内字段逐项对账(未分类新字段 fail-closed);
+        # 唯一判决权字段=adj_bmp_car,非权威统计结构化可识别,不靠块名清单。
+        mw = (result.get("car") or {}).get("main_window")
+        if isinstance(mw, dict) and mw:
+            mw["field_roles"] = _main_window_field_roles(mw)
         result["not_for_verdict_policy"] = {
             "enabled": True, "marked_blocks": marked,
             "label": "NOT_FOR_VERDICT · 非权威结果:报告项,不判决、不参与判决、不得择优改判"
                      "(人裁 2026-07-17 回修单元 C6);唯一判决=顶层 verdict(主窗 ADJ-BMP)。"}
-    if st_policy != "reject" or verdict_policy != "three_method" or nfv_structured:
-        result["audit"]["premend_params"] = {           # 非默认参数如实入审计(默认跑零新键)
-            "st_policy": st_policy, "verdict_policy": verdict_policy,
-            "nfv_structured": nfv_structured}
+    if (st_policy != "reject" or verdict_policy != "three_method" or nfv_structured
+            or postpone_policy != "legacy" or diagnostic_dims):
+        result["audit"]["premend_params"] = {           # 非默认参数如实入审计(默认跑零新键);
+            "st_policy": st_policy, "verdict_policy": verdict_policy,   # 含实际 postpone_policy
+            "nfv_structured": nfv_structured, "postpone_policy": postpone_policy,
+            "diagnostic_dims": list(diagnostic_dims)}   # (人令调整一:audit 记 postpone_policy)
     return result
 
 

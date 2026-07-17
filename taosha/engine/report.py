@@ -30,6 +30,12 @@ def _fmt(x, nd=4):
     return "NA" if x is None else f"{x:.{nd}f}"
 
 
+def _nfv_tag(blk) -> str:
+    """非权威段直接带 NOT_FOR_VERDICT 标记(人令调整六;C6 二次回修)。
+    默认路径(块无 not_for_verdict 键)→ 空串,渲染逐字节零回归。"""
+    return " [NOT_FOR_VERDICT]" if isinstance(blk, dict) and blk.get("not_for_verdict") else ""
+
+
 def render(result: dict) -> str:
     a = result["audit"]
     L = []
@@ -65,14 +71,21 @@ def render(result: dict) -> str:
                  f"原因{d['by_reason']}")
     L.append("")
 
-    # ① 偏差方向声明(item 9)
-    L.append(BIAS_DECLARATION)
+    # ① 偏差方向声明(item 9;P1-4 二次回修:result 携带冻结 PAP bias_statement 时直接消费
+    #    渲染〔权威来源唯一=pap,runner 已锚定〕;默认无键 → 原固定段逐字节不变)
+    bs = result.get("bias_statement")
+    if bs:
+        L.append("【偏差方向声明(冻结 PAP bias_statement,report 直接消费;P1-4 二次回修)】")
+        L.append(f"  {bs['text']}")
+        L.append(f"  来源锚: {bs['source_anchor']}")
+    else:
+        L.append(BIAS_DECLARATION)
     L.append("")
 
     # ③ 逐日 AR + 主/稳健窗(item 8)
     pt = result.get("per_tau") or {}
     if pt:
-        L.append(f"【逐日 AR 标准输出(item 8;{pt['tau_axis']})】")
+        L.append(f"【逐日 AR 标准输出(item 8;{pt['tau_axis']})】" + _nfv_tag(pt))
         L.append(f"  ρ̄={_fmt(pt['rho_bar'])}(行业内,{pt['rho_n_pairs']} 对;口径④)")
         L.append("  τ    N    AAR        BMP       ADJ-BMP")
         for r in pt["by_tau"]:
@@ -81,8 +94,13 @@ def render(result: dict) -> str:
         car = result["car"]
         for wk in ("main_window", "robust_window"):
             w = car[wk]
+            # 主窗字段角色(人令调整六,nfv 时有键):唯一判决权字段=adj_bmp_car,其余非权威
+            fr = w.get("field_roles") or {}
+            role_tag = (" [字段角色: adj_bmp_car=VERDICT_AUTHORITY,其余统计=NOT_FOR_VERDICT]"
+                        if fr else "")
             L.append(f"  {wk} {w['taus']}: CAAR={_fmt(w['caar'],5)} N={w['n']} "
-                     f"BMP_CAR={_fmt(w.get('bmp_car'),3)} ADJ-BMP_CAR={_fmt(w.get('adj_bmp_car'),3)}")
+                     f"BMP_CAR={_fmt(w.get('bmp_car'),3)} ADJ-BMP_CAR={_fmt(w.get('adj_bmp_car'),3)}"
+                     + _nfv_tag(w) + role_tag)
         # 预注册次级报告窗(人裁 2026-07-15,三窗 pap 时才有;不参与判决)——两窗 result 无此键零回归
         for w in (car.get("secondary_windows") or {}).get("windows", ()):
             L.append(f"  secondary_window {w['taus']}(预注册次级报告窗·不判决): CAAR={_fmt(w['caar'],5)} "
@@ -91,7 +109,7 @@ def render(result: dict) -> str:
 
     # ④ 板块分层(item 8)
     st = result.get("board_strata") or {}
-    L.append("【板块分层(item 8)】")
+    L.append("【板块分层(item 8)】" + _nfv_tag(st))
     for k, v in st.items():
         if k.startswith("_") or not isinstance(v, dict):   # 非板块行(如 C6 not_for_verdict 标记)跳过
             continue
@@ -106,13 +124,13 @@ def render(result: dict) -> str:
     if ic:
         L.append(f"  行业覆盖(口径④): 'unknown' 残余组 {ic['unknown_n']}/{ic['n_valid']} "
                  f"({_fmt(ic['unknown_pct'], 3)})"
-                 + ("  ⚠升级上报(>5%)" if ic.get("escalate") else ""))
+                 + ("  ⚠升级上报(>5%)" if ic.get("escalate") else "") + _nfv_tag(ic))
     L.append("")
 
     # ④'' 删失诊断窗(步3b,R5;报告项·不进 verdict)
     cd = result.get("censor_diagnostic") or {}
     if cd:
-        L.append(f"【删失诊断窗(R5;报告项·不进 verdict;{cd['window']})】")
+        L.append(f"【删失诊断窗(R5;报告项·不进 verdict;{cd['window']})】" + _nfv_tag(cd))
         allp = cd.get("all", {})
         L.append("  ① 各 τ 逐日 AR(全体;反应时间形状/延迟价格发现):")
         L.append("     τ   N     AAR        BMP     ADJ-BMP")
@@ -138,7 +156,7 @@ def render(result: dict) -> str:
     if rb:
         cr = (rb.get("corrado_rank") or {})
         ct = (rb.get("calendar_time") or {})
-        L.append("【稳健性两道(spec §6;三法之秩/日历)】")
+        L.append("【稳健性两道(spec §6;三法之秩/日历)】" + _nfv_tag(rb))
         L.append(f"  Corrado 秩检验: 主窗 t_rank={_fmt((cr.get('main') or {}).get('t_rank'),3)} "
                  f"稳健窗 t_rank={_fmt((cr.get('robust') or {}).get('t_rank'),3)}(非参,对非正态/事件方差稳健)")
         cm, crob = (ct.get('main') or {}), (ct.get('robust') or {})
@@ -150,21 +168,27 @@ def render(result: dict) -> str:
     ts = result.get("type_strata") or {}
     layers = ts.get("layers") or {}
     if layers:
-        L.append("【三层分解(预喜/预亏/扭亏;pap 冻结 layers/event_def;各层独立同一流水线)】")
+        L.append("【三层分解(预喜/预亏/扭亏;pap 冻结 layers/event_def;各层独立同一流水线)】"
+                 + _nfv_tag(ts))
         L.append(f"  注: {ts.get('note','')}")
         L.append("  层(key)         N_valid  主窗[0,+M] CAAR      ADJ-BMP_CAR  朴素t      verdict")
         for key, blk in layers.items():
             mw = (blk.get("car") or {}).get("main_window") or {}
             adj = mw.get("adj_bmp_car")
             lab = f"{blk.get('layer_label','')}({key})"
-            # 回修单元 C6:nfv 结构化时层块键=sig_state_report_only(报告项);默认键名不变零回归
-            sig = blk.get("verdict", blk.get("sig_state_report_only", ""))
+            # C6 二次回修:nfv 层块零判决字段(改名旁路已废)→ 渲染 NOT_FOR_VERDICT 标记;
+            # 默认路径 verdict 键在位、渲染零回归
+            sig = blk.get("verdict",
+                          "NOT_FOR_VERDICT" if blk.get("not_for_verdict") else "")
             L.append(f"  {lab:<14} {blk.get('n_valid',0):>7}  "
                      f"{_fmt(mw.get('caar'),5):>16}  {_fmt(adj,3):>10}  "
                      f"{_fmt(mw.get('naive_t'),3):>8}   {sig}")
-        # 各层 verdict_note 全文(不省;分歧不许挑有利的)
+        # 各层 verdict_note 全文(不省;分歧不许挑有利的;nfv 层块无判决注 → 标记行)
         for key, blk in layers.items():
-            note = blk.get("verdict_note", blk.get("sig_state_note", ""))
+            note = blk.get("verdict_note")
+            if note is None:
+                note = ("NOT_FOR_VERDICT(层内零判决字段,C6 二次回修)"
+                        if blk.get("not_for_verdict") else "")
             L.append(f"    · {blk.get('layer_label','')}({key}): {note}")
         nvs = ts.get("n_valid_sum")
         if nvs is not None:
@@ -201,7 +225,7 @@ def render(result: dict) -> str:
     tr = result.get("tradeable") or {}
     if tr.get("available"):
         c = tr.get("cost") or {}
-        L.append("【可交易口径净收益(选项2;pap cost 冻结;报告项·不改统计判决)】")
+        L.append("【可交易口径净收益(选项2;pap cost 冻结;报告项·不改统计判决)】" + _nfv_tag(tr))
         L.append(f"  成本(冻结率): 佣金={_fmt(c.get('commission'),5)} 印花(卖)={_fmt(c.get('stamp_tax_sell'),5)} "
                  f"滑点(单边)={_fmt(c.get('slippage_oneway'),5)} → 买费={_fmt(c.get('buy_fee'),5)} "
                  f"卖费={_fmt(c.get('sell_fee'),5)}")
@@ -224,6 +248,34 @@ def render(result: dict) -> str:
         for key, blk in (tr.get("layers") or {}).items():
             _tr_line(f"{blk.get('layer_label','')}({key})", blk)
         L.append(f"  注: {tr.get('note','')}")
+        L.append("")
+
+    # ④'''''' 正交诊断维度(C6 二次回修;两条独立轴,无键 → 段落不出=既有渲染零回归)
+    dd2 = result.get("diagnostic_dimensions")
+    if dd2:
+        L.append("【正交诊断维度(C6 二次回修;两条独立轴,每层 NOT_FOR_VERDICT·不判决不改判)】")
+        for dim, dblk in (dd2.get("dims") or {}).items():
+            L.append(f"  轴 {dim} [NOT_FOR_VERDICT]: {dblk.get('note','')}")
+            for lay, blk in (dblk.get("layers") or {}).items():
+                head = (f"    {lay} [NOT_FOR_VERDICT]: 事件N={blk['n_events']} "
+                        f"存活={blk['n_valid']} 剔除={blk['n_rejected']}")
+                if blk.get("status"):
+                    L.append(head + f" → {blk['status']}")
+                    L.append(f"      剔除逐因: {blk.get('rejections_by_reason_total') or {}}"
+                             f"(逐年分解见 result_json)")
+                else:
+                    st_ = blk.get("stats") or {}
+                    mw_ = st_.get("main_window") or {}
+                    rw_ = st_.get("robust_window") or {}
+                    L.append(head)
+                    L.append(f"      主窗{mw_.get('taus','')}: CAAR={_fmt(mw_.get('caar'),5)} "
+                             f"ADJ-BMP_CAR={_fmt(mw_.get('adj_bmp_car'),3)} "
+                             f"朴素t={_fmt(mw_.get('naive_t'),3)}(预注册报告统计,非判决)")
+                    L.append(f"      稳健窗{rw_.get('taus','')}: CAAR={_fmt(rw_.get('caar'),5)} "
+                             f"ADJ-BMP_CAR={_fmt(rw_.get('adj_bmp_car'),3)}")
+        cc = dd2.get("cross_counts")
+        if cc:
+            L.append(f"  二维计数核对(仅计数,不计统计/判决): {cc.get('cells')}")
         L.append("")
 
     # ⑤ verdict(统计事实)。nfv 结构化水印(回修单元 C6):有键才渲染 → 既有 result 渲染零回归
