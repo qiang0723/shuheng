@@ -208,16 +208,22 @@ def main() -> int:
         _ok("S3 exp3(#2b)/exp4(#3)/exp5(#4) 在册", cur.fetchone()[0] == 3)
 
         # ── 正向(b) ──
+        # F1 标本=动态选取 registered 态 legacy 实验(原硬编码 exp8;exp8 依冻结令
+        # 2026-07-17 深夜五真冻结后标本失效——探针语义不变,只换活标本,SAVEPOINT 回滚零残留)
+        cur.execute("""SELECT min(e.exp_id) FROM experiment e
+                       JOIN pap_legacy_registry r ON r.exp_id = e.exp_id
+                       WHERE e.status = 'registered'""")
+        f1_specimen = cur.fetchone()[0]
         cur.execute("SAVEPOINT f1")
         try:
             cur.execute("UPDATE experiment SET status='frozen', frozen_at=now() "
-                        "WHERE exp_id=8 AND status='registered'")
-            ok = cur.rowcount == 1
+                        "WHERE exp_id=%s AND status='registered'", (f1_specimen,))
+            ok = f1_specimen is not None and cur.rowcount == 1
             cur.execute("ROLLBACK TO SAVEPOINT f1")
-            _ok("F1 既有 registered 纯事件 legacy 实验(exp8)事件版冻结放行", ok)
+            _ok(f"F1 既有 registered 纯事件 legacy 实验(exp{f1_specimen})事件版冻结放行", ok)
         except psycopg.Error as err:
             cur.execute("ROLLBACK TO SAVEPOINT f1")
-            _ok("F1 既有 registered 纯事件 legacy 实验(exp8)事件版冻结放行", False,
+            _ok(f"F1 既有 registered 纯事件 legacy 实验(exp{f1_specimen})事件版冻结放行", False,
                 str(err).splitlines()[0][:130])
         _freeze_allow(cur, "F2 合法 close_to_next_open PAP 冻结放行",
                       _pap(pap_schema_version=2, analysis_type="strategy", strategy_execution=SE_C2N))
