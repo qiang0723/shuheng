@@ -1,0 +1,1404 @@
+{
+ "_SYNTHETIC_SAMPLE_NOTE": "回修三交付样例:合成域(make_ashare_fixture),非真实数据、非正式运行;演示 result 真锚三元组 bias_statement={pap_sha256,key,text}——pap_sha256=引擎对实收合成 pap 重算 canonical digest(本样例=57d4ff6aa0c26b03748763cb45b73387045c8da7381f9ba4f0488811193ea579);真实 exp8 运行时该值将=冻结 PAP v3 digest(afd8443a…),以人签发冻结句为准。",
+ "audit": {
+  "benchmark_mode": "market",
+  "family_alpha": 0.05,
+  "family_trial": 1,
+  "frozen_ashare_digest": "c795b21ebc1a9d21690d307189dd93d8e416ced95e39cb954777f8504dc402c1",
+  "frozen_config_digest": "b88a43ef7bd88b8e22303c48dbfa20384d9372c12eb7c7b0884dcf618638110b",
+  "premend_params": {
+   "diagnostic_dims": [
+    "listing_age",
+    "st"
+   ],
+   "nfv_structured": true,
+   "postpone_policy": "unified",
+   "st_policy": "keep",
+   "verdict_policy": "adj_bmp_main_only"
+  }
+ },
+ "bias_statement": {
+  "key": "bias_statement",
+  "pap_sha256": "57d4ff6aa0c26b03748763cb45b73387045c8da7381f9ba4f0488811193ea579",
+  "source_anchor": "pap_sha256=57d4ff6aa0c26b03748763cb45b73387045c8da7381f9ba4f0488811193ea579 key=bias_statement(引擎自实收冻结 PAP 内容重算 canonical digest,回修三)",
+  "text": "清洗剔除与listing fail-closed产生样本选择,偏差方向未知;估计对象仅限清洗存活样本,不得外推为全体一字涨停链事件的效应。"
+ },
+ "board_strata": {
+  "ST": {
+   "rejected": 0,
+   "total": 6,
+   "valid": 6
+  },
+  "_chinext_regime": {
+   "boundary": "2020-08-24",
+   "post_20pct": 7,
+   "pre_10pct": 6
+  },
+  "_st_note": "ST 为保留层(st_policy='keep',人裁 2026-07-17 回修单元 C2 乙案):入主样本与主判决;ST/非ST 分层报告,不分别产生判决",
+  "chinext": {
+   "rejected": 3,
+   "total": 16,
+   "valid": 13
+  },
+  "main": {
+   "rejected": 3,
+   "total": 18,
+   "valid": 15
+  },
+  "not_for_verdict": true,
+  "star": {
+   "rejected": 1,
+   "total": 8,
+   "valid": 7
+  }
+ },
+ "car": {
+  "main_window": {
+   "adj_bmp_car": 3.638452213279425,
+   "bmp_car": 8.636151099948503,
+   "caar": 0.022219103877052438,
+   "csar_mean": 2.214024401451448,
+   "csar_sd": 1.641549938523662,
+   "field_roles": {
+    "adj_bmp_car": "VERDICT_AUTHORITY",
+    "bmp_car": "NOT_FOR_VERDICT",
+    "caar": "NOT_FOR_VERDICT",
+    "csar_mean": "NOT_FOR_VERDICT",
+    "csar_sd": "NOT_FOR_VERDICT",
+    "kp_factor": "NOT_FOR_VERDICT",
+    "n": "CONTEXT",
+    "naive_t": "NOT_FOR_VERDICT",
+    "taus": "CONTEXT"
+   },
+   "kp_factor": 0.42130483489353504,
+   "n": 41,
+   "naive_t": 8.674593599137268,
+   "taus": "[0,+2]"
+  },
+  "robust_window": {
+   "adj_bmp_car": 2.099020308842564,
+   "bmp_car": 4.982188987631704,
+   "caar": 0.020856127222092437,
+   "csar_mean": 2.0478269013385297,
+   "csar_sd": 2.631873278709325,
+   "kp_factor": 0.42130483489353504,
+   "n": 41,
+   "naive_t": 5.004071887633484,
+   "not_for_verdict": true,
+   "taus": "[0,+5]"
+  }
+ },
+ "censor_diagnostic": {
+  "all": {
+   "by_tau_ar": [
+    {
+     "aar": 0.02538623810011782,
+     "adj_bmp": 6.71393475693371,
+     "bmp": 15.936049626941358,
+     "n": 41,
+     "tau": 0
+    },
+    {
+     "aar": -0.0010773011955624175,
+     "adj_bmp": -0.36556271631069936,
+     "bmp": -0.867691718760071,
+     "n": 41,
+     "tau": 1
+    },
+    {
+     "aar": -0.0020898330275029623,
+     "adj_bmp": -0.5835700723767854,
+     "bmp": -1.3851492412240065,
+     "n": 41,
+     "tau": 2
+    },
+    {
+     "aar": -0.0010686002972508323,
+     "adj_bmp": -0.28080918388226495,
+     "bmp": -0.6665225761133888,
+     "n": 41,
+     "tau": 3
+    },
+    {
+     "aar": -0.001915635007591097,
+     "adj_bmp": -0.43505791665848137,
+     "bmp": -1.0326440159852943,
+     "n": 41,
+     "tau": 4
+    },
+    {
+     "aar": 0.0016212586498819265,
+     "adj_bmp": 0.4037269346305809,
+     "bmp": 0.9582774779515736,
+     "n": 41,
+     "tau": 5
+    }
+   ],
+   "by_tau_censor": [
+    {
+     "censored_pct": 0.0,
+     "limit_down": 0,
+     "limit_up": 0,
+     "n": 41,
+     "none": 41,
+     "one_word": 0,
+     "suspend": 0,
+     "tau": 0
+    },
+    {
+     "censored_pct": 0.0,
+     "limit_down": 0,
+     "limit_up": 0,
+     "n": 41,
+     "none": 41,
+     "one_word": 0,
+     "suspend": 0,
+     "tau": 1
+    },
+    {
+     "censored_pct": 0.0,
+     "limit_down": 0,
+     "limit_up": 0,
+     "n": 41,
+     "none": 41,
+     "one_word": 0,
+     "suspend": 0,
+     "tau": 2
+    },
+    {
+     "censored_pct": 0.0,
+     "limit_down": 0,
+     "limit_up": 0,
+     "n": 41,
+     "none": 41,
+     "one_word": 0,
+     "suspend": 0,
+     "tau": 3
+    },
+    {
+     "censored_pct": 0.0,
+     "limit_down": 0,
+     "limit_up": 0,
+     "n": 41,
+     "none": 41,
+     "one_word": 0,
+     "suspend": 0,
+     "tau": 4
+    },
+    {
+     "censored_pct": 0.0,
+     "limit_down": 0,
+     "limit_up": 0,
+     "n": 41,
+     "none": 41,
+     "one_word": 0,
+     "suspend": 0,
+     "tau": 5
+    }
+   ]
+  },
+  "by_board": {
+   "ST": {
+    "by_tau_ar": [
+     {
+      "aar": 0.027062484198821915,
+      "adj_bmp": 7.178175357061502,
+      "bmp": 9.468838668831344,
+      "n": 6,
+      "tau": 0
+     },
+     {
+      "aar": -0.0019487637654867947,
+      "adj_bmp": -1.1177480167399265,
+      "bmp": -1.4744381568367249,
+      "n": 6,
+      "tau": 1
+     },
+     {
+      "aar": -0.0017034998775730416,
+      "adj_bmp": -0.4306275753953207,
+      "bmp": -0.5680472870806967,
+      "n": 6,
+      "tau": 2
+     },
+     {
+      "aar": -0.004594189888082949,
+      "adj_bmp": -0.8808971246830096,
+      "bmp": -1.1620045962314545,
+      "n": 6,
+      "tau": 3
+     },
+     {
+      "aar": 0.00293447174579662,
+      "adj_bmp": 0.5756024914399014,
+      "bmp": 0.759285871089803,
+      "n": 6,
+      "tau": 4
+     },
+     {
+      "aar": 0.001446754942694701,
+      "adj_bmp": 0.1273697005749746,
+      "bmp": 0.16801528049260445,
+      "n": 6,
+      "tau": 5
+     }
+    ],
+    "by_tau_censor": [
+     {
+      "censored_pct": 0.0,
+      "limit_down": 0,
+      "limit_up": 0,
+      "n": 6,
+      "none": 6,
+      "one_word": 0,
+      "suspend": 0,
+      "tau": 0
+     },
+     {
+      "censored_pct": 0.0,
+      "limit_down": 0,
+      "limit_up": 0,
+      "n": 6,
+      "none": 6,
+      "one_word": 0,
+      "suspend": 0,
+      "tau": 1
+     },
+     {
+      "censored_pct": 0.0,
+      "limit_down": 0,
+      "limit_up": 0,
+      "n": 6,
+      "none": 6,
+      "one_word": 0,
+      "suspend": 0,
+      "tau": 2
+     },
+     {
+      "censored_pct": 0.0,
+      "limit_down": 0,
+      "limit_up": 0,
+      "n": 6,
+      "none": 6,
+      "one_word": 0,
+      "suspend": 0,
+      "tau": 3
+     },
+     {
+      "censored_pct": 0.0,
+      "limit_down": 0,
+      "limit_up": 0,
+      "n": 6,
+      "none": 6,
+      "one_word": 0,
+      "suspend": 0,
+      "tau": 4
+     },
+     {
+      "censored_pct": 0.0,
+      "limit_down": 0,
+      "limit_up": 0,
+      "n": 6,
+      "none": 6,
+      "one_word": 0,
+      "suspend": 0,
+      "tau": 5
+     }
+    ]
+   },
+   "chinext": {
+    "by_tau_ar": [
+     {
+      "aar": 0.026278681841575644,
+      "adj_bmp": 5.358570169045449,
+      "bmp": 7.34833645860764,
+      "n": 13,
+      "tau": 0
+     },
+     {
+      "aar": -0.0007936431858517104,
+      "adj_bmp": -0.3253975089567315,
+      "bmp": -0.446225448799675,
+      "n": 13,
+      "tau": 1
+     },
+     {
+      "aar": -0.0004847210782207722,
+      "adj_bmp": -0.2001380632760662,
+      "bmp": -0.27445415115066424,
+      "n": 13,
+      "tau": 2
+     },
+     {
+      "aar": 0.0004935080906927022,
+      "adj_bmp": 0.05859256946375751,
+      "bmp": 0.08034940307047012,
+      "n": 13,
+      "tau": 3
+     },
+     {
+      "aar": -0.005057245931741319,
+      "adj_bmp": -1.2880896198768406,
+      "bmp": -1.7663883493348285,
+      "n": 13,
+      "tau": 4
+     },
+     {
+      "aar": 3.995815526898977e-06,
+      "adj_bmp": -0.10866661529430036,
+      "bmp": -0.14901714931594193,
+      "n": 13,
+      "tau": 5
+     }
+    ],
+    "by_tau_censor": [
+     {
+      "censored_pct": 0.0,
+      "limit_down": 0,
+      "limit_up": 0,
+      "n": 13,
+      "none": 13,
+      "one_word": 0,
+      "suspend": 0,
+      "tau": 0
+     },
+     {
+      "censored_pct": 0.0,
+      "limit_down": 0,
+      "limit_up": 0,
+      "n": 13,
+      "none": 13,
+      "one_word": 0,
+      "suspend": 0,
+      "tau": 1
+     },
+     {
+      "censored_pct": 0.0,
+      "limit_down": 0,
+      "limit_up": 0,
+      "n": 13,
+      "none": 13,
+      "one_word": 0,
+      "suspend": 0,
+      "tau": 2
+     },
+     {
+      "censored_pct": 0.0,
+      "limit_down": 0,
+      "limit_up": 0,
+      "n": 13,
+      "none": 13,
+      "one_word": 0,
+      "suspend": 0,
+      "tau": 3
+     },
+     {
+      "censored_pct": 0.0,
+      "limit_down": 0,
+      "limit_up": 0,
+      "n": 13,
+      "none": 13,
+      "one_word": 0,
+      "suspend": 0,
+      "tau": 4
+     },
+     {
+      "censored_pct": 0.0,
+      "limit_down": 0,
+      "limit_up": 0,
+      "n": 13,
+      "none": 13,
+      "one_word": 0,
+      "suspend": 0,
+      "tau": 5
+     }
+    ]
+   },
+   "main": {
+    "by_tau_ar": [
+     {
+      "aar": 0.023686684479241982,
+      "adj_bmp": 6.544312325280334,
+      "bmp": 10.011914935345018,
+      "n": 15,
+      "tau": 0
+     },
+     {
+      "aar": -0.0026161352830255096,
+      "adj_bmp": -0.7576948847689325,
+      "bmp": -1.159170949703664,
+      "n": 15,
+      "tau": 1
+     },
+     {
+      "aar": -0.005037598234034316,
+      "adj_bmp": -1.0546792214297642,
+      "bmp": -1.6135169173146682,
+      "n": 15,
+      "tau": 2
+     },
+     {
+      "aar": -0.002543876696232035,
+      "adj_bmp": -0.4633069796964828,
+      "bmp": -0.7087971721267303,
+      "n": 15,
+      "tau": 3
+     },
+     {
+      "aar": -0.0031456811626948277,
+      "adj_bmp": -0.5393572476103239,
+      "bmp": -0.8251438217544219,
+      "n": 15,
+      "tau": 4
+     },
+     {
+      "aar": 0.0022831873152127985,
+      "adj_bmp": 0.8029398675095883,
+      "bmp": 1.2283896690946574,
+      "n": 15,
+      "tau": 5
+     }
+    ],
+    "by_tau_censor": [
+     {
+      "censored_pct": 0.0,
+      "limit_down": 0,
+      "limit_up": 0,
+      "n": 15,
+      "none": 15,
+      "one_word": 0,
+      "suspend": 0,
+      "tau": 0
+     },
+     {
+      "censored_pct": 0.0,
+      "limit_down": 0,
+      "limit_up": 0,
+      "n": 15,
+      "none": 15,
+      "one_word": 0,
+      "suspend": 0,
+      "tau": 1
+     },
+     {
+      "censored_pct": 0.0,
+      "limit_down": 0,
+      "limit_up": 0,
+      "n": 15,
+      "none": 15,
+      "one_word": 0,
+      "suspend": 0,
+      "tau": 2
+     },
+     {
+      "censored_pct": 0.0,
+      "limit_down": 0,
+      "limit_up": 0,
+      "n": 15,
+      "none": 15,
+      "one_word": 0,
+      "suspend": 0,
+      "tau": 3
+     },
+     {
+      "censored_pct": 0.0,
+      "limit_down": 0,
+      "limit_up": 0,
+      "n": 15,
+      "none": 15,
+      "one_word": 0,
+      "suspend": 0,
+      "tau": 4
+     },
+     {
+      "censored_pct": 0.0,
+      "limit_down": 0,
+      "limit_up": 0,
+      "n": 15,
+      "none": 15,
+      "one_word": 0,
+      "suspend": 0,
+      "tau": 5
+     }
+    ]
+   },
+   "star": {
+    "by_tau_ar": [
+     {
+      "aar": 0.025933960826112275,
+      "adj_bmp": 4.935279913740155,
+      "bmp": 6.10864510971494,
+      "n": 7,
+      "tau": 0
+     },
+     {
+      "aar": 0.0024403748909023614,
+      "adj_bmp": 0.9045487734533645,
+      "bmp": 1.1196056835744992,
+      "n": 7,
+      "tau": 1
+     },
+     {
+      "aar": 0.0009147418093145106,
+      "adj_bmp": 0.327387162963174,
+      "bmp": 0.4052236199309801,
+      "n": 7,
+      "tau": 2
+     },
+     {
+      "aar": 0.00221358177224128,
+      "adj_bmp": 0.8093982431470005,
+      "bmp": 1.001833068484413,
+      "n": 7,
+      "tau": 3
+     },
+     {
+      "aar": 0.0023973641095778363,
+      "adj_bmp": 0.3292188185322749,
+      "bmp": 0.4074907525010537,
+      "n": 7,
+      "tau": 4
+     },
+     {
+      "aar": 0.0033559028084213017,
+      "adj_bmp": 0.862936572582396,
+      "bmp": 1.0681001617403225,
+      "n": 7,
+      "tau": 5
+     }
+    ],
+    "by_tau_censor": [
+     {
+      "censored_pct": 0.0,
+      "limit_down": 0,
+      "limit_up": 0,
+      "n": 7,
+      "none": 7,
+      "one_word": 0,
+      "suspend": 0,
+      "tau": 0
+     },
+     {
+      "censored_pct": 0.0,
+      "limit_down": 0,
+      "limit_up": 0,
+      "n": 7,
+      "none": 7,
+      "one_word": 0,
+      "suspend": 0,
+      "tau": 1
+     },
+     {
+      "censored_pct": 0.0,
+      "limit_down": 0,
+      "limit_up": 0,
+      "n": 7,
+      "none": 7,
+      "one_word": 0,
+      "suspend": 0,
+      "tau": 2
+     },
+     {
+      "censored_pct": 0.0,
+      "limit_down": 0,
+      "limit_up": 0,
+      "n": 7,
+      "none": 7,
+      "one_word": 0,
+      "suspend": 0,
+      "tau": 3
+     },
+     {
+      "censored_pct": 0.0,
+      "limit_down": 0,
+      "limit_up": 0,
+      "n": 7,
+      "none": 7,
+      "one_word": 0,
+      "suspend": 0,
+      "tau": 4
+     },
+     {
+      "censored_pct": 0.0,
+      "limit_down": 0,
+      "limit_up": 0,
+      "n": 7,
+      "none": 7,
+      "one_word": 0,
+      "suspend": 0,
+      "tau": 5
+     }
+    ]
+   }
+  },
+  "diag_main_len": 3,
+  "diag_robust_len": 6,
+  "not_for_verdict": true,
+  "window": "删失诊断窗 主[0,+2]/稳健[0,+5](frozen,R5;报告项不进 verdict;检验窗见 car)"
+ },
+ "coverage": {
+  "denominator": 160,
+  "min_valid": 112,
+  "n_valid_events": 41,
+  "valid_days_max": 160,
+  "valid_days_mean": 158.53658536585365,
+  "valid_days_min": 157
+ },
+ "diagnostic_dimensions": {
+  "cross_counts": {
+   "cells": {
+    "recent_listing×non_ST": {
+     "n_events": 24,
+     "n_valid": 17
+    },
+    "seasoned×ST": {
+     "n_events": 6,
+     "n_valid": 6
+    },
+    "seasoned×non_ST": {
+     "n_events": 18,
+     "n_valid": 18
+    }
+   },
+   "note": "二维计数矩阵:仅计数核对(审计用),不计算 CAR/显著性/判决(人令调整四)"
+  },
+  "dims": {
+   "listing_age": {
+    "layers": {
+     "recent_listing": {
+      "n_events": 24,
+      "n_rejected": 7,
+      "n_valid": 17,
+      "not_for_verdict": true,
+      "rejections": {
+       "alert": true,
+       "alert_threshold": 0.05,
+       "by_year": {
+        "2020": {
+         "by_reason": {
+          "coverage": 1,
+          "event_day_anomaly": 4
+         },
+         "reject_ratio": 0.35714285714285715,
+         "rejected": 5,
+         "total": 14
+        },
+        "2021": {
+         "by_reason": {
+          "event_day_anomaly": 2
+         },
+         "reject_ratio": 0.5,
+         "rejected": 2,
+         "total": 4
+        },
+        "2022": {
+         "by_reason": {},
+         "reject_ratio": 0.0,
+         "rejected": 0,
+         "total": 3
+        },
+        "2023": {
+         "by_reason": {},
+         "reject_ratio": 0.0,
+         "rejected": 0,
+         "total": 3
+        }
+       },
+       "reject_ratio": 0.2916666666666667,
+       "rejected": 7,
+       "total": 24
+      },
+      "rejections_by_reason_total": {
+       "coverage": 1,
+       "event_day_anomaly": 6
+      },
+      "stats": {
+       "main_window": {
+        "adj_bmp_car": 2.591049544329759,
+        "bmp_car": 4.755142906716482,
+        "caar": 0.022597022390282183,
+        "csar_mean": 2.2336223904444235,
+        "csar_sd": 1.936736965473511,
+        "kp_factor": 0.5448941483272748,
+        "n": 17,
+        "naive_t": 4.8546846895263975,
+        "taus": "[0,+2]"
+       },
+       "rho_bar": 0.12226480295654864,
+       "robust_window": {
+        "adj_bmp_car": 1.199103853989269,
+        "bmp_car": 2.2006179689583716,
+        "caar": 0.0157181682538838,
+        "csar_mean": 1.5082583804818261,
+        "csar_sd": 2.825891954519088,
+        "kp_factor": 0.5448941483272748,
+        "n": 17,
+        "naive_t": 2.281236254552009,
+        "taus": "[0,+5]"
+       }
+      }
+     },
+     "seasoned": {
+      "n_events": 24,
+      "n_rejected": 0,
+      "n_valid": 24,
+      "not_for_verdict": true,
+      "rejections": {
+       "alert": false,
+       "alert_threshold": 0.05,
+       "by_year": {
+        "2020": {
+         "by_reason": {},
+         "reject_ratio": 0.0,
+         "rejected": 0,
+         "total": 10
+        },
+        "2021": {
+         "by_reason": {},
+         "reject_ratio": 0.0,
+         "rejected": 0,
+         "total": 4
+        },
+        "2022": {
+         "by_reason": {},
+         "reject_ratio": 0.0,
+         "rejected": 0,
+         "total": 5
+        },
+        "2023": {
+         "by_reason": {},
+         "reject_ratio": 0.0,
+         "rejected": 0,
+         "total": 5
+        }
+       },
+       "reject_ratio": 0.0,
+       "rejected": 0,
+       "total": 24
+      },
+      "rejections_by_reason_total": {},
+      "stats": {
+       "main_window": {
+        "adj_bmp_car": 4.550082055354444,
+        "bmp_car": 7.479683505652208,
+        "caar": 0.021951411596848037,
+        "csar_mean": 2.2001424925814237,
+        "csar_sd": 1.4410306169150364,
+        "kp_factor": 0.6083254795361411,
+        "n": 24,
+        "naive_t": 7.396211222291463,
+        "taus": "[0,+2]"
+       },
+       "rho_bar": 0.06623016638512949,
+       "robust_window": {
+        "adj_bmp_car": 2.9264796207851447,
+        "bmp_car": 4.81071353943063,
+        "caar": 0.02449551482457355,
+        "csar_mean": 2.430021270278695,
+        "csar_sd": 2.4746067823431845,
+        "kp_factor": 0.6083254795361411,
+        "n": 24,
+        "naive_t": 4.729367693777774,
+        "taus": "[0,+5]"
+       }
+      }
+     }
+    },
+    "not_for_verdict": true,
+    "note": "上市交易龄维度:recent_listing=链起点自身真实交易行序号≤30 / seasoned=其余;两层一律同一估计窗与覆盖门槛(112/160),不预判任何层无CAR、不预限主结论适用域(C3)"
+   },
+   "st": {
+    "layers": {
+     "ST": {
+      "n_events": 6,
+      "n_rejected": 0,
+      "n_valid": 6,
+      "not_for_verdict": true,
+      "rejections": {
+       "alert": false,
+       "alert_threshold": 0.05,
+       "by_year": {
+        "2020": {
+         "by_reason": {},
+         "reject_ratio": 0.0,
+         "rejected": 0,
+         "total": 1
+        },
+        "2021": {
+         "by_reason": {},
+         "reject_ratio": 0.0,
+         "rejected": 0,
+         "total": 1
+        },
+        "2022": {
+         "by_reason": {},
+         "reject_ratio": 0.0,
+         "rejected": 0,
+         "total": 2
+        },
+        "2023": {
+         "by_reason": {},
+         "reject_ratio": 0.0,
+         "rejected": 0,
+         "total": 2
+        }
+       },
+       "reject_ratio": 0.0,
+       "rejected": 0,
+       "total": 6
+      },
+      "rejections_by_reason_total": {},
+      "stats": {
+       "main_window": {
+        "adj_bmp_car": 2.8413423973969287,
+        "bmp_car": 3.7480573301117643,
+        "caar": 0.023410220555762078,
+        "csar_mean": 2.4473094794556767,
+        "csar_sd": 1.5994044219072716,
+        "kp_factor": 0.758084027842819,
+        "n": 6,
+        "naive_t": 3.6992676472289947,
+        "taus": "[0,+2]"
+       },
+       "rho_bar": 0.1098007827179155,
+       "robust_window": {
+        "adj_bmp_car": 1.5808990676239454,
+        "bmp_car": 2.0853876477552284,
+        "caar": 0.02319725735617045,
+        "csar_mean": 2.3687649663552297,
+        "csar_sd": 2.782343845949697,
+        "kp_factor": 0.758084027842819,
+        "n": 6,
+        "naive_t": 2.0520340620642816,
+        "taus": "[0,+5]"
+       }
+      }
+     },
+     "non_ST": {
+      "n_events": 42,
+      "n_rejected": 7,
+      "n_valid": 35,
+      "not_for_verdict": true,
+      "rejections": {
+       "alert": true,
+       "alert_threshold": 0.05,
+       "by_year": {
+        "2020": {
+         "by_reason": {
+          "coverage": 1,
+          "event_day_anomaly": 4
+         },
+         "reject_ratio": 0.21739130434782608,
+         "rejected": 5,
+         "total": 23
+        },
+        "2021": {
+         "by_reason": {
+          "event_day_anomaly": 2
+         },
+         "reject_ratio": 0.2857142857142857,
+         "rejected": 2,
+         "total": 7
+        },
+        "2022": {
+         "by_reason": {},
+         "reject_ratio": 0.0,
+         "rejected": 0,
+         "total": 6
+        },
+        "2023": {
+         "by_reason": {},
+         "reject_ratio": 0.0,
+         "rejected": 0,
+         "total": 6
+        }
+       },
+       "reject_ratio": 0.16666666666666666,
+       "rejected": 7,
+       "total": 42
+      },
+      "rejections_by_reason_total": {
+       "coverage": 1,
+       "event_day_anomaly": 6
+      },
+      "stats": {
+       "main_window": {
+        "adj_bmp_car": 3.6576992036499987,
+        "bmp_car": 7.710113543328364,
+        "caar": 0.0220149124464165,
+        "csar_mean": 2.17403267379358,
+        "csar_sd": 1.6681661919697146,
+        "kp_factor": 0.47440276762396594,
+        "n": 35,
+        "naive_t": 7.771922341578882,
+        "taus": "[0,+2]"
+       },
+       "rho_bar": 0.08956825760885279,
+       "robust_window": {
+        "adj_bmp_car": 2.1155698687357214,
+        "bmp_car": 4.45943829402914,
+        "caar": 0.02045479062767906,
+        "csar_mean": 1.9928089473356672,
+        "csar_sd": 2.6437447829916154,
+        "kp_factor": 0.47440276762396594,
+        "n": 35,
+        "naive_t": 4.497395393242496,
+        "taus": "[0,+5]"
+       }
+      }
+     }
+    },
+    "not_for_verdict": true,
+    "note": "ST/非ST 维度:is_st=事件日行判定(st_mode 辖);明确正交诊断维度,不藏于板块计数(C6)"
+   }
+  },
+  "label": "正交诊断维度(C6 二次回修):两条独立轴分别结构化输出(禁四格交叉统计);层块零判决字段,不产生独立判决、不改变顶层判决;零存活层状态按真实原因命名(NO_EVENTS_IN_LAYER / UNESTIMABLE_BY_FROZEN_COVERAGE / UNESTIMABLE_AFTER_FROZEN_CLEANING)且块不缺席。",
+  "not_for_verdict": true
+ },
+ "industry_coverage": {
+  "escalate": false,
+  "n_valid": 41,
+  "not_for_verdict": true,
+  "note": "industry 缺失归 'unknown' 残余组(口径④;不猜不补);占比>5% 升级上报(人批 2026-07-08)",
+  "unknown_n": 0,
+  "unknown_pct": 0.0
+ },
+ "n_eff_rho": {
+  "kish": 8.099910556186755,
+  "kp": 7.277408320091423,
+  "n_valid": 41,
+  "not_for_verdict": true,
+  "note": "相关性折算有效N:Kish=N/(1+(N-1)ρ̄);KP=N(1-ρ̄)/(1+(N-1)ρ̄);ρ̄=行业内(口径④)。等相关假设→N_eff 下界;ADJ-BMP 已内嵌此坍缩。",
+  "rho_bar": 0.10154460723854532
+ },
+ "n_events_total": 48,
+ "n_events_valid": 41,
+ "n_valid": 41,
+ "not_for_verdict_policy": {
+  "enabled": true,
+  "label": "NOT_FOR_VERDICT · 非权威结果:报告项,不判决、不参与判决、不得择优改判(人裁 2026-07-17 回修单元 C6);唯一判决=顶层 verdict(主窗 ADJ-BMP)。",
+  "marked_blocks": [
+   "per_tau",
+   "n_eff_rho",
+   "robustness",
+   "type_strata",
+   "tradeable",
+   "board_strata",
+   "censor_diagnostic",
+   "industry_coverage",
+   "diagnostic_dimensions",
+   "car.robust_window"
+  ]
+ },
+ "per_tau": {
+  "by_tau": [
+   {
+    "aar": 0.02538623810011782,
+    "adj_bmp": 6.71393475693371,
+    "bmp": 15.936049626941358,
+    "n": 41,
+    "tau": 0
+   },
+   {
+    "aar": -0.0010773011955624175,
+    "adj_bmp": -0.36556271631069936,
+    "bmp": -0.867691718760071,
+    "n": 41,
+    "tau": 1
+   },
+   {
+    "aar": -0.0020898330275029623,
+    "adj_bmp": -0.5835700723767854,
+    "bmp": -1.3851492412240065,
+    "n": 41,
+    "tau": 2
+   },
+   {
+    "aar": -0.0010686002972508323,
+    "adj_bmp": -0.28080918388226495,
+    "bmp": -0.6665225761133888,
+    "n": 41,
+    "tau": 3
+   },
+   {
+    "aar": -0.001915635007591097,
+    "adj_bmp": -0.43505791665848137,
+    "bmp": -1.0326440159852943,
+    "n": 41,
+    "tau": 4
+   },
+   {
+    "aar": 0.0016212586498819265,
+    "adj_bmp": 0.4037269346305809,
+    "bmp": 0.9582774779515736,
+    "n": 41,
+    "tau": 5
+   }
+  ],
+  "not_for_verdict": true,
+  "rho_bar": 0.10154460723854532,
+  "rho_n_pairs": 119,
+  "rho_note": "ρ̄按行业内估计(口径④:tushare industry)",
+  "tau_axis": "τ=0:=T+1(首个可交易日,S2-DEC3)"
+ },
+ "rejections": {
+  "alert": true,
+  "alert_threshold": 0.05,
+  "by_year": {
+   "2020": {
+    "by_reason": {
+     "coverage": 1,
+     "event_day_anomaly": 4
+    },
+    "reject_ratio": 0.20833333333333334,
+    "rejected": 5,
+    "total": 24
+   },
+   "2021": {
+    "by_reason": {
+     "event_day_anomaly": 2
+    },
+    "reject_ratio": 0.25,
+    "rejected": 2,
+    "total": 8
+   },
+   "2022": {
+    "by_reason": {},
+    "reject_ratio": 0.0,
+    "rejected": 0,
+    "total": 8
+   },
+   "2023": {
+    "by_reason": {},
+    "reject_ratio": 0.0,
+    "rejected": 0,
+    "total": 8
+   }
+  },
+  "reject_ratio": 0.14583333333333334,
+  "rejected": 7,
+  "total": 48
+ },
+ "rejections_by_layer": {
+  "recent_listing": {
+   "by_reason_total": {
+    "coverage": 1,
+    "event_day_anomaly": 6
+   },
+   "by_year": {
+    "2020": {
+     "by_reason": {
+      "coverage": 1,
+      "event_day_anomaly": 4
+     },
+     "reject_ratio": 0.35714285714285715,
+     "rejected": 5,
+     "total": 14
+    },
+    "2021": {
+     "by_reason": {
+      "event_day_anomaly": 2
+     },
+     "reject_ratio": 0.5,
+     "rejected": 2,
+     "total": 4
+    },
+    "2022": {
+     "by_reason": {},
+     "reject_ratio": 0.0,
+     "rejected": 0,
+     "total": 3
+    },
+    "2023": {
+     "by_reason": {},
+     "reject_ratio": 0.0,
+     "rejected": 0,
+     "total": 3
+    }
+   },
+   "reject_ratio": 0.2916666666666667,
+   "rejected": 7,
+   "total": 24
+  },
+  "seasoned": {
+   "by_reason_total": {},
+   "by_year": {
+    "2020": {
+     "by_reason": {},
+     "reject_ratio": 0.0,
+     "rejected": 0,
+     "total": 10
+    },
+    "2021": {
+     "by_reason": {},
+     "reject_ratio": 0.0,
+     "rejected": 0,
+     "total": 4
+    },
+    "2022": {
+     "by_reason": {},
+     "reject_ratio": 0.0,
+     "rejected": 0,
+     "total": 5
+    },
+    "2023": {
+     "by_reason": {},
+     "reject_ratio": 0.0,
+     "rejected": 0,
+     "total": 5
+    }
+   },
+   "reject_ratio": 0.0,
+   "rejected": 0,
+   "total": 24
+  }
+ },
+ "robustness": {
+  "calendar_time": {
+   "main": {
+    "direction": 1,
+    "n_cal_days": 122,
+    "port_mean": 0.007336448497981393,
+    "t_cal": 5.263869216148725
+   },
+   "robust": {
+    "direction": 1,
+    "n_cal_days": 227,
+    "port_mean": 0.003259412012876488,
+    "t_cal": 3.6500563620627346
+   }
+  },
+  "corrado_rank": {
+   "by_tau": [
+    {
+     "kbar": 0.44777399395141904,
+     "t_rank": 7.655159502175897,
+     "tau": 0
+    },
+    {
+     "kbar": -0.036108033783711586,
+     "t_rank": -0.6173041794701843,
+     "tau": 1
+    },
+    {
+     "kbar": -0.07123735871505057,
+     "t_rank": -1.2178763189552226,
+     "tau": 2
+    },
+    {
+     "kbar": -0.01995354917767085,
+     "t_rank": -0.3411265586052622,
+     "tau": 3
+    },
+    {
+     "kbar": -0.05092581048491952,
+     "t_rank": -0.8706293963153576,
+     "tau": 4
+    },
+    {
+     "kbar": 0.06124277322808278,
+     "t_rank": 1.0470085439294765,
+     "tau": 5
+    }
+   ],
+   "main": {
+    "direction": 1,
+    "t_rank": 3.360166444493315
+   },
+   "robust": {
+    "direction": 1,
+    "t_rank": 2.3087386299212325
+   },
+   "s_k": 0.0584930978674114
+  },
+  "not_for_verdict": true
+ },
+ "sample_gate": {
+  "gate": 30,
+  "state": "OK"
+ },
+ "snapshot_batch": "SYNTH",
+ "tradeable": {
+  "available": true,
+  "combined": {
+   "main": {
+    "excluded_no_close": 0,
+    "exit_censor": {
+     "limit_down": 0,
+     "limit_up": 0,
+     "one_word": 0,
+     "suspend_or_missing": 0
+    },
+    "gross": {
+     "mean": 0.014637507029199763,
+     "median": 0.01614549485912664,
+     "n": 41,
+     "pos_frac": 0.8292682926829268,
+     "std": 0.02277132657303176
+    },
+    "n_events": 41,
+    "net": {
+     "mean": 0.01109070925181936,
+     "median": 0.012593425713551598,
+     "n": 41,
+     "pos_frac": 0.7804878048780488,
+     "std": 0.022691726430204687
+    },
+    "window": "[0,+2]"
+   },
+   "robust": {
+    "excluded_no_close": 0,
+    "exit_censor": {
+     "limit_down": 0,
+     "limit_up": 0,
+     "one_word": 0,
+     "suspend_or_missing": 0
+    },
+    "gross": {
+     "mean": 0.020333366758804358,
+     "median": 0.019031459679552,
+     "n": 41,
+     "pos_frac": 0.6585365853658537,
+     "std": 0.043792657489011164
+    },
+    "n_events": 41,
+    "net": {
+     "mean": 0.016766658360646298,
+     "median": 0.015469302267438811,
+     "n": 41,
+     "pos_frac": 0.6097560975609756,
+     "std": 0.04363957454148404
+    },
+    "window": "[0,+5]"
+   }
+  },
+  "cost": {
+   "buy_fee": 0.00125,
+   "commission": 0.00025,
+   "limit_up_board_untradeable": true,
+   "net_formula": "close_exit*(1-卖费)/(open_entry*(1+买费))-1",
+   "sell_fee": 0.0022500000000000003,
+   "slippage_oneway": 0.001,
+   "stamp_tax_sell": 0.001
+  },
+  "layers": {
+   "recent_listing": {
+    "layer_key": "recent_listing",
+    "layer_label": "recent_listing",
+    "main": {
+     "excluded_no_close": 0,
+     "exit_censor": {
+      "limit_down": 0,
+      "limit_up": 0,
+      "one_word": 0,
+      "suspend_or_missing": 0
+     },
+     "gross": {
+      "mean": 0.011717815272899626,
+      "median": 0.012422273006062134,
+      "n": 17,
+      "pos_frac": 0.7647058823529411,
+      "std": 0.02764616296021924
+     },
+     "n_events": 17,
+     "net": {
+      "mean": 0.008181223658961971,
+      "median": 0.008883218868213305,
+      "n": 17,
+      "pos_frac": 0.7058823529411765,
+      "std": 0.027549522190820214
+     },
+     "window": "[0,+2]"
+    },
+    "robust": {
+     "excluded_no_close": 0,
+     "exit_censor": {
+      "limit_down": 0,
+      "limit_up": 0,
+      "one_word": 0,
+      "suspend_or_missing": 0
+     },
+     "gross": {
+      "mean": 0.01811049477989167,
+      "median": 0.011408406648980796,
+      "n": 17,
+      "pos_frac": 0.6470588235294118,
+      "std": 0.04519719125056554
+     },
+     "n_events": 17,
+     "net": {
+      "mean": 0.01455155672073604,
+      "median": 0.007872896613253966,
+      "n": 17,
+      "pos_frac": 0.5882352941176471,
+      "std": 0.04503919857203675
+     },
+     "window": "[0,+5]"
+    }
+   },
+   "seasoned": {
+    "layer_key": "seasoned",
+    "layer_label": "seasoned",
+    "main": {
+     "excluded_no_close": 0,
+     "exit_censor": {
+      "limit_down": 0,
+      "limit_up": 0,
+      "one_word": 0,
+      "suspend_or_missing": 0
+     },
+     "gross": {
+      "mean": 0.016705622023245697,
+      "median": 0.01982528243760595,
+      "n": 24,
+      "pos_frac": 0.875,
+      "std": 0.01895624107711077
+     },
+     "n_events": 24,
+     "net": {
+      "mean": 0.013151594880093343,
+      "median": 0.01626035011447835,
+      "n": 24,
+      "pos_frac": 0.8333333333333334,
+      "std": 0.01888997706335809
+     },
+     "window": "[0,+2]"
+    },
+    "robust": {
+     "excluded_no_close": 0,
+     "exit_censor": {
+      "limit_down": 0,
+      "limit_up": 0,
+      "one_word": 0,
+      "suspend_or_missing": 0
+     },
+     "gross": {
+      "mean": 0.021907901077200847,
+      "median": 0.027769363152428506,
+      "n": 24,
+      "pos_frac": 0.6666666666666666,
+      "std": 0.04368055827108124
+     },
+     "n_events": 24,
+     "net": {
+      "mean": 0.018335688688916062,
+      "median": 0.024176661258762167,
+      "n": 24,
+      "pos_frac": 0.625,
+      "std": 0.04352786718099506
+     },
+     "window": "[0,+5]"
+    }
+   }
+  },
+  "not_for_verdict": true,
+  "note": "pap 既定可交易口径(cost 冻结):进场=τ=0 后复权 open、出场=窗尾后复权 close、成本乘式净额(买费=佣金+滑点/卖费=佣金+印花+滑点);一字涨停不可成交由 cleaning 顺延/放弃处置进场侧;窗尾不可成交按字面'收盘出'计、单列诊断。报告与锚对照用途,不改统计判决。"
+ },
+ "type_strata": {
+  "applicable": false,
+  "not_for_verdict": true,
+  "note": "type_strata 不适用(非 forecast 分层事件);分层诊断走 diagnostic_dimensions 两条独立轴(C6 二次回修)"
+ },
+ "verdict": "SIG",
+ "verdict_note": "主窗(双侧 α=0.0500,临界±1.960):ADJ-BMP_CAR=3.638[显著] / 朴素t=8.675 / Corrado秩t=3.360[dir1] / 日历t=5.264[dir1]。判决口径=adj_bmp_main_only(人裁 2026-07-17):唯一判据=主窗 ADJ-BMP;辅助方法仅报告、不得改判。"
+}
