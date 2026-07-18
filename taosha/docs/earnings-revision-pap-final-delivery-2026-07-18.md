@@ -1,4 +1,8 @@
-# exp20 终版 PAP 交付档(2026-07-18 深夜二,PAP 文本回修单元)
+# exp20 终版 PAP 交付档(2026-07-18 深夜二,PAP 文本回修单元;深夜三 v2 回修补记)
+
+> **⚠v2 补记(2026-07-18 深夜三)**:本档 §1 之 v1 digest `94b9ba78…fa17` 经外部复核**未批冻结、已作废**
+> (标记档=`earnings-revision-pap-final-2026-07-18.NOT-FROZEN.md`);现行待复核版本见 §7(v2,digest `e1d18dc1…7fd5`)。
+> §2-§5 的裁定映射与 fixture 清单对 v2 继续有效,v2 增量见 §7。
 
 - **令源**:`taosha/docs/earnings-revision-pap-rulings-2026-07-18.md`(十项裁定+signed补强+终版要求,留痕 `ce48471`,原文即口径)。
 - **本单元性质**:仅 PAP 文本回修。零代码/零收益·CAR·显著性读取/零冻结/零 manifest/零台账写/零运行。草案档未覆盖、原样保留。
@@ -66,7 +70,36 @@ digest == file sha256: PASS
 
 补充建议(非令内,采否由人定):9) pap_sha256_assert 逐字断言 fail-closed(沿 exp8 fixture ⑨先例);10) 对账产出=12,569/5,225 逐层归因表落 audit 的结构断言。
 
-## 6. 交验点
+## 6. 交验点(v1,已被 §7 取代)
 
-终版 PAP JSON+逐键 diff+validate/窗解析+digest+对账声明+fixture 清单全毕,**停交验点**。
-待人复核终版并以 digest `94b9ba78…fa17` 下冻结句+另写预判;未令不动代码/manifest/台账/运行。
+~~待人复核终版并以 digest `94b9ba78…fa17` 下冻结句~~——该 digest 未批冻结、已作废(v2 补记)。
+
+## 7. v2 回修(2026-07-18 深夜三,令=`earnings-revision-pap-v2-order-2026-07-18.md`,留痕 `e8b5964`)
+
+### 7.1 实物
+
+- 新版本:`taosha/docs/earnings-revision-pap-final-v2-2026-07-18.json`(v1 未覆盖,SHA 复核仍 `94b9ba78…fa17`)
+- **v2 文件 SHA256 = canonical digest = `e1d18dc1019d8c43563b762c3dec3cf7b4bccad1e25667721867c33bb1dd7fd5`**(引擎重算==文件 SHA 当场断言 PASS)
+- `validate_pap`:**PASS**;`parse_test_windows`:**(5, 20, 60)**(均对 v2 实测)
+
+### 7.2 v1→v2 逐键 diff(程序化对账:键集不变,恰 4 键改、15 键逐字节相等)
+
+| 键 | 变更 | 依据 |
+|----|------|------|
+| event_def | 增 flat 阶段语义段:候选方向分类阶段 flat=合法分类结果,计入 flat 计数块后排除出主事件集,不得因存在 flat 候选拒绝整次运行;主事件集仅由 up/down 构成;主事件流形成后、进 CAR 及顶层 verdict 前 direction 严格∈{up,down},flat/null/unknown 等白名单外值**泄漏进主事件流**才 fail-closed 拒跑 | 令一 |
+| diagnostic_dimensions | `direction_fail_closed` 重写为两阶段语义(候选阶段正常排除≠拒跑;泄漏才拒);`note` 末句改"flat候选不在轴内、不入主事件集,仅入计数报告块(候选阶段正常排除,非拒跑事由)";axes/display_basis/zero_survivor_status 未动 | 令一 |
+| verdict_authority | effect_alignment 补成全定义函数:权威 ADJ-BMP 统计量 >0=ALIGNED、<0=REVERSED、=0=NEUTRAL、不可得=UNAVAILABLE;INSUFFICIENT/AMBIGUOUS 等无可用 ADJ-BMP 必须输出 UNAVAILABLE 不得猜测方向;四态均不得成为独立 verdict 或改变顶层四态判决;SIG+ALIGNED/SIG+REVERSED/NOT_SIG 解释句及 field_roles(effect_alignment=CONTEXT)不变 | 令二 |
+| reporting_commitments | ③改 flat 候选计数(正常排除不终止运行);⑥改 effect_alignment 四态全定义随主窗报告+无可用 ADJ-BMP 必须=UNAVAILABLE+四态不产生不改 verdict | 令一+二 |
+| 其余 15 键 | pap_schema_version/analysis_type/signed_ar/window/pool/benchmark/cleaning/cost/engine_params/bias_statement/verdict_power_note/holdout/pap_digest_binding/sample_gate/snapshot_batch_req **逐字节相等**(生成器程序化断言) | — |
+
+### 7.3 攻击 fixture 清单增补(令定四组,并入 §5 总清单为 11-14 号)
+
+11. **flat 候选正常排除**:构造含 flat 候选的输入,断言运行不终止、flat 进计数块、主事件集不含 flat、主检验正常产出。
+12. **flat 泄漏拒跑**:向已成形主事件流注入 flat/null/unknown/白名单外方向值,断言在 CAR 计算及顶层 verdict 调用前 fail-closed 拒绝(判决函数调用计数=0)。
+13. **effect_alignment 四分支**:ADJ-BMP 正/负/零/不可得(含 INSUFFICIENT、AMBIGUOUS 终态)四分支逐一断言输出 ALIGNED/REVERSED/NEUTRAL/UNAVAILABLE;不可得分支不得猜测方向。
+14. **四态零判决影响**:四种 alignment 状态下顶层 verdict 均由既有四态判决路径独立产生,alignment 不产生独立 verdict、不改变顶层判决(对照攻击:翻转 alignment 值,verdict 逐字节不变)。
+
+### 7.4 交验点(现行)
+
+v2 全毕,**停交验点**。待人复核 v2 并以 digest `e1d18dc1…7fd5` 下冻结句+另写预判;
+旧 digest `94b9ba78…fa17` 及任何预判不得平移。未令不动代码/manifest/台账/运行。
