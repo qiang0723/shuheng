@@ -62,7 +62,7 @@
 
 ## 6. 重新取证九件(交付包 `~/shuheng/s8_narrowfix_delivery_2026-07-18/`,AWS)
 
-1. `result_exp8.json` SHA 仍 `282bda4f…`✅ 2. `report_exp8.txt` SHA 仍 `278456d5…`✅ 3. `report_exp8.corrected.txt` SHA `5fb87ebf…`✅ 4. `run8.log` SHA 仍 `d2940c31…`✅ 5. `report_exp8.diff` 逐行 diff✅ 6. manifest 121 三处读回=`db_readonly_queries.txt`:权威(taosha.study_snapshot 121)/镜像(qbase.study_snapshot_mirror 121)/发布凭证(qbase.study_snapshot_publication pub_id=25 attested)三处 digest 全=`21e9095e…3efcd`,两侧 content md5 均 `aa940b61…`✅ 7. exp8 仍 frozen、result 槽空、done_at 空✅ 8. 台账仍 25 行(frozen 3/registered 18/done 3/closed 1)✅ 9. 秘密扫描 13 类全部交付件 TOTAL_HITS=0 + `SHA256SUMS` 全清单(传输后 AWS 侧 `sha256sum -c` 全 OK)✅。
+1. `result_exp8.json` SHA 仍 `282bda4f…`✅ 2. `report_exp8.txt` SHA 仍 `278456d5…`✅ 3. `report_exp8.corrected.txt` SHA `5fb87ebf…`✅ 4. `run8.log` SHA 仍 `d2940c31…`✅ 5. `report_exp8.diff` 逐行 diff✅ 6. manifest 121 三处读回=`db_readonly_queries.txt`:权威(taosha.study_snapshot 121)/镜像(qbase.study_snapshot_mirror 121)/发布凭证(qbase.study_snapshot_publication pub_id=25 attested)三处 digest 全=`21e9095e…3efcd`,两侧 content md5 均 `aa940b61…`✅ 7. exp8 仍 frozen、result 槽空、done_at 空✅ 8. 台账仍 25 行(registered 17/frozen 3/done 4/closed 1)✅〔勘误 2026-07-18 深夜:原误写 18/3/3/1,该分布属 `pap_legacy_registry.status_at_migration` 历史迁移分布,非当前台账;详见 §10〕 9. 秘密扫描 13 类全部交付件 TOTAL_HITS=0 + `SHA256SUMS` 全清单(传输后 AWS 侧 `sha256sum -c` 全 OK)✅。
 
 ## 7. 范围声明
 
@@ -76,3 +76,11 @@
 ## 9. 交验点
 
 两窄修+攻击性验收+回归+重新取证全毕,**停交验点,未 persist**。待外审核对本证据包后另行下达 persist 令。
+
+## 10. 勘误(2026-07-18 深夜,外审指正):台账状态分布留痕错误
+
+- **性质**:纯事实留痕勘误。零代码 / 零重跑 / 零重渲染 / 零 DB 写 / 原始 result·report·log 零触碰;原证据包及 `SHA256SUMS`、`SHA256SUMS.all` 不改不作废。
+- **错误**:多处将 **18/3/3/1**(registered 18/frozen 3/done 3/closed 1)写成当前台账分布。该分布实为 **`public.pap_legacy_registry.status_at_migration`(legacy registry 历史迁移分布)**;当前 **`public.experiment`** 台账正确分布 = **registered 17 / frozen 3 / done 4 / closed 1**(共 25 行,外审直接只读查询与我方 2026-07-18 22:33 复核一致)。
+- **错误位置**:①`ops/STATE.md` 07-18 傍晚条目(已改正+作废标注);②本档 §6 第 8 件(已改正);③交付包 `README.txt` 第 18 行与 ④`db_readonly_queries.txt` [3] 节标题预期文字——二者为封存原件(在 SHA 清单内)**不改动**,以勘误附页为准;⚠该文件 [3] 节**原始 SQL 输出本身正确**(17/3/4/1),错的只是标题预期文字。
+- **原因**:取证文字预期值误从 legacy registry 迁移分布取数,未与同文件 SQL 实际输出逐字核对,README/验收档/STATE 照抄同源扩散。
+- **交付索引更新**:交付包新增两件——**`ERRATA_ledger_status_distribution_2026-07-18.txt`**(勘误附页:错误位置/原因/正确 SQL 结果/两种分布表名对照,SHA256=`1ab84bb67e54d33e500df805d1d99d649d4cfc738d8b52dc95d75f1dabbcda85`)+ **`SHA256SUMS.errata`**(仅覆盖新增勘误件)。README 九件对照第 8 条以勘误附页为准。勘误后原包 `sha256sum -c SHA256SUMS.all` 复核仍全 OK。
