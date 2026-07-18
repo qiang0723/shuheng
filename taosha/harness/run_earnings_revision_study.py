@@ -113,16 +113,29 @@ def reference_reconciliation(sel: dict) -> dict:
         "events_up": cnt.get("events_up"),
         "events_down": cnt.get("events_down"),
     }
+    # 候选层恒等锚(对账归因,2026-07-18 深夜实测钉死):参考 12,569 = 去重后全期
+    # first 在场且 ann≠first 行数 = 冻结规则全期候选(ann>first)+时序违例(ann<first,
+    # fail-closed)。SQL 独立复核恒等命中(验收档 §对账);研究期筛/时序剔除属冻结规则,
+    # 参考数系评估期未加筛全期口径,非规则分歧。
+    cand_identity = (layers["candidate_rows_all_periods"]
+                     + layers["fail_closed_by_class"].get("temporal_violation", 0))
+    layers["candidate_allperiod_plus_temporal"] = cand_identity
+    d_cand_id = cand_identity - REFERENCE_NUMBERS["candidates"]
     d_cand = layers["candidate_event_keys_in_period"] - REFERENCE_NUMBERS["candidates"]
     d_dec = decidable - REFERENCE_NUMBERS["baseline_decidable"]
     return {
         "reference": dict(REFERENCE_NUMBERS),
         "layers": layers,
-        "delta": {"candidates": d_cand, "baseline_decidable": d_dec},
-        "summary": (f"候选层: 实测事件键(研究期)={layers['candidate_event_keys_in_period']} "
-                    f"vs 参考12,569(Δ={d_cand:+d}); 基准B可判层: 实测可判链日={decidable} "
+        "delta": {"candidates_allperiod_identity": d_cand_id,
+                  "candidates_in_period_vs_reference": d_cand,
+                  "baseline_decidable": d_dec},
+        "summary": (f"候选层恒等: 全期候选{layers['candidate_rows_all_periods']}+时序违例"
+                    f"{layers['fail_closed_by_class'].get('temporal_violation', 0)}"
+                    f"={cand_identity} vs 参考12,569(Δ={d_cand_id:+d}); "
+                    f"研究期候选={layers['candidate_event_keys_in_period']}"
+                    f"(研究期筛属冻结规则); 基准B可判层: 实测可判链日={decidable} "
                     f"(up/down={layers['directed_chain_days']}+flat={layers['flat_chain_days']}) "
-                    f"vs 参考5,225(Δ={d_dec:+d})"),
+                    f"vs 参考5,225(Δ={d_dec:+d};残差归因见验收档,原脚本未归档系已留痕风险)"),
         "note": "参考数仅对账,不是预写样本量;差异逐层归因,不改冻结规则(异常即停报人,令三)",
     }
 

@@ -144,16 +144,22 @@ with tempfile.TemporaryDirectory() as td:
     recon = aud["reference_reconciliation"]
     check("#10 recon 全键(reference/layers/delta/summary/note)",
           sorted(recon.keys()), ["delta", "layers", "note", "reference", "summary"])
-    check("#10 recon 逐层归因表:候选/可判/fail-closed 六类/主事件 up·down 全在场",
-          {"candidate_event_keys_in_period", "baseline_decidable_chain_days",
-           "fail_closed_by_class", "directed_chain_days", "flat_chain_days",
-           "events_after_fold", "events_up", "events_down"} <= set(recon["layers"]), True)
-    check("#10 recon 差值算术(Δ=实测−参考;基准可判=up/down+flat)",
-          (recon["delta"]["candidates"],
+    check("#10 recon 逐层归因表:候选(全期恒等+研究期)/可判/fail-closed 六类/主事件 up·down 全在场",
+          {"candidate_event_keys_in_period", "candidate_allperiod_plus_temporal",
+           "baseline_decidable_chain_days", "fail_closed_by_class", "directed_chain_days",
+           "flat_chain_days", "events_after_fold", "events_up", "events_down"}
+          <= set(recon["layers"]), True)
+    check("#10 recon 差值算术(Δ=实测−参考;恒等锚=全期候选+时序违例;基准可判=up/down+flat)",
+          (recon["delta"]["candidates_allperiod_identity"],
+           recon["delta"]["candidates_in_period_vs_reference"],
            recon["delta"]["baseline_decidable"],
+           recon["layers"]["candidate_allperiod_plus_temporal"],
            recon["layers"]["baseline_decidable_chain_days"]),
-          (recon["layers"]["candidate_event_keys_in_period"] - 12569,
+          (recon["layers"]["candidate_allperiod_plus_temporal"] - 12569,
+           recon["layers"]["candidate_event_keys_in_period"] - 12569,
            recon["layers"]["baseline_decidable_chain_days"] - 5225,
+           recon["layers"]["candidate_rows_all_periods"]
+           + recon["layers"]["fail_closed_by_class"].get("temporal_violation", 0),
            recon["layers"]["directed_chain_days"] + recon["layers"]["flat_chain_days"]))
     check("#10 recon note=不改冻结规则声明(异常即停报人,令三)",
           "不改冻结规则" in recon["note"], True)
