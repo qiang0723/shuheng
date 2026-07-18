@@ -29,14 +29,17 @@ def iter_survivors(event_src, by_sec, all_dates, date_index, mkt, robust_len, *,
     st_policy: ST 处置(回修单元 C2 乙案,2026-07-17):'reject' 默认=spec §5 剔除(零回归)/
       'keep'=保留入主样本(exp8);穿线至 clean_event,本函数零判断。
     postpone_policy: T+1 起不可交易处置(C1 二次回修,2026-07-17 深夜三):'legacy' 默认=既有
-      行为逐字(零回归)/'unified'=停牌与一字板统一顺延计数(exp8);穿线至 clean_event,零判断。
+      行为逐字(零回归)/'unified'=停牌与一字板统一顺延计数(exp8)/'unified_announcement'=
+      公告事件语义(exp20,冻结 PAP v2:ann_date 日历锚,τ0=其后首个交易所交易日,统一顺延≤5,
+      无 event_day_anomaly);穿线至 clean_event,零判断。
     """
     n_dates = len(all_dates)
+    _axis = all_dates if postpone_policy == "unified_announcement" else None
     _ret_cache: dict = {}
     for ev in event_src:
         rows = by_sec.get(ev.ts_code, [])
         ce = clean_event(rows, ev, date_index, st_mode=st_mode, st_policy=st_policy,
-                         postpone_policy=postpone_policy)
+                         postpone_policy=postpone_policy, axis_dates=_axis)
         if ce.rejected:
             yield ce, None
             continue

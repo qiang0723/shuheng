@@ -196,6 +196,12 @@ _DIAG_DIM_SPECS = {
         "layers": ("ST", "non_ST"),
         "note": "ST/非ST 维度:is_st=事件日行判定(st_mode 辖);明确正交诊断维度,不藏于板块计数(C6)",
     },
+    "direction": {
+        "layers": ("up", "down"),
+        "note": "修正方向维度(exp20,冻结 PAP v2 diagnostic_dimensions):up/down 为结构化 "
+                "NOT_FOR_VERDICT 诊断轴,零 verdict、零显著性分类,展示基准=raw AR(保留上修、"
+                "下修实际方向与强度;主检验 signed 数值不在诊断层重复渲染);flat 候选不在轴内",
+    },
 }
 
 
@@ -313,6 +319,7 @@ _MAIN_WINDOW_FIELD_ROLES = {
     "kp_factor": "NOT_FOR_VERDICT",
     "taus": "CONTEXT",
     "n": "CONTEXT",
+    "effect_alignment": "CONTEXT",   # exp20(冻结 PAP v2 field_roles 逐字:非 verdict 上下文字段)
 }
 
 
@@ -377,6 +384,9 @@ def run_study(reader, pap: dict, *, benchmark_mode: str = "market",
               st_policy: str = "reject", verdict_policy: str = "three_method",
               nfv_structured: bool = False, postpone_policy: str = "legacy",
               diagnostic_dims: tuple = (),
+              direction_signed_main: bool = False,
+              direction_display: Optional[str] = None,
+              effect_alignment_source: Optional[str] = None,
               bias_statement_assert: Optional[str] = None,
               pap_sha256_assert: Optional[str] = None) -> dict:
     """跑一条已冻结假设的事件研究,返回 result 字典(供 report + 落库)。
@@ -406,20 +416,39 @@ def run_study(reader, pap: dict, *, benchmark_mode: str = "market",
       唯一权威=引擎对实收 pap 内容重算 canonical_pap_sha256(pap.py 单一口径:词典序排序键+
       紧凑分隔符+UTF-8+末尾单换行,顶层 "_" 前缀运行时键不进 digest);本参数提供时与重算值
       不逐字相等 → fail-closed 拒。result.bias_statement 携带 {pap_sha256,key,text} 真锚三元组。
+    ── exp20 三参数(冻结 PAP v2 engine_params,digest e1d18dc1…7fd5;默认值=既有行为零回归)──
+    direction_signed_main: True → signed AR 口径(PAP signed_ar 冻结定义):direction_sign
+      (up=+1/down=−1)施加于**事件级、逐 τ,先于一切聚合与检验**,并作用于该事件估计期异常
+      残差及全部方向相关统计输入(AAR/CAAR/BMP/ADJ-BMP/Corrado 秩输入/日历法输入/事件间相关
+      符号同一 signed 对象);raw AR 只保留给 direction 诊断层;禁止仅改最终 CAAR 或展示值符号。
+    direction_display: 'raw' → direction 诊断层展示基准=raw AR(PAP display_basis;诊断层
+      消费未 signed 的原始 SecurityEvent);None 默认=无 direction 轴语义,零新键。
+    effect_alignment_source: 'adj_bmp_sign' → 产出 effect_alignment 四态上下文字段(全定义
+      函数,人令 2026-07-18 深夜三冻结):权威 ADJ-BMP>0=ALIGNED/<0=REVERSED/=0=NEUTRAL/
+      不可得=UNAVAILABLE;INSUFFICIENT/AMBIGUOUS 等无可用 ADJ-BMP 必须 UNAVAILABLE 不得猜方向;
+      四态不产生不改变顶层 verdict(CONTEXT 字段)。None 默认=零新键。
     """
     if st_policy not in ("reject", "keep"):
         raise ValueError(f"st_policy 非法: {st_policy}(合法={{'reject','keep'}})")
     if verdict_policy not in ("three_method", "adj_bmp_main_only"):
         raise ValueError(f"verdict_policy 非法: {verdict_policy}"
                          "(合法={'three_method','adj_bmp_main_only'})")
-    if postpone_policy not in ("legacy", "unified"):
-        raise ValueError(f"postpone_policy 非法: {postpone_policy}(合法={{'legacy','unified'}})")
+    if postpone_policy not in ("legacy", "unified", "unified_announcement"):
+        raise ValueError(f"postpone_policy 非法: {postpone_policy}"
+                         "(合法={'legacy','unified','unified_announcement'})")
     for d in diagnostic_dims:
         if d not in _DIAG_DIM_SPECS:
             raise ValueError(f"diagnostic_dims 非法维度: {d}(合法={sorted(_DIAG_DIM_SPECS)})")
+    if direction_display not in (None, "raw"):
+        raise ValueError(f"direction_display 非法: {direction_display}(合法={{None,'raw'}};"
+                         "冻结 PAP v2 display_basis=raw,不留运行时选择)")
+    if effect_alignment_source not in (None, "adj_bmp_sign"):
+        raise ValueError(f"effect_alignment_source 非法: {effect_alignment_source}"
+                         "(合法={None,'adj_bmp_sign'})")
     # P1-4(人令调整二):偏差声明唯一权威=pap['bias_statement']——不接受任何调用方替代文本。
     pap_bias = pap.get("bias_statement")
-    new_strategy = (postpone_policy != "legacy") or bool(diagnostic_dims) or nfv_structured
+    new_strategy = ((postpone_policy != "legacy") or bool(diagnostic_dims) or nfv_structured
+                    or direction_signed_main or (effect_alignment_source is not None))
     if new_strategy and not pap_bias:
         raise ValueError("回修新策略已启用(unified/diagnostic_dims/nfv_structured)但 pap 缺 "
                          "'bias_statement' → 拒绝运行(P1-4:权威来源唯一=冻结 PAP)")
@@ -463,6 +492,27 @@ def run_study(reader, pap: dict, *, benchmark_mode: str = "market",
             raise ValueError(f"listing_age 层键出现白名单外值 → fail-closed 拒绝运行"
                              f"(合法={list(frozen_layers)};违例计数={bad};"
                              f"回修三·窄阻塞二:意外层不得入主样本/报告/顶层判决)")
+    # exp20 flat 两阶段语义第二道闸(冻结 PAP v2 direction_fail_closed;沿 listing_age 先例):
+    # direction 轴启用或 signed 主检验启用时,主事件流全部事件的 direction 层键须严格∈{up,down},
+    # 白名单与 PAP diagnostic_dimensions.axes.direction 逐项一致对账;flat/null/unknown 及任何
+    # 白名单外值**泄漏进主事件流** → fail-closed 拒绝运行——校验先于一切清洗/CAR 计算与顶层
+    # _verdict() 调用(候选阶段 flat 正常排除属 L2 规则,不达此处;泄漏才拒)。
+    if "direction" in diagnostic_dims or direction_signed_main:
+        frozen_dirs = _DIAG_DIM_SPECS["direction"]["layers"]
+        pap_dirs = ((pap.get("diagnostic_dimensions") or {}).get("axes") or {}).get("direction")
+        if list(pap_dirs or ()) != list(frozen_dirs):
+            raise ValueError(f"direction 层白名单与 PAP diagnostic_dimensions.axes.direction "
+                             f"不逐项一致 → fail-closed(引擎={list(frozen_dirs)} / "
+                             f"PAP={pap_dirs!r};冻结 PAP v2 direction_fail_closed)")
+        bad_dir: dict = {}
+        for ev in event_src:
+            lay = getattr(ev, "event_type_layer", None)
+            if lay not in frozen_dirs:
+                bad_dir[repr(lay)] = bad_dir.get(repr(lay), 0) + 1
+        if bad_dir:
+            raise ValueError(f"direction 层键出现白名单外值(flat/null/unknown 等)泄漏进主事件流 "
+                             f"→ fail-closed 拒绝运行(合法={list(frozen_dirs)};违例计数={bad_dir};"
+                             f"冻结 PAP v2 两阶段语义:进 CAR 及顶层 verdict 前拒)")
     # #2b drawdown 事件带 D1/D2/D3 诊断属性(报告项,不进 verdict)——据此启用诊断聚合与 se_meta 带出。
     is_drawdown = bool(event_src) and hasattr(event_src[0], "d1_never_broke_ma10")
 
@@ -497,6 +547,10 @@ def run_study(reader, pap: dict, *, benchmark_mode: str = "market",
     # ── 逐事件清洗 + compute(存活样本构造=survivors.iter_survivors 单一主干,硬化④)──────
     cleaned: list[CleanedEvent] = []
     valid_events: list[SecurityEvent] = []
+    # exp20 signed 口径:诊断层展示基准=raw AR(PAP display_basis)→ 平行保留未 signed 的
+    # SecurityEvent 供 _diagnostic_dimensions 消费;非 signed 路径 None → 诊断层沿 valid_events。
+    diag_valid_events: Optional[list] = ([] if (direction_signed_main and diagnostic_dims)
+                                         else None)
     for ce, sv in iter_survivors(event_src, by_sec, all_dates, date_index, mkt, robust_len,
                                  st_mode=st_mode, st_policy=st_policy,
                                  postpone_policy=postpone_policy,
@@ -509,11 +563,26 @@ def run_study(reader, pap: dict, *, benchmark_mode: str = "market",
         est_hi = ce.t_idx + fc.EST_WINDOW_OFFSET_END
         # 事件窗 τ=0..robust_len-1(检验窗,τ=0=tau0_idx=T+1,含一字板顺延)
         w_idx = [ce.tau0_idx + k for k in range(robust_len)]
+        # exp20 signed AR(PAP signed_ar 冻结定义):direction_sign(up=+1/down=−1)施加于
+        # **事件级、逐 τ、先于一切聚合与检验**,并作用于估计期异常残差(est_ar_by_date/秩输入)
+        # 及全部方向相关统计输入——SecurityEvent 即"同一 signed 估计对象",AAR/CAAR/BMP/
+        # ADJ-BMP/Corrado/日历法/ρ̄(事件间相关符号)全部下游消费 signed 值;est_ar_sd 数值
+        # 不因乘 ±1 改变(PAP 原文),x_bar/sxx 为市场侧统计不在 signed 范围。默认 sign=+1
+        # =乘法恒等,既有路径逐字节零回归。
+        sign = 1.0
+        if direction_signed_main:
+            sign = 1.0 if ev.event_type_layer == "up" else -1.0   # 层已过 direction 白名单校验
+        raw_event_abnormal = [fit.abnormal[j] for j in w_idx]
+        if sign == 1.0:
+            s_event_abnormal, s_est_ar_by_date = raw_event_abnormal, est_ar_by_date
+        else:
+            s_event_abnormal = [None if x is None else sign * x for x in raw_event_abnormal]
+            s_est_ar_by_date = {d: sign * v for d, v in est_ar_by_date.items()}
         se = SecurityEvent(
             est_ar_sd=fit.est_ar_sd, L=fit.delta, x_bar=fit.x_bar, sxx=fit.sxx,
             event_market=[mkt[j] for j in w_idx],
-            event_abnormal=[fit.abnormal[j] for j in w_idx],
-            industry=ce.industry, est_ar_by_date=est_ar_by_date,
+            event_abnormal=s_event_abnormal,
+            industry=ce.industry, est_ar_by_date=s_est_ar_by_date,
         )
         # 删失诊断窗(步3b,R5):诊断窗 τ=0..DIAG_ROBUST_LEN-1 各日删失类型(不进 verdict,报告项)
         ev_by_idx = {date_index[r.trade_date]: r for r in rows}
@@ -563,11 +632,21 @@ def run_study(reader, pap: dict, *, benchmark_mode: str = "market",
             se_meta["drawdown"] = (ev.d1_never_broke_ma10, ev.d2_episode_to_entry_days,
                                    ev.d3_broke_ma20_before_entry)
         # 秩检验输入:估计窗 AR(相对位置 -250..-91)+ 事件窗 AR;日历法输入:窗内日期+AR
-        est_ar_seq = [fit.abnormal[j] for j in range(est_lo, est_hi + 1)]
+        # 秩检验输入同一 signed 对象(估计窗 AR 序列 + 事件窗 AR;PAP:秩方向按 signed 口径)
+        est_ar_seq = [None if fit.abnormal[j] is None else sign * fit.abnormal[j]
+                      for j in range(est_lo, est_hi + 1)]
         w_dates = [all_dates[j] for j in w_idx]
         rank_sec = RankSecurity(est_ar_seq, se.event_abnormal)
         cal_ev = CalEvent(w_dates, se.event_abnormal)
         valid_events.append((se, se_meta, rank_sec, cal_ev))
+        if diag_valid_events is not None:      # 诊断层 raw 平行对象(仅 signed+diag 路径构造)
+            raw_se = SecurityEvent(
+                est_ar_sd=fit.est_ar_sd, L=fit.delta, x_bar=fit.x_bar, sxx=fit.sxx,
+                event_market=[mkt[j] for j in w_idx],
+                event_abnormal=raw_event_abnormal,
+                industry=ce.industry, est_ar_by_date=est_ar_by_date,
+            )
+            diag_valid_events.append((raw_se, se_meta, rank_sec, cal_ev))
 
     return _assemble(pap, cleaned, valid_events, benchmark_mode, main_len, robust_len,
                      strata_enabled=strata_enabled,
@@ -575,7 +654,25 @@ def run_study(reader, pap: dict, *, benchmark_mode: str = "market",
                      secondary_lens=secondary_lens, st_policy=st_policy,
                      verdict_policy=verdict_policy, nfv_structured=nfv_structured,
                      postpone_policy=postpone_policy, diagnostic_dims=diagnostic_dims,
+                     direction_signed_main=direction_signed_main,
+                     direction_display=direction_display,
+                     effect_alignment_source=effect_alignment_source,
+                     diag_valid_events=diag_valid_events,
                      pap_bias=pap_bias, pap_sha256=pap_sha256)
+
+
+def _effect_alignment(verdict: str, stat) -> str:
+    """exp20 effect_alignment 四态全定义函数(冻结 PAP v2 verdict_authority,人令 2026-07-18
+    深夜三逐字):权威 ADJ-BMP 统计量 >0=ALIGNED(沿修正方向)/<0=REVERSED(逆修正方向)/
+    =0=NEUTRAL/统计量不可得=UNAVAILABLE;INSUFFICIENT/AMBIGUOUS 等无可用 ADJ-BMP 必须
+    UNAVAILABLE 不得猜测方向。纯函数:只读 verdict 与统计量,不产生、不改变顶层判决。"""
+    if verdict in ("INSUFFICIENT", "AMBIGUOUS") or stat is None:
+        return "UNAVAILABLE"
+    if stat > 0:
+        return "ALIGNED"
+    if stat < 0:
+        return "REVERSED"
+    return "NEUTRAL"
 
 
 def _assemble(pap, cleaned, valid_events, benchmark_mode, main_len, robust_len,
@@ -583,6 +680,9 @@ def _assemble(pap, cleaned, valid_events, benchmark_mode, main_len, robust_len,
               secondary_lens: tuple = (), st_policy: str = "reject",
               verdict_policy: str = "three_method", nfv_structured: bool = False,
               postpone_policy: str = "legacy", diagnostic_dims: tuple = (),
+              direction_signed_main: bool = False, direction_display: Optional[str] = None,
+              effect_alignment_source: Optional[str] = None,
+              diag_valid_events: Optional[list] = None,
               pap_bias: Optional[str] = None, pap_sha256: Optional[str] = None) -> dict:
     ses = [v[0] for v in valid_events]
     rank_secs = [v[2] for v in valid_events]
@@ -714,8 +814,43 @@ def _assemble(pap, cleaned, valid_events, benchmark_mode, main_len, robust_len,
     # C6 二次回修:两条独立诊断轴(exp8=('listing_age','st'));参数空默认 → 零新键零回归。
     # 本块由独立 report-only 路径构建(结构上不调用 _verdict,人令调整三)。
     if diagnostic_dims:
+        # exp20 signed 路径:诊断层消费 raw 平行对象(display_basis=raw,PAP);其余路径沿主对象。
         result["diagnostic_dimensions"] = _diagnostic_dimensions(
-            cleaned, valid_events, main_len, robust_len, secondary_lens, diagnostic_dims)
+            cleaned, (diag_valid_events if diag_valid_events is not None else valid_events),
+            main_len, robust_len, secondary_lens, diagnostic_dims)
+        if direction_display == "raw" and "direction" in diagnostic_dims:
+            result["diagnostic_dimensions"]["display_basis"] = (
+                "raw AR(冻结 PAP v2 display_basis:诊断层保留上修、下修实际方向与强度;"
+                "主检验 signed 数值不在诊断层重复渲染)")
+
+    # exp20 effect_alignment(冻结 PAP v2 verdict_authority 全定义函数;人令 2026-07-18 深夜三):
+    # 权威 ADJ-BMP>0=ALIGNED/<0=REVERSED/=0=NEUTRAL/不可得=UNAVAILABLE;INSUFFICIENT/AMBIGUOUS
+    # 等无可用 ADJ-BMP 必须 UNAVAILABLE 不得猜方向;四态均为 CONTEXT,**不产生、不改变**顶层
+    # 四态 verdict(verdict 已在上方由既有判决路径独立产生)。默认 None → 零新键零回归。
+    if effect_alignment_source == "adj_bmp_sign":
+        mw_ea = (car or {}).get("main_window") or {}
+        stat_ea = mw_ea.get("adj_bmp_car")
+        ea = _effect_alignment(verdict, stat_ea)
+        result["effect_alignment"] = {
+            "value": ea, "source": "adj_bmp_sign", "role": "CONTEXT",
+            "note": "effect_alignment=非 verdict 上下文字段(冻结 PAP v2 全定义函数):权威 "
+                    "ADJ-BMP>0=ALIGNED(沿修正方向)/<0=REVERSED(逆修正方向)/=0=NEUTRAL/"
+                    "统计量不可得(含 INSUFFICIENT/AMBIGUOUS 终态)=UNAVAILABLE;"
+                    "四态均不产生、不改变顶层四态判决"}
+        if mw_ea:
+            mw_ea["effect_alignment"] = ea      # 随主窗报告(field_roles=CONTEXT,PAP 逐字)
+        if verdict == "SIG" and ea == "REVERSED":
+            verdict_note += ("效应显著且方向与修正方向相反(effect_alignment=REVERSED)→ "
+                             "显著证伪方向假设,禁作方向假设成立解读(冻结 PAP v2 verdict_authority)。")
+        elif verdict == "SIG" and ea == "ALIGNED":
+            verdict_note += "效应显著且沿修正方向(effect_alignment=ALIGNED;SIG+ALIGNED,PAP 解释边界)。"
+        # signed CAAR 与 ADJ-BMP 符号不一致 → 并列披露,不得择一解释(PAP reporting⑥)
+        caar_ea = mw_ea.get("caar")
+        if (caar_ea is not None and stat_ea is not None
+                and caar_ea != 0 and stat_ea != 0 and ((caar_ea > 0) != (stat_ea > 0))):
+            verdict_note += (f"⚠signed CAAR={caar_ea:.5f} 与 ADJ-BMP={stat_ea:.3f} 符号不一致 → "
+                             f"并列披露,不得择一解释(冻结 PAP v2 reporting⑥)。")
+        result["verdict_note"] = verdict_note      # 上述注记增补写回(注记不改 verdict 本体)
 
     # P1-4(人令调整二+回修三·窄阻塞一):偏差声明唯一权威=pap['bias_statement'],原样携带;
     # 来源锚=真锚三元组 {pap_sha256,key,text}——pap_sha256 由引擎对实收 PAP 内容重算
@@ -756,11 +891,19 @@ def _assemble(pap, cleaned, valid_events, benchmark_mode, main_len, robust_len,
             "label": "NOT_FOR_VERDICT · 非权威结果:报告项,不判决、不参与判决、不得择优改判"
                      "(人裁 2026-07-17 回修单元 C6);唯一判决=顶层 verdict(主窗 ADJ-BMP)。"}
     if (st_policy != "reject" or verdict_policy != "three_method" or nfv_structured
-            or postpone_policy != "legacy" or diagnostic_dims):
+            or postpone_policy != "legacy" or diagnostic_dims
+            or direction_signed_main or direction_display is not None
+            or effect_alignment_source is not None):
         result["audit"]["premend_params"] = {           # 非默认参数如实入审计(默认跑零新键);
             "st_policy": st_policy, "verdict_policy": verdict_policy,   # 含实际 postpone_policy
             "nfv_structured": nfv_structured, "postpone_policy": postpone_policy,
             "diagnostic_dims": list(diagnostic_dims)}   # (人令调整一:audit 记 postpone_policy)
+        if direction_signed_main or direction_display is not None \
+                or effect_alignment_source is not None:  # exp20 三参数(冻结件消费如实入审计)
+            result["audit"]["premend_params"].update({
+                "direction_signed_main": direction_signed_main,
+                "direction_display": direction_display,
+                "effect_alignment_source": effect_alignment_source})
     return result
 
 

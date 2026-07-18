@@ -52,6 +52,16 @@ def render(result: dict) -> str:
         L.append("═══ 淘沙 · 事件研究体检报告(exp8 一字涨停开板·事件版)═══")
         L.append(f"快照批次: StudySnapshot={ss['snapshot_id']} digest={ss['digest']}"
                  f"  |  基准口径: {a['benchmark_mode']}(口径②)")
+    elif "earnings_revision_selection" in a:
+        # exp20(冻结 PAP v2 digest e1d18dc1…7fd5):真锚标题承 exp8 先例——键在场即须真实快照锚
+        # (present-but-None 同 fail-closed),禁回退合成标题或 PAP 需求字典。
+        ss = a.get("study_snapshot")
+        if not isinstance(ss, dict) or ss.get("snapshot_id") is None or not ss.get("digest"):
+            raise SystemExit("report fail-closed: audit.earnings_revision_selection 在场但缺真实 "
+                             "audit.study_snapshot.snapshot_id/digest,禁回退合成标题或 PAP 需求字典")
+        L.append("═══ 淘沙 · 事件研究体检报告(exp20 业绩预告修正·signed 事件版)═══")
+        L.append(f"快照批次: StudySnapshot={ss['snapshot_id']} digest={ss['digest']}"
+                 f"  |  基准口径: {a['benchmark_mode']}(口径②)")
     else:
         if result.get("drawdown_diagnostic") is not None:
             L.append("═══ 淘沙 · 事件研究体检报告(#2b 回撤反抽·b1池 事件版)═══")
@@ -83,6 +93,32 @@ def render(result: dict) -> str:
         L.append(f"    {y}: 总{d['total']} 剔{d['rejected']} 率{_fmt(d['reject_ratio'],3)} "
                  f"原因{d['by_reason']}")
     L.append("")
+
+    # exp20 事件生成漏斗(冻结 PAP v2 reporting_commitments①②③④;无此键 → 段落不出=零回归)
+    ers = a.get("earnings_revision_selection")
+    if ers:
+        cnt = ers.get("counters") or {}
+        fc = (ers.get("fail_closed") or {}).get("by_class") or {}
+        flat = ers.get("flat") or {}
+        fold = ers.get("fold_audit") or {}
+        L.append("【exp20 事件生成漏斗(L2 冻结规则;reporting①②③④)】")
+        L.append(f"  输入行={cnt.get('input_rows')} 重复折叠={cnt.get('duplicate_rows_collapsed')} "
+                 f"候选行(全期)={cnt.get('candidate_rows_all_periods')} "
+                 f"候选行(研究期)={cnt.get('candidate_rows_in_period')} "
+                 f"候选事件键(研究期)={cnt.get('candidate_event_keys_in_period')}")
+        L.append(f"  fail-closed 六类逐类计数: {fc}(600856.SH 单独留痕 "
+                 f"{len(ers.get('itemized_600856') or [])} 条,逐条见 result_json)")
+        L.append(f"  flat 计数块(合法分类·排除出主事件集·不拒跑): "
+                 f"链日 flat={flat.get('chain_day_flat')} 按年={flat.get('by_year')}")
+        L.append(f"  同日折叠: 多链同向折叠事件={fold.get('events_folded_from_multi_chain')} "
+                 f"方向冲突整事件拒={fold.get('conflict_events')}"
+                 f"(组成链审计=result_json events.member_chains)")
+        L.append(f"  主事件集: up={cnt.get('events_up')} down={cnt.get('events_down')} "
+                 f"合计={cnt.get('events_after_fold')}")
+        recon = ers.get("reference_reconciliation")
+        if recon:
+            L.append(f"  窄闸参考数对账: {recon.get('summary','(见 result_json)')}")
+        L.append("")
 
     # ① 偏差方向声明(item 9;P1-4 二次回修+回修三:result 携带冻结 PAP bias_statement 时
     #    直接消费渲染〔权威来源唯一=pap,runner 已锚定〕;来源锚必须直接显示实际 PAP digest
@@ -301,6 +337,12 @@ def render(result: dict) -> str:
         L.append("")
     L.append(f"【verdict(统计终态,非交易判断)】{result['verdict']}")
     L.append(f"  {result['verdict_note']}")
+    ea = result.get("effect_alignment")
+    if ea:
+        L.append(f"  effect_alignment={ea['value']}(CONTEXT·非 verdict 字段,source={ea['source']};"
+                 f"四态不产生不改变顶层判决,冻结 PAP v2)")
+        if result["verdict"] == "SIG" and ea["value"] == "REVERSED":
+            L.append("  ⚠ SIG+REVERSED:显著证伪方向假设(价格逆修正方向反应),禁作方向假设成立解读。")
     L.append("")
 
     # ⑥ 数据质量敏感性(exp4 专属键,人令 2026-07-16 五.5;无此键 → 段落不出=既有 result 渲染零回归)

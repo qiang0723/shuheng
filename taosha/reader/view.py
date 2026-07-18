@@ -143,6 +143,30 @@ class ViewReader:
                     "valid_time": vt.isoformat(), "snapshot_batch": str(batch)})
         return out
 
+    # ── forecast 原始预告行(exp20 最小适配器,冻结令 2026-07-18 深夜六 令三①;
+    #    修正链/基准B/方向判别在 L2 规则 earnings_revision_rules,不在此)──────────────
+    def forecast_rows(self) -> list[dict]:
+        """explore_reader_forecast_snap 全行(忠实传递;holdout 视图焊死+此处再挡一道)。
+        最小列面=冻结 PAP v2 方向规则消费面(018 头注:无 net_profit/type,结构上防误用);
+        数值转 float(None 保留=不可判行忠实传递);行序=(ts_code,ann_date,end_date,
+        first_ann_date) 钉死确定性(与 L2 规则内部排序同键)。"""
+        out: list[dict] = []
+        with self._connect(self._qdsn) as c, c.cursor() as cur:
+            cur.execute(
+                "SELECT ts_code, ann_date, end_date, first_ann_date, "
+                "       p_change_min, p_change_max, snapshot_batch "
+                "FROM explore_reader_forecast_snap "
+                "ORDER BY ts_code, ann_date, end_date, first_ann_date")
+            for (ts, ad, ed, fad, pmin, pmax, batch) in cur.fetchall():
+                if ad >= HOLDOUT_START:   # 视图已焊死,结构上再挡一道(与 holder_sell 面对称)
+                    continue
+                out.append({
+                    "ts_code": ts, "ann_date": ad, "end_date": ed, "first_ann_date": fad,
+                    "p_change_min": None if pmin is None else float(pmin),
+                    "p_change_max": None if pmax is None else float(pmax),
+                    "snapshot_batch": str(batch)})
+        return out
+
     def listing(self) -> dict[str, dict]:
         """explore_reader_listing_snap → {ts_code: {list_status, list_date, delist_date}}。
         PIT 上市窗(跨代码同 announcement_id 归属裁定的 L2 依据,人令 2026-07-16 窄闸③)。"""
