@@ -84,3 +84,14 @@
 - **错误位置**:①`ops/STATE.md` 07-18 傍晚条目(已改正+作废标注);②本档 §6 第 8 件(已改正);③交付包 `README.txt` 第 18 行与 ④`db_readonly_queries.txt` [3] 节标题预期文字——二者为封存原件(在 SHA 清单内)**不改动**,以勘误附页为准;⚠该文件 [3] 节**原始 SQL 输出本身正确**(17/3/4/1),错的只是标题预期文字。
 - **原因**:取证文字预期值误从 legacy registry 迁移分布取数,未与同文件 SQL 实际输出逐字核对,README/验收档/STATE 照抄同源扩散。
 - **交付索引更新**:交付包新增两件——**`ERRATA_ledger_status_distribution_2026-07-18.txt`**(勘误附页:错误位置/原因/正确 SQL 结果/两种分布表名对照,SHA256=`1ab84bb67e54d33e500df805d1d99d649d4cfc738d8b52dc95d75f1dabbcda85`)+ **`SHA256SUMS.errata`**(仅覆盖新增勘误件)。README 九件对照第 8 条以勘误附页为准。勘误后原包 `sha256sum -c SHA256SUMS.all` 复核仍全 OK。
+
+## 11. persist 闭卷(2026-07-18 深夜,人正式批准令原文即口径)
+
+外部复核确认勘误闭合+两窄修及运行结果验收全部通过后,人正式批准 exp8 persist,按令四节边界执行完毕:
+
+- **前置断言(只读,任一不符即停)全 PASS**:exp8 仍 frozen、result_json 与 done_at 空;台账 25 行=17/3/4/1;唯一结果来源 `/root/s8run/result_exp8.json` SHA256=`282bda4f…18a10` 全等;原报告 `278456d5…`/修正版 `5fb87ebf…`/run8.log `d2940c31…` 全等;manifest 121 权威·镜像·publication attestation(pub_id=25)三处 digest 全=`21e9095e…3efcd`;冻结 PAP canonical digest(引擎 `canonical_pap_sha256` 对 DB pap_json 重算)=`afd8443a…addb`;result 内顶层唯一 verdict=NOT_SIG、事件 6,005、N_valid 3,742、audit.study_snapshot=121+digest、bias_statement.pap_sha256==PAP digest。
+- **执行**:仅既有状态机 `ledger.start_running(8)`→`ledger.finish(8, result)`,同连接同事务末尾一次 COMMIT,身份 taosha_app;result 唯一来源=上述已验收原文件;零重跑/零重生成/零改写/零补键/零旁路 SQL;不新增 experiment 行。脚本+日志留档 aliyun `/root/s8persist/persist_exp8.py`+`.log`。**COMMIT @2026-07-18 22:47:22+08**。
+- **persist 后核验(只读)全 PASS**:exp8=done,done_at=2026-07-18 22:47:22.536829+08,顶层 verdict=NOT_SIG;库内 result_json 与原文件 **parsed_equal=True**,canonical SHA(排序紧凑 JSON)双侧同=`671ab272ea00c509397ffd8087c63d61dcd281bc1704430e43f8b22e61b2d436`,库侧 jsonb::text SHA=`a96beb30fcc3d4fa6e7122d741816b7ddf840b983eaf431f9a445f819ba7a856`;结构完整=manifest 121/事件 6,005/N_valid 3,742/三窗(main[0,+4] CAAR −0.014818、secondary[0,+19] 带不判决注记、robust[0,+59])/诊断双轴 diagnostic_dimensions.dims={st:{ST,non_ST}, listing_age:{seasoned,recent_listing}}/NOT_FOR_VERDICT 块 17 处全标注/**顶层外 verdict 键=0(唯一判决在顶层)**;台账 25 行,分布严格=**registered 17 / frozen 2 / done 5 / closed 1**;manifest 121 三处 digest 不变;四件产物 SHA 不变;两台生产 git 无代码改动、工作区净。
+- **终态解读边界(闭卷结论固定,人令原文)**:exp8 一字涨停开板事件版判决为 NOT_SIG。主窗市场调整后 CAR 方向为负,与冻结前预判同向,但唯一权威判据 ADJ-BMP 不显著。朴素 t、Corrado、日历时间法的负向名义显著及次级、稳健窗负值均属 NOT_FOR_VERDICT,不得改读为显著结论。该实验效力仍为 llm/prescreen,不得写成 full 证据。
+- **密封开封对照(令第九条,首条校准读数入册;预判原文不得修改、重述或替换)**:冻结前预判原文=**"主窗市场调整后CAR为负,把握度60%"**,绑定 PAP v3 digest `afd8443a…addb`;实测主窗 CAAR=**−1.482%,方向命中**,但 ADJ-BMP **−0.473 不显著**,终态=**NOT_SIG**。
+- **exp8 正式闭卷,不再追加复核、重跑或施工。**修正版报告作为独立验收产物保留,未写入、未反向改造 result_json。
