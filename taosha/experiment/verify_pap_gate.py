@@ -331,9 +331,15 @@ def main() -> int:
         cur.execute("SELECT status, result_json IS NULL, done_at IS NULL "
                     "FROM experiment WHERE exp_id=8")
         r6_exp8_after = cur.fetchone()
+        # 负对照标本状态断言动态化(2026-07-18 深夜,exp20 适配单元):原硬编码
+        # ("frozen", True, True) 为 s8 窄修时点态;exp8 已于 07-18 深夜二人令 persist 闭卷
+        # (done,result 槽已写)。断言意图不变=负对照标本须**非 registered**(旧假绿灯路径
+        # 命中 0 行的前提)+ 回滚后与攻击前逐项零残留;不锚具体终态,persist 类合法迁移
+        # 不再造成本探针时点性假红。
         r6_restored = (r6_after_status == r6_before_status and r6_after_pap == r6_before_pap
                        and r6_ledger_after == r6_ledger_before == 25
-                       and r6_exp8_after == r6_exp8_before == ("frozen", True, True))
+                       and r6_exp8_after == r6_exp8_before
+                       and r6_exp8_before[0] != "registered")
         r6_neg_ok = (r6_neg_hits == 0 and r6_neg_err is not None
                      and not _r6_accept(r6_neg_err))
         r6_pass = (r6_unexpected is None and r6_injected_ok
@@ -345,7 +351,7 @@ def main() -> int:
               f"{(r6_gate_err or r6_unexpected or '(未捕获任何异常=放行)').splitlines()[0][:200]}")
         print(f"      R6 证据③回滚零残留: 标本status/PAP==原值={r6_after_status == r6_before_status}"
               f"/{r6_after_pap == r6_before_pap} 台账行数{r6_ledger_before}→{r6_ledger_after} "
-              f"exp8(frozen/result空/done空){r6_exp8_before}→{r6_exp8_after}")
+              f"exp8(status/result空/done空,非registered即可){r6_exp8_before}→{r6_exp8_after}")
         print(f"      R6 证据④负对照(旧假绿灯路径): 升级UPDATE命中={r6_neg_hits}(0=坐实旧探针"
               f"空打) 非gate错误被新判据拒绝={r6_neg_ok} "
               f"原文={(r6_neg_err or '(无异常)').splitlines()[0][:120]}")
