@@ -253,20 +253,105 @@ def main() -> int:
                             strategy_execution={"execution_profile": "same_close_exec"}))
         _freeze_reject(cur, "R5 伪称 legacy(pap 带 legacy 字段/自报 registered_at)冻结拒",
                        _pap(legacy=True, registered_at_claim="2026-07-01"))
+        # R6(外审窄修二 2026-07-18): 假绿灯修正。旧实现硬编码 exp8——exp8 真冻结后升级
+        # UPDATE 因 status='registered' 命中 0 行,随后冻结 UPDATE 撞 frozen_at/状态约束类
+        # 异常,任意 psycopg.Error 均被记 PASS=错误拒绝原因造成的假 PASS,证不了声称的攻击
+        # 路径。今: 动态标本(registered∧legacy 在册,复用 F1 选取)独立 SAVEPOINT;注入后直接
+        # 断言 rowcount==1+标本仍 registered+PAP 实含策略升级三键;冻结攻击只接受
+        # _pap_freeze_gate 文本(R6_EXPECT)——frozen_at 不可改/状态非法迁移/命中 0 行/其他
+        # 任意库错误均不算 PASS;回滚后标本/台账/exp8/探针零残留直接证明,并以旧假绿灯
+        # 路径作负对照(其错误文本必须被新判据拒绝)。
+        R6_EXPECT = "legacy 实验只允许事件版冻结与运行"
+
+        def _r6_accept(errtext) -> bool:
+            return errtext is not None and R6_EXPECT in errtext
+
+        if f1_specimen is None:
+            _ok("R6 legacy 升级 schema 后 analysis_type=strategy 冻结拒(动态标本;只认 "
+                "_pap_freeze_gate 拒绝原因;窄修二)", False,
+                "无 registered∧legacy 在册标本可选,fail-closed 不得空转计 PASS")
+            raise SystemExit(1)
+
+        cur.execute("SELECT status, pap_json FROM experiment WHERE exp_id=%s", (f1_specimen,))
+        r6_before_status, r6_before_pap = cur.fetchone()
+        cur.execute("SELECT count(*) FROM experiment")
+        r6_ledger_before = cur.fetchone()[0]
+        cur.execute("SELECT status, result_json IS NULL, done_at IS NULL "
+                    "FROM experiment WHERE exp_id=8")
+        r6_exp8_before = cur.fetchone()
+
         cur.execute("SAVEPOINT r6")
+        r6_inject = -1
+        r6_status_now = r6_gate_err = r6_unexpected = None
+        r6_injected_ok = False
+        try:
+            cur.execute("UPDATE experiment SET pap_json = pap_json || %s::jsonb "
+                        "WHERE exp_id=%s AND status='registered'",
+                        (json.dumps({"pap_schema_version": 2, "analysis_type": "strategy",
+                                     "strategy_execution": SE_C2N}), f1_specimen))
+            r6_inject = cur.rowcount
+            cur.execute("SELECT status, pap_json FROM experiment WHERE exp_id=%s", (f1_specimen,))
+            r6_status_now, pap_now = cur.fetchone()
+            se_now = pap_now.get("strategy_execution")
+            r6_injected_ok = (r6_inject == 1 and r6_status_now == "registered"
+                              and pap_now.get("pap_schema_version") == 2
+                              and pap_now.get("analysis_type") == "strategy"
+                              and se_now == SE_C2N)
+            if r6_injected_ok:
+                try:
+                    cur.execute("UPDATE experiment SET status='frozen', frozen_at=now() "
+                                "WHERE exp_id=%s AND status='registered'", (f1_specimen,))
+                except psycopg.Error as err:
+                    r6_gate_err = str(err)
+        except psycopg.Error as err:
+            r6_unexpected = str(err)          # 注入段落异常=非预期,不得计 PASS
+        cur.execute("ROLLBACK TO SAVEPOINT r6")
+
+        # 负对照(旧假绿灯路径逐字重放,SAVEPOINT 回滚零副作用): exp8 已 frozen →
+        # 升级 UPDATE 命中 0 行、冻结 UPDATE 撞非 gate 异常;其错误文本必须被新判据拒绝。
+        cur.execute("SAVEPOINT r6neg")
+        r6_neg_hits, r6_neg_err = None, None
         try:
             cur.execute("UPDATE experiment SET pap_json = pap_json || %s::jsonb "
                         "WHERE exp_id=8 AND status='registered'",
                         (json.dumps({"pap_schema_version": 2, "analysis_type": "strategy",
                                      "strategy_execution": SE_C2N}),))
+            r6_neg_hits = cur.rowcount
             cur.execute("UPDATE experiment SET status='frozen', frozen_at=now() WHERE exp_id=8")
-            cur.execute("ROLLBACK TO SAVEPOINT r6")
-            _ok("R6 legacy 升级 schema 后 analysis_type=strategy 冻结拒(legacy 只许事件版)",
-                False, "本应被拒却放行")
         except psycopg.Error as err:
-            cur.execute("ROLLBACK TO SAVEPOINT r6")
-            _ok("R6 legacy 升级 schema 后 analysis_type=strategy 冻结拒(legacy 只许事件版)",
-                True, str(err).splitlines()[0][:130])
+            r6_neg_err = str(err)
+        cur.execute("ROLLBACK TO SAVEPOINT r6neg")
+
+        # 回滚后零残留直接证明: 标本 status/PAP 恢复原值、台账总行数不变、exp8 状态与
+        # 结果槽不变(frozen/result_json 空/done_at 空)。
+        cur.execute("SELECT status, pap_json FROM experiment WHERE exp_id=%s", (f1_specimen,))
+        r6_after_status, r6_after_pap = cur.fetchone()
+        cur.execute("SELECT count(*) FROM experiment")
+        r6_ledger_after = cur.fetchone()[0]
+        cur.execute("SELECT status, result_json IS NULL, done_at IS NULL "
+                    "FROM experiment WHERE exp_id=8")
+        r6_exp8_after = cur.fetchone()
+        r6_restored = (r6_after_status == r6_before_status and r6_after_pap == r6_before_pap
+                       and r6_ledger_after == r6_ledger_before == 25
+                       and r6_exp8_after == r6_exp8_before == ("frozen", True, True))
+        r6_neg_ok = (r6_neg_hits == 0 and r6_neg_err is not None
+                     and not _r6_accept(r6_neg_err))
+        r6_pass = (r6_unexpected is None and r6_injected_ok
+                   and _r6_accept(r6_gate_err) and r6_restored and r6_neg_ok)
+        print(f"      R6 证据①注入: 标本=exp{f1_specimen} UPDATE命中={r6_inject} "
+              f"注入后status={r6_status_now} 三键(schema=2/strategy/close_to_next_open结构)"
+              f"={r6_injected_ok}")
+        print(f"      R6 证据②gate 拒绝原文: "
+              f"{(r6_gate_err or r6_unexpected or '(未捕获任何异常=放行)').splitlines()[0][:200]}")
+        print(f"      R6 证据③回滚零残留: 标本status/PAP==原值={r6_after_status == r6_before_status}"
+              f"/{r6_after_pap == r6_before_pap} 台账行数{r6_ledger_before}→{r6_ledger_after} "
+              f"exp8(frozen/result空/done空){r6_exp8_before}→{r6_exp8_after}")
+        print(f"      R6 证据④负对照(旧假绿灯路径): 升级UPDATE命中={r6_neg_hits}(0=坐实旧探针"
+              f"空打) 非gate错误被新判据拒绝={r6_neg_ok} "
+              f"原文={(r6_neg_err or '(无异常)').splitlines()[0][:120]}")
+        _ok("R6 legacy 升级 schema 后 analysis_type=strategy 冻结拒(动态标本;只认 "
+            "_pap_freeze_gate 拒绝原因;窄修二)", r6_pass,
+            (r6_gate_err or r6_unexpected or "放行").splitlines()[0][:130])
         cur.execute("SAVEPOINT r7")
         try:
             cur.execute("INSERT INTO pap_legacy_registry (exp_id, status_at_migration, note) "

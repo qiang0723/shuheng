@@ -530,6 +530,60 @@ try:
 except ValueError:
     check("⑩兜底:_diagnostic_dimensions 白名单外层禁追加 → raise", "ValueError", "ValueError")
 
+# ── 证⑪(外审窄修一 2026-07-18):exp8 正式报告标识+快照真锚 fail-closed;合成/#2b 零回归 ──
+# 攻击性验收断言 1-5:①exp8 渲染真实标题(零"切片2 合成验收")②快照行直读
+# audit.study_snapshot 真锚=StudySnapshot=121+实际 digest,PAP 需求字典(snapshot_batch)
+# 零渲染 ③缺真锚任一键 fail-closed 禁回退 ④默认合成路径逐字节不变 ⑤#2b 专属标题逐字节
+# 不变;另证 exp8 路径除标题行+快照行外渲染与非 exp8 路径逐行相同(窄修一要求 6 的结构保证)。
+_SS121_DIGEST = "21e9095e5d96412bf1a7194f57e4312076b3bee0436bd2982bfcca8b7a13efcd"
+_a8x = dict(res8["audit"])
+_a8x["limit_open_selection"] = {"probe": "selection 在场即触发 exp8 路径"}
+_a8x["study_snapshot"] = {"snapshot_id": 121, "digest": _SS121_DIGEST}
+res8x = dict(res8, audit=_a8x)
+r8x = report_mod.render(res8x)
+r8x_lines = r8x.split("\n")
+check("⑪exp8 正式标题=真实标题(一字涨停开板·事件版)", r8x_lines[0],
+      "═══ 淘沙 · 事件研究体检报告(exp8 一字涨停开板·事件版)═══")
+check("⑪exp8 快照行=StudySnapshot=121+实际 digest 直读真锚", r8x_lines[1],
+      f"快照批次: StudySnapshot=121 digest={_SS121_DIGEST}  |  基准口径: market(口径②)")
+check("⑪exp8 报告'切片2 合成验收'零命中", "切片2 合成验收" in r8x, False)
+check("⑪exp8 报告 PAP 需求字典(snapshot_batch)零渲染",
+      f"快照批次: {res8x.get('snapshot_batch')}" in r8x, False)
+check("⑪exp8 路径除标题行+快照行外与既有渲染逐行相同(改动面=恰两行)",
+      r8x_lines[2:] == report_mod.render(res8).split("\n")[2:], True)
+
+
+def _expect_failclosed(name, audit_mut):
+    try:
+        report_mod.render(dict(res8, audit=audit_mut))
+        check(name, "未拒", "SystemExit")
+    except SystemExit:
+        check(name, "SystemExit", "SystemExit")
+
+
+_no_ss = dict(res8["audit"], limit_open_selection={"probe": True})
+_no_ss.pop("study_snapshot", None)
+_expect_failclosed("⑪fail-closed:缺 audit.study_snapshot(禁回退合成标题/PAP 需求字典)", _no_ss)
+_expect_failclosed("⑪fail-closed:study_snapshot 非 dict",
+                   dict(_a8x, study_snapshot="StudySnapshot=121(字符串占位)"))
+_expect_failclosed("⑪fail-closed:缺 snapshot_id",
+                   dict(_a8x, study_snapshot={"digest": _SS121_DIGEST}))
+_expect_failclosed("⑪fail-closed:缺/空 digest",
+                   dict(_a8x, study_snapshot={"snapshot_id": 121, "digest": ""}))
+_lp_none = dict(res8["audit"], limit_open_selection=None)
+_lp_none.pop("study_snapshot", None)
+_expect_failclosed("⑪fail-closed:limit_open_selection 在场但为 None(present-but-None 不得"
+                   "静默落回合成路径)", _lp_none)
+
+_syn_l = report_mod.render(res_a1).split("\n")
+check("⑪默认合成标题逐字节不变", _syn_l[0], "═══ 淘沙 · 事件研究体检报告(切片2 合成验收)═══")
+check("⑪默认合成快照行逐字节不变(旧行为保持)", _syn_l[1],
+      f"快照批次: {res_a1.get('snapshot_batch')}  |  基准口径: market(口径②)")
+_r2b_l = report_mod.render(dict(res_a1, drawdown_diagnostic={"note": "零回归探针"})).split("\n")
+check("⑪#2b 专属标题逐字节不变", _r2b_l[0], "═══ 淘沙 · 事件研究体检报告(#2b 回撤反抽·b1池 事件版)═══")
+check("⑪#2b 快照行逐字节不变", _r2b_l[1],
+      f"快照批次: {res_a1.get('snapshot_batch')}  |  基准口径: market(口径②)")
+
 print(f"\n{'='*60}\nverify_limit_open_engine: {N - FAIL}/{N} PASS"
       + ("" if FAIL == 0 else f"  ⚠ {FAIL} FAIL"))
 sys.exit(1 if FAIL else 0)

@@ -40,11 +40,24 @@ def render(result: dict) -> str:
     a = result["audit"]
     L = []
     # 横幅:#2b(含 drawdown_diagnostic 键)出专属标题;#4/合成无此键 → 保留原标题(约束③不动 #4)。
-    if result.get("drawdown_diagnostic") is not None:
-        L.append("═══ 淘沙 · 事件研究体检报告(#2b 回撤反抽·b1池 事件版)═══")
+    # exp8(audit 含 limit_open_selection)出专属标题+快照行直读 audit.study_snapshot 真锚
+    # (外审窄修一 2026-07-18):缺 study_snapshot/snapshot_id/digest 任一 → fail-closed,
+    # 不得回退合成标题或 PAP 需求字典;其余路径(合成/#2b)渲染逐字节不变。
+    # "在场"=键在场(present-but-None 同走 exp8 路径撞 fail-closed,不得静默落回合成)。
+    if "limit_open_selection" in a:
+        ss = a.get("study_snapshot")
+        if not isinstance(ss, dict) or ss.get("snapshot_id") is None or not ss.get("digest"):
+            raise SystemExit("report fail-closed: audit.limit_open_selection 在场但缺真实 "
+                             "audit.study_snapshot.snapshot_id/digest,禁回退合成标题或 PAP 需求字典")
+        L.append("═══ 淘沙 · 事件研究体检报告(exp8 一字涨停开板·事件版)═══")
+        L.append(f"快照批次: StudySnapshot={ss['snapshot_id']} digest={ss['digest']}"
+                 f"  |  基准口径: {a['benchmark_mode']}(口径②)")
     else:
-        L.append("═══ 淘沙 · 事件研究体检报告(切片2 合成验收)═══")
-    L.append(f"快照批次: {result.get('snapshot_batch')}  |  基准口径: {a['benchmark_mode']}(口径②)")
+        if result.get("drawdown_diagnostic") is not None:
+            L.append("═══ 淘沙 · 事件研究体检报告(#2b 回撤反抽·b1池 事件版)═══")
+        else:
+            L.append("═══ 淘沙 · 事件研究体检报告(切片2 合成验收)═══")
+        L.append(f"快照批次: {result.get('snapshot_batch')}  |  基准口径: {a['benchmark_mode']}(口径②)")
     L.append(f"冻结口径审计: frozen_config={a['frozen_config_digest'][:16]}… "
              f"frozen_ashare={a['frozen_ashare_digest'][:16]}…")
     L.append("")
