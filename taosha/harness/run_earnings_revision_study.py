@@ -93,7 +93,8 @@ def events_from_forecast(rows: list[dict], batch: str) -> tuple[list[EventRow], 
 def reference_reconciliation(sel: dict) -> dict:
     """漏斗 → 12,569/5,225 参考数逐层对账块(纯函数;PAP reporting_commitments①)。
 
-    参考层锚定:候选 12,569 ↔ candidate_event_keys_in_period(研究期内修正候选市场事件键数);
+    参考层锚定:候选 12,569 ↔ 全期候选+时序违例恒等锚(candidate_allperiod_plus_temporal
+    =candidate_rows_all_periods+temporal_violation;参考数系评估期未加研究期筛的全期口径);
     基准B可判 5,225 ↔ baseline_decidable_chain_days(=方向已判 up/down/flat 链日合计,即当前值
     与基准B双双可判的候选)。差异只归因不改规则(对不上即停报人,冻结令三)。"""
     cnt = sel["counters"]
