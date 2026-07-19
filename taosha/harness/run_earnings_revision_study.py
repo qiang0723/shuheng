@@ -48,6 +48,14 @@ ENGINE_PARAM_KEYS = frozenset({
 # p_change 规则重实现后逐层归因对账。
 REFERENCE_NUMBERS = {"candidates": 12569, "baseline_decidable": 5225}
 
+# provenance 注记(人令 2026-07-19 冻结原文,earnings-revision-run-order-2026-07-19.md;
+# 正式运行时注入 result 注记字段,report 沿 bias_statement 同机制直接消费渲染;逐字禁改)
+PROVENANCE_NOTE = (
+    "对账注记:冻结规则下可判链日为5,175,其中flat 283排除后主事件集为4,892;"
+    "相对不可重放的历史参考数5,225,总差额−50,其中−38已按冻结规则归因,"
+    "剩余不可归因旧口径差额−12。历史参考数生成脚本未归档,不具备复现证明资格;"
+    "正式样本以冻结规则确定性实现为唯一权威。")
+
 
 def engine_kwargs_from_pap(pap: dict) -> dict:
     """冻结 PAP v2 engine_params → run_study 关键字参数(逐字消费,fail-closed)。
@@ -262,6 +270,12 @@ def main():
                               pap_sha256_assert=a.pap_sha256_assert, **kwargs)
     result["audit"]["study_snapshot"] = reader.snapshot_info
     result["audit"]["earnings_revision_selection"] = selection_audit(sel)
+    # provenance 注记内嵌(人令 2026-07-19 一;沿 bias_statement 同机制=result 字段+report 消费)
+    result["provenance_note"] = {
+        "key": "provenance_note",
+        "text": PROVENANCE_NOTE,
+        "source_anchor": ("人令2026-07-19 冻结原文"
+                          "(taosha/docs/earnings-revision-run-order-2026-07-19.md)")}
 
     rendered = report.render(result)
     print("\n" + rendered)

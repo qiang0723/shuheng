@@ -120,6 +120,15 @@ def render(result: dict) -> str:
             L.append(f"  窄闸参考数对账: {recon.get('summary','(见 result_json)')}")
         L.append("")
 
+    # provenance 注记(人令 2026-07-19 一:沿 bias_statement 同机制,自 result 注记字段直接
+    # 消费渲染冻结原文;默认无键 → 零新行零回归)
+    pn = result.get("provenance_note")
+    if pn:
+        L.append("【对账 provenance 注记(人令 2026-07-19 冻结原文,report 自 result 注记字段直接消费)】")
+        L.append(f"  {pn['text']}")
+        L.append(f"  来源锚: {pn['source_anchor']} key={pn['key']}")
+        L.append("")
+
     # ① 偏差方向声明(item 9;P1-4 二次回修+回修三:result 携带冻结 PAP bias_statement 时
     #    直接消费渲染〔权威来源唯一=pap,runner 已锚定〕;来源锚必须直接显示实际 PAP digest
     #    (真锚三元组 pap_sha256/key/text,禁描述性占位);默认无键 → 原固定段逐字节不变)

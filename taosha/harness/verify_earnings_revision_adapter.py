@@ -175,6 +175,25 @@ with tempfile.TemporaryDirectory() as td:
            "窄闸参考数对账" in rend and recon["summary"] in rend),
           (True, True, True, True, True))
 
+    # ── provenance 注记三断言(人令 2026-07-19 一,无例外;冻结原文=独立字面量落锚,
+    #    与 driver 常量二重对账防同源;渲染面=注入注记字段后的 report)────────────────
+    from taosha.harness.run_earnings_revision_study import PROVENANCE_NOTE
+    NOTE_FROZEN = ("对账注记:冻结规则下可判链日为5,175,其中flat 283排除后主事件集为4,892;"
+                   "相对不可重放的历史参考数5,225,总差额−50,其中−38已按冻结规则归因,"
+                   "剩余不可归因旧口径差额−12。历史参考数生成脚本未归档,不具备复现证明资格;"
+                   "正式样本以冻结规则确定性实现为唯一权威。")
+    check("注记 driver 常量==人令冻结原文(独立字面量,逐字)", PROVENANCE_NOTE, NOTE_FROZEN)
+    res_p = json.loads(json.dumps(res_r))
+    res_p["provenance_note"] = {"key": "provenance_note", "text": PROVENANCE_NOTE,
+                                "source_anchor": "人令2026-07-19 冻结原文"
+                                "(taosha/docs/earnings-revision-run-order-2026-07-19.md)"}
+    rend_p = report_mod.render(res_p)
+    check("注记断言①完整注记逐字在场(渲染报告)", NOTE_FROZEN in rend_p, True)
+    check("注记断言②'不可归因旧口径差额−12'与'不可重放'在场",
+          ("不可归因旧口径差额−12" in rend_p, "不可重放" in rend_p), (True, True))
+    check("注记断言③'5,225已复现'精确字符串零命中", rend_p.count("5,225已复现"), 0)
+    check("注记默认无键零回归(未注入渲染==原渲染逐字节)", report_mod.render(res_r) == rend, True)
+
 print("=" * 60)
 print(f"verify_earnings_revision_adapter: {N - FAIL}/{N} PASS")
 sys.exit(1 if FAIL else 0)
