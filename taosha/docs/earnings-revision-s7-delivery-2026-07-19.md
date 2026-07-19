@@ -70,3 +70,62 @@ report 沿 bias_statement 同机制消费渲染+adapter fixture 三断言 19→2
 - **persist 未授权未执行**;结果解读效力=llm/prescreen(报告水印在场);密封预判开封对照属 persist
   阶段事项,本档不做。
 - 下一步(须人令)=人验收本取证包+外审复核→另下 persist 令。
+
+## 7. persist 终令执行与正式闭卷(2026-07-19 晚,人令原文=earnings-revision-persist-order-2026-07-19.md,留痕 `d69415f` 先行)
+
+外部已直接核对原件;此前流通的错误数字组(51e0e79d / manifest 122 / CAAR −0.317% / REVERSED /
+N_valid 4,829)经外部认定为串档转述,双方相关目录及权威留痕零命中,以权威实物为准恢复 persist。
+
+### 7.1 前置断言(只读,22/22 全 PASS)
+
+脚本+日志留档 aliyun `/root/s20persist/preassert_exp20.{py,log}`:
+- 三件原始产物 SHA256 全等:result `7cf44b41…a6f0` / report `3b5de3c4…a030e` / log `ca66f7ea…d78c`;
+- result 原件直接断言 10/10:顶层唯一 verdict=NOT_SIG / 主窗 signed CAAR=0.00698934637496006 /
+  ADJ-BMP=0.6072938553928457 / effect_alignment.value=ALIGNED / N_valid=3335 / 主窗 N=3282 /
+  manifest=166+digest / provenance 注记逐字在场(与人令冻结原文独立字面量逐字等)/ 顶层之外 verdict 键=0;
+- exp20 库态:frozen / frozen_at 非空 / result_json·done_at 空 / DB pap_json canonical digest==
+  `e1d18dc1019d8c43563b762c3dec3cf7b4bccad1e25667721867c33bb1dd7fd5`;
+- 台账 25 行=registered 16/frozen 3/done 5/closed 1;
+- manifest 166 三处 digest(taosha 权威行/qbase 镜像/publication attestation)均==
+  `21e9095e5d96412bf1a7194f57e4312076b3bee0436bd2982bfcca8b7a13efcd`。
+
+### 7.2 执行(既有状态机,单连接单事务一次 COMMIT)
+
+- 脚本+日志留档 aliyun `/root/s20persist/persist_exp20.{py,log}`(exp8 先例 `/root/s8persist/` 范式);
+- 身份=taosha_app(ledger.connect 既有 DSN);解释器=/opt/venvs/qbase-ingest/bin/python3;
+- 入事务前再断言 6 项(verdict/事件数 4892/N_valid 3335/manifest 166+digest/result 内 PAP digest)+
+  事务内 FOR UPDATE 再断言(status=frozen + DB PAP canonical==e1d18dc1…7fd5)→
+  `ledger.start_running(20)` → `ledger.finish(20, result)` → 一次 COMMIT;
+- result 唯一来源=已验收原件 `/root/s20run/result_exp20.json`,零重跑/零重生成/零改写/零旁路 SQL;
+- COMMIT OK @ **2026-07-19 20:13:42+08**(=done_at)。
+
+### 7.3 persist 后核验(只读,14/14 全 PASS)
+
+脚本+日志留档 aliyun `/root/s20persist/postverify_exp20.{py,log}`:
+- exp20=done / done_at=2026-07-19 20:13:42.003687+08 / 顶层 verdict=NOT_SIG;
+- 库内 result_json 与原件 parsed_equal=True;canonical 序列化 SHA 双侧一致=
+  `49e5bcd42c6d4dd8c78bc61f7f29cc0deeac35d335ca3705df6ccbfd9ddc839c`(库侧 jsonb::text md5=`b433867b…b9a3`);
+- 关键数值零删减零补写(库侧再断言 CAAR/ADJ-BMP/N/N_valid/事件数/alignment/manifest/注记全等);
+- 台账仍 25 行=**registered 16 / frozen 2 / done 6 / closed 1**(恰迁 exp20 一行,零新增);
+- manifest 166 三处 digest 不变;三件原始产物 SHA 不变;frozen_at=冻结既有值 00:26:27 未变;
+- 生产 git 工作区净(核验时 HEAD `d69415f`)。
+
+### 7.4 闭卷留痕三件(人令第三节;只入档,不写入、不反向改造 result_json)
+
+**① 密封开封对照(校准册第二条)**
+- 预判原文:"主窗[0,+4]市场调整后 signed CAR 为负,把握度 55%",绑定 PAP v2 digest `e1d18dc1…7fd5`。
+- 实测 signed CAAR 为 +0.6989346%,**方向未命中**;ADJ-BMP 不显著,终态 NOT_SIG。
+- 如实入册;预判原文永不改述。
+
+**② 方法限制固定**
+- NOT_SIG 仅在冻结的行业分组口径下成立;行业缺失组占 6.7%,未验证其他缺失行业处理方式下的稳健性。
+- 不得结果后修改行业分组或追加敏感性重跑。
+
+**③ 解读边界**
+- 实测方向为正但不显著,不能认定存在沿修正方向或逆修正方向的可靠效应;
+- 朴素 t、Corrado、日历时间法的名义显著均为 NOT_FOR_VERDICT,不得改读正式结论;
+- 效力固定为 llm/prescreen,不得写成 full 证据。
+
+### 7.5 终态
+
+exp20 正式闭卷。不再追加复核、重跑或施工;停工交终签。
