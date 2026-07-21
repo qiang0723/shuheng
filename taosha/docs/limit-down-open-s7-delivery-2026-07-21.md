@@ -74,3 +74,43 @@
 - 解读边界照冻结件:NOT_SIG 仅冻结口径下成立;偏差方向声明(bias_statement)在场=估计对象仅限
   冻结规则下存活主事件集,不得外推全体一字跌停链事件。
 - 下一步(须人令)=人验收本取证包(+外审如需)→另下 persist 令;未令不动。
+
+## 7. persist 终令执行与正式闭卷(2026-07-21 深夜,人令原文=limit-down-open-persist-order-2026-07-21.md,留痕 `df8f36b` 先行)
+
+### 7.1 前置断言(只读,24/24 全 PASS,/root/s13persist/preassert_exp13.log)
+
+三件产物 SHA 全等(result `c71a696d…8b83e`==令定唯一输入/report `9ad456e9…77f8`/log `fc499797…405f`);
+result 原件锚定 11 项(NOT_SIG/CAAR −0.044783531272772986/ADJ-BMP −1.4437154277206525/主窗 N 2,036/
+N_valid 2,124/n_events_total 2,794/final_main_events 2,794/hijack 26/manifest 189+digest/PAP digest/
+顶层外 verdict=0);exp13 frozen+双槽空+DB PAP canonical==`583c4c94…0c42`;台账 25=15/3/6/1;
+manifest 189 三处 digest==`21e9095e…efcd`。
+
+### 7.2 既有状态机单事务(taosha_app,零重跑零改写零旁路零新增行)
+
+脚本=/root/s13persist/persist_exp13.py(exp8/exp20 范式):入事务前 6 断言+FOR UPDATE 再断言
+(frozen+DB canonical)→`ledger.start_running(13)`→`ledger.finish(13, result)`→一次
+**COMMIT @2026-07-21 23:56:37.265408+08**。
+
+### 7.3 后核验(只读,16/16 全 PASS,/root/s13persist/postverify_exp13.log)
+
+done/done_at=23:56:37.265408+08/库内顶层 verdict=NOT_SIG/**parsed_equal=True**(库 result_json==
+原件深等;canonical 双侧同=`3cc21750a0c5890913fa76eb81821e084edd7581cd1860ae57c4f551a2440cfe`,
+库侧 md5 `c5dd0b8e6fcb12c0e035590c906f2480`)/关键数值零删减零补写/**台账 25=registered15/frozen2/
+done7/closed1** 恰迁一行/manifest 189 三处不变/study_snapshot 仍 9 行/三件产物 SHA 不变/
+frozen_at=冻结既有值不变/两台 git 净(HEAD `df8f36b`)。
+
+### 7.4 闭卷留痕三件(人令原文即口径,原文永不改述)
+
+1. **密封开封对照校准册第三条**:预判原文"主窗[0,+4]市场调整后 CAR 为正约+5%,超跌反弹,
+   把握度 70%"(绑 digest `583c4c94…0c42`)→实测主窗 CAAR=**−4.478%**,**方向未命中**;
+   ADJ-BMP=−1.444 不显著,终态 **NOT_SIG**(校准册现三条:exp8 方向命中不显著/exp20 方向
+   未命中不显著/exp13 方向未命中不显著)。
+2. **方法限制**:NOT_SIG 仅在冻结行业分组口径下成立(unknown 组 570/2,124=26.8%,已升级上报);
+   **不作结果后敏感性重跑**,禁结果后改分组。
+3. **解读边界**:朴素 t(−19.4)/Corrado(−9.3)/日历法(−14.2)名义显著及所有诊断轴
+   (ST/listing_age)、可交易口径均为 **NFV,不得改写顶层结论**;方向负不显著不认定任何方向
+   可靠效应;**效力维持 llm/prescreen,禁写 full**。
+
+### 7.5 终态
+
+exp13 正式闭卷=done/NOT_SIG;不再追加复核/重跑/敏感性/施工。停工交终签,等人后续排产另令。
