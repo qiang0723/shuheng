@@ -266,6 +266,10 @@ def _recon_flag_rows_and_calendar(snapshot_id: int):
             "SELECT ts_code, list_date, delist_date FROM explore_reader_listing_snap"):
         listing[ts] = {"list_date": ld, "delist_date": dd}
 
+    from collections import namedtuple
+    FlagRow = namedtuple("FlagRow",
+                         "ts_code trade_date limit_status open_limit_status board is_st")
+
     def flag_rows():
         with conn.cursor(name="s13_recon_flags") as cur:
             cur.itersize = 200_000
@@ -276,8 +280,7 @@ def _recon_flag_rows_and_calendar(snapshot_id: int):
                 "JOIN explore_reader_calendar_snap cal USING (trade_date) "
                 "ORDER BY p.ts_code, p.trade_date")
             for ts, d, ls, ols, board, st in cur:
-                yield {"ts_code": ts, "trade_date": d, "limit_status": ls,
-                       "open_limit_status": ols, "board": board, "is_st": bool(st)}
+                yield FlagRow(ts, d, ls, ols, board, bool(st))
     return conn, flag_rows, calendar, listing
 
 
