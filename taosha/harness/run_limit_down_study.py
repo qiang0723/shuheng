@@ -212,6 +212,8 @@ def selection_audit(sel: dict) -> dict:
             "rejects_yearly_by_reason": rejects_yearly_by_reason,
             "itemized_rejects": itemized,
             "chain_len_dist": chain_len_dist,
+            "chain_len_dist_all_chains": _count_by(
+                events + sel["rejects"], lambda r: str(r["chain_len"])),
             "events_yearly": yearly,
             "layer_counts": layer_counts,
             "st_axis": {"not_for_verdict": True,
