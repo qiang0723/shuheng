@@ -211,3 +211,107 @@ StudySnapshot 锚/缺锚 fail-closed/exp8 逐字节零回归);统计内核零触
 snapshot/未正式运行/未写台账/未代写方向与把握度预判。权威重算恰双跑(run1/run2,§4.1),
 逐字节一致后未追加第三次运行、未自行开启新复核项;漏斗恒等断言跑在双跑实物 JSON 上,
 零重算。裁决留痕 commit(`133f32a`)先于施工、与交付 commit 分单。完成后停交验点。
+
+---
+
+## 9. 终版文本收口单元追加(2026-07-21 晚;人终版收口令=`limit-down-open-pap-final-order-2026-07-21.md`,F 条留痕 commit `9ca62fa` 先于本节施工)
+
+### 9.1 PAP 终版(令五.1/五.3)
+
+- **终版实物 = `taosha/docs/limit-down-open-pap-final-2026-07-21.json`**(canonical 字节本体,
+  新建文件,草案文件零覆盖零改动)。
+- **文件 SHA256 == 引擎 canonical 重算 digest ==
+  `583c4c946078006aef6061cdc405d7255d16a7bfd9d36bdb3c3793f57f0e0c42`**
+  (引擎 `taosha.experiment.pap.canonical_pap_sha256` 对文件解析结果重算,与文件 sha256 逐字相等)。
+- `validate_pap` = PASS(无异常);`parse_test_windows` = (5, 20, 60)。
+- **状态 = 终版候选,NOT-FROZEN**:冻结须由人以本 digest 另下冻结令;工地未冻结、未写库、未入运行参数。
+
+### 9.2 草案→终版程序化逐键 diff(令五.3)
+
+- 键集完全相同 = 18 键;**逐字节相同 16 键** = analysis_type / benchmark / bias_statement /
+  cleaning / cost / diagnostic_dimensions / engine_params / holdout / pap_digest_binding /
+  pap_schema_version / pool / reporting_commitments / sample_gate / verdict_authority /
+  verdict_power_note / window;**改动恰 2 键** = event_def、snapshot_batch_req。
+- 改动内容恰为终版收口令二.2/二.3 的三处文本精确化:
+  ① `event_def`:「连续N≥2个一字跌停交易日」→「链长为明确冻结值N_MIN=2:长度不少于2的
+  最大饱和一字跌停链进入候选,N不是运行时可选参数、不保留N的运行时选择」(令二.2,全文
+  无 `N≥2` 残留,程序化断言);
+  ② `event_def` 末段:「本次钉快照(StudySnapshot 121语义)…对账权威」→「本次冻结前只读
+  对账锚=既有已发布StudySnapshot 121钉批视图+交易日历轴内连接语义…身份边界=仅冻结前只读
+  对账锚、属既有研究manifest、不得冒充exp13正式manifest」(令二.3);
+  ③ `snapshot_batch_req.note`:改写为 snapshot 身份精确化全文(见 §9.4)。
+- **变化仅限本令文本精确化的逐字节证明**:对终版文件逆向施加上述三处替换(每处唯一命中),
+  结果与草案文件**逐字节相等**,sha256 还原为
+  `a432877a0953c50b2bb3c1064faa19fc611f1cbeb1cfbd45a76ce1231a6189e2`。
+
+### 9.3 18 键完整清单及人裁映射(令三/令五.3)
+
+| # | 键 | 人裁 | 边界(令三原文即口径) |
+|---|---|---|---|
+| 1 | analysis_type='event' | 批准(沿承) | — |
+| 2 | benchmark | 批准保留(沿承) | 唯一实跑基准=market_hypothesis 全市场等权;pool_hypothesis 仅 schema 保留,不运行、不产生第二判决 |
+| 3 | cost | 批准保留(沿承) | 四值仅 schema 及审计字段;事件研究,不得表述为"成本后策略证据" |
+| 4 | holdout | 批准(沿承) | — |
+| 5 | pap_digest_binding | 批准(沿承) | — |
+| 6 | pap_schema_version=2 | 批准(沿承) | — |
+| 7 | sample_gate=30 | 批准(沿承) | — |
+| 8 | window='T+1起,后5/20/60日' | 批准(沿承) | — |
+| 9 | bias_statement | 按草案批准 | — |
+| 10 | cleaning | 按草案批准 | 估计窗事件日前250至91交易日/总长160/覆盖门槛112;postpone_policy='unified',T+1起不可交易统一顺延≤5交易日第6日剔;st_policy='keep',st_mode='event_day' |
+| 11 | diagnostic_dimensions | 按草案批准 | ST首要NFV轴,listing_age第二NFV轴;B口径仅NFV对照;hijack只进事件几何audit,禁收益/CAR/显著性/独立结论 |
+| 12 | engine_params | 按草案批准 | verdict_policy='adj_bmp_main_only';diagnostic_dims=['st','listing_age'] |
+| 13 | event_def | 按草案批准+令二.2/二.3精确化 | N_MIN=2 冻结值;snapshot 121 仅只读对账锚 |
+| 14 | pool | 按草案批准 | — |
+| 15 | reporting_commitments | 按草案批准 | — |
+| 16 | snapshot_batch_req | 按草案批准+令二.3精确化 | 见 §9.4 |
+| 17 | verdict_authority | 按草案批准 | 顶层主窗ADJ-BMP唯一判决权;朴素t/Corrado/日历时间法/次级窗/稳健窗及所有诊断层均不得改判 |
+| 18 | verdict_power_note | 按草案批准 | 效力固定 llm/prescreen,不得写成 full |
+
+权威数字基线(令一)与 §3 漏斗逐项相符:输入行 15,099,011 / 成员行 18,106 / 链 3,323 /
+右删失 47 / pre2007 456 / listing 0 / duplicate 0 / hijack 26 / 主集 2,794 / ST 1,480 /
+非 ST 1,314 / recent_listing 29 / seasoned 2,765 / hijack 26/2,820=0.922%;
+旧 57.5%/2,489/30.9%/差异 30 条维持作废;旧 3,661 不具硬基线资格,不得恢复引用。
+
+### 9.4 3 行差异术语勘误(令二.1;对 §4 的改读,原证据封存不改)
+
+原 §4 表述「current−钉批 = 3 行」**改读为(人令原文)**:
+
+> current raw视图与snapshot 121 raw视图的批次向量及行集一致;3行差异发生在raw价格视图与
+> "snapshot 121钉批视图+交易日历轴内连接"的正式ViewReader读取语义之间。三行均为1992/1993年
+> 的日历外周日bar,`limit_status=none`、`open_limit_status=none`,不改变A/B链集合、事件集合、
+> reversal_hijack集合或最终主事件集合。
+
+即:原对账脚本 `s13recon.py` 及 §4 中的「current−钉批」只是「**current raw − 钉批并日历**」
+的简写,**不得误读为批次向量差异**(批次向量 current 与 snap121 逐项相等,§4.1 已录)。
+原交付包 AWS `~/shuheng/s13_pap_delivery_2026-07-21/` 与脚本保持封存不改;未重跑、未重生成、
+未覆盖任何原证据(本节为纯文本勘误)。
+
+**snapshot 121 身份(令二.3,终版 PAP `snapshot_batch_req.note` 已载)**:StudySnapshot 121
+仅是本次冻结前**只读对账锚**;属既有研究 manifest,不得冒充 exp13 正式 manifest;
+**正式 exp13 manifest 尚未生成**,正式运行前须另行生成、发布;exp13 实际 qbase 依赖键固定为
+daily / adj_factor / stock_basic / namechange / trade_cal 五键;正式 manifest 必须与本次
+冻结前数据向量相容,批次变化不得静默沿用本次数量,须停下报人。
+
+### 9.5 人预判原文登记状态(令四;仅登记,未密封)
+
+人预判原文已由人给出并**逐字登记于人令留痕档**
+`limit-down-open-pap-final-order-2026-07-21.md` §四(主窗 [0,+4] 市场调整后 CAR 方向、
+幅度约 +5%、把握度 70%、超跌反弹机制;解释边界四条同档)。**状态 = 已登记、未密封**:
+不构成正式密封,不绑定草案 digest `a432877a…89e2`,不写入 PAP 正文;待终版 PAP digest
+经人复核后,由人另下冻结句将原文逐字绑定终版 digest,工地不得改写、补充或平移。
+
+### 9.6 草案状态标记(令五.2)
+
+草案继续保留 `NOT-FROZEN`(从未冻结),并已注明**被终版候选取代但从未冻结**——标记档 =
+`taosha/docs/limit-down-open-pap-draft-NOT-FROZEN-superseded-2026-07-21.md`
+(草案 JSON 文件本体零改动,SHA 维持 `a432877a…89e2`)。
+
+### 9.7 范围与停止线遵守实录(令六)
+
+本单元仅改动:终版 PAP JSON(新建)/草案状态标记档(新建)/本交付档(追加本 §9)/
+人令留痕档(新建,F 条先行 commit `9ca62fa` 分单)/`ops/STATE.md`。
+未修改生产代码、未修改统计内核、未新增 driver 或 report 分支、未读取收益、未计算 CAR 或
+显著性、未冻结 exp13、未新建 source snapshot 或研究 manifest、未正式运行、未 persist、
+未写台账;未重复数据双跑、未追加第三跑、未重新生成既有证据(本节验证仅为对已有草案文件与
+新终版文件的 sha256/canonical/逐键 diff 纯文本计算)。完成终版 PAP 及 digest 后立即停交验点;
+下一步只能由人另下**终版 PAP digest 冻结令+预判原文绑定令**。
