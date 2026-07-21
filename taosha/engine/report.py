@@ -52,6 +52,17 @@ def render(result: dict) -> str:
         L.append("═══ 淘沙 · 事件研究体检报告(exp8 一字涨停开板·事件版)═══")
         L.append(f"快照批次: StudySnapshot={ss['snapshot_id']} digest={ss['digest']}"
                  f"  |  基准口径: {a['benchmark_mode']}(口径②)")
+    elif "limit_down_selection" in a:
+        # exp13(冻结 PAP digest 583c4c94…0c42,冻结令 2026-07-21):真锚标题承 exp8 先例——
+        # 键在场即须真实快照锚(present-but-None 同 fail-closed),禁回退合成标题或 PAP 需求字典;
+        # exp8/exp20 及其余路径渲染逐字节不变。
+        ss = a.get("study_snapshot")
+        if not isinstance(ss, dict) or ss.get("snapshot_id") is None or not ss.get("digest"):
+            raise SystemExit("report fail-closed: audit.limit_down_selection 在场但缺真实 "
+                             "audit.study_snapshot.snapshot_id/digest,禁回退合成标题或 PAP 需求字典")
+        L.append("═══ 淘沙 · 事件研究体检报告(exp13 一字跌停开板·事件版)═══")
+        L.append(f"快照批次: StudySnapshot={ss['snapshot_id']} digest={ss['digest']}"
+                 f"  |  基准口径: {a['benchmark_mode']}(口径②)")
     elif "earnings_revision_selection" in a:
         # exp20(冻结 PAP v2 digest e1d18dc1…7fd5):真锚标题承 exp8 先例——键在场即须真实快照锚
         # (present-but-None 同 fail-closed),禁回退合成标题或 PAP 需求字典。
