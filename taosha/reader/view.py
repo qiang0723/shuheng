@@ -167,6 +167,27 @@ class ViewReader:
                     "snapshot_batch": str(batch)})
         return out
 
+    # ── namechange 原始名称行(exp12 最小适配器,冻结令 2026-07-23 三节"只读视图接入";
+    #    段位折叠/状态谓词/完整撤销判别在 L2 规则 st_removal_rules,不在此)──────────────
+    def namechange_rows(self) -> list[dict]:
+        """explore_reader_namechange_snap 全行(忠实传递;holdout 视图焊死+此处再挡一道)。
+        最小列面=冻结 PAP(digest 62a387a2…4353)event_def 名称段位法消费面(019 头注:
+        无 end_date——冻结口径明令不信任,段边界=LEAD,结构上防误用);孪生行忠实传递不折叠;
+        ann_date 为 NULL 的行忠实传递(锚缺失=L2 fail-closed 留痕);行序=(ts_code,
+        start_date,alias,ann_date) 钉死确定性(与 L2 规则消费口径同键)。"""
+        out: list[dict] = []
+        with self._connect(self._qdsn) as c, c.cursor() as cur:
+            cur.execute(
+                "SELECT ts_code, alias, start_date, ann_date, snapshot_batch "
+                "FROM explore_reader_namechange_snap "
+                "ORDER BY ts_code, start_date, alias, ann_date NULLS FIRST")
+            for (ts, alias, sd, ad, batch) in cur.fetchall():
+                if ad is not None and ad >= HOLDOUT_START:   # 视图已焊死,结构上再挡一道
+                    continue
+                out.append({"ts_code": ts, "alias": alias, "start_date": sd,
+                            "ann_date": ad, "snapshot_batch": str(batch)})
+        return out
+
     def listing(self) -> dict[str, dict]:
         """explore_reader_listing_snap → {ts_code: {list_status, list_date, delist_date}}。
         PIT 上市窗(跨代码同 announcement_id 归属裁定的 L2 依据,人令 2026-07-16 窄闸③)。"""

@@ -63,6 +63,17 @@ def render(result: dict) -> str:
         L.append("═══ 淘沙 · 事件研究体检报告(exp13 一字跌停开板·事件版)═══")
         L.append(f"快照批次: StudySnapshot={ss['snapshot_id']} digest={ss['digest']}"
                  f"  |  基准口径: {a['benchmark_mode']}(口径②)")
+    elif "st_removal_selection" in a:
+        # exp12(冻结 PAP digest 62a387a2…4353,冻结令 2026-07-23):真锚标题承 exp8/exp13
+        # 先例——键在场即须真实快照锚(present-but-None 同 fail-closed),禁回退合成标题或
+        # PAP 需求字典;其余路径渲染逐字节不变。
+        ss = a.get("study_snapshot")
+        if not isinstance(ss, dict) or ss.get("snapshot_id") is None or not ss.get("digest"):
+            raise SystemExit("report fail-closed: audit.st_removal_selection 在场但缺真实 "
+                             "audit.study_snapshot.snapshot_id/digest,禁回退合成标题或 PAP 需求字典")
+        L.append("═══ 淘沙 · 事件研究体检报告(exp12 ST/风险警示完整撤销·事件版)═══")
+        L.append(f"快照批次: StudySnapshot={ss['snapshot_id']} digest={ss['digest']}"
+                 f"  |  基准口径: {a['benchmark_mode']}(口径②)")
     elif "earnings_revision_selection" in a:
         # exp20(冻结 PAP v2 digest e1d18dc1…7fd5):真锚标题承 exp8 先例——键在场即须真实快照锚
         # (present-but-None 同 fail-closed),禁回退合成标题或 PAP 需求字典。
@@ -129,6 +140,46 @@ def render(result: dict) -> str:
         recon = ers.get("reference_reconciliation")
         if recon:
             L.append(f"  窄闸参考数对账: {recon.get('summary','(见 result_json)')}")
+        L.append("")
+
+    # exp12 事件生成漏斗 + 一字板执行限制段(冻结 PAP reporting_commitments/
+    # diagnostic_dimensions.execution_limit_audit,人终版令+冻结令 2026-07-23;
+    # 无此键 → 段落不出=零回归)
+    srs = a.get("st_removal_selection")
+    if srs:
+        cnt = srs.get("counters") or {}
+        L.append("【exp12 事件生成漏斗(L2 冻结规则;reporting_commitments 固定档序)】")
+        L.append(f"  入库行={cnt.get('input_rows')}(start缺失={cnt.get('start_missing_rows')}) "
+                 f"段={cnt.get('segments')} 有前段转换={cnt.get('transitions_with_prev')} "
+                 f"完整摘帽候选={cnt.get('removal_candidates')}")
+        L.append(f"  fail-closed/剔除逐档: 状态不可判={cnt.get('state_unjudgeable_fail_closed')} "
+                 f"锚缺失={cnt.get('anchor_missing')} 锚冲突={cnt.get('anchor_conflict_fail_closed')} "
+                 f"ann>start={cnt.get('ann_after_start_fail_closed')} "
+                 f"研究期外={cnt.get('out_of_period')} "
+                 f"事件键重复剔除={cnt.get('event_key_duplicate_fail_closed')}")
+        L.append(f"  最终事件集={cnt.get('final_events')} 恒等式="
+                 f"{'OK' if srs.get('funnel_identity_ok') else '⚠不成立(fail-closed 复核)'}")
+        L.append(f"  NFV 报数(裁定二/四;不入事件集·零收益零判决): "
+                 f"摘星未摘帽全史={cnt.get('destar_all')}"
+                 f"(研究期内锚干净={cnt.get('destar_in_window_clean_anchor')}) "
+                 f"戴星全史={cnt.get('star_on_all')} ST→退市全史={cnt.get('st_to_delist_all')}"
+                 " [NOT_FOR_VERDICT]")
+        recon = srs.get("reference_reconciliation")
+        if recon:
+            L.append(f"  batch 7 参考数对账(641 仅对账参考非硬断言,差异按血缘归因): "
+                     f"{recon.get('summary', '(见 result_json)')}")
+        # 一字板执行限制段(PAP execution_limit_audit 键;正式运行强制在场,fail-closed)
+        ela = srs.get("execution_limit_audit")
+        if ela is None:
+            raise SystemExit("report fail-closed: audit.st_removal_selection 在场但缺 "
+                             "execution_limit_audit(冻结 PAP diagnostic_dimensions 强制报告项)")
+        L.append("【一字板执行限制(execution_limit_audit;人终版令 2026-07-23)】 [NOT_FOR_VERDICT]")
+        L.append(f"  τ0日一字板事件: 数量={ela.get('tau0_one_word_n')} / "
+                 f"分母(有效存活)={ela.get('denominator_n_valid')} "
+                 f"比例={_fmt(ela.get('ratio'), 4)}")
+        L.append("  口径: 一字板不控制CAR取样(照冻结口径进入CAR、不作顺延);本段为结构化"
+                 "NOT_FOR_VERDICT执行限制报告,不改判决;cost键(含limit_up_board_untradeable)"
+                 "仅为schema与执行审计字段;结果不得表述为可成交策略证据。")
         L.append("")
 
     # provenance 注记(人令 2026-07-19 一:沿 bias_statement 同机制,自 result 注记字段直接

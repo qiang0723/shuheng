@@ -94,17 +94,25 @@ def clean_event(rows: list[PriceRow], event, date_index: dict,
         第一个交易所交易日起,自该日起个股缺 bar/停牌/一字不可交易统一计入顺延,
         ≤MAX_POSTPONE(5)保留、第 6 日剔 'postpone';**无 event_day_anomaly 规则**
         (exp8 价格形态事件专属,冻结原文明令不引入)。须传 axis_dates(升序交易日轴)。
-    axis_dates: 仅 'unified_announcement' 消费(公告日历锚 bisect 定位);其余策略忽略。
+      'missing_bar_only'(exp12,冻结 PAP digest 62a387a2…4353 cleaning τ0 唯一口径,
+        人终版令+冻结令 2026-07-23)= 公告日历锚同 'unified_announcement'(ann_date 不要求
+        交易日/不要求当日 bar;锚交易日=轴内最后一个 ≤ann_date 交易日;τ=0 从 ann_date 后
+        首个交易所交易日起;无 event_day_anomaly);**仅停牌/缺 bar 计入顺延**:一字涨停或
+        跌停日只要存在真实 bar 即取为 τ0 进入 CAR、不作顺延、不计入顺延计数(τ0 日一字板
+        留痕注记=execution_limit_audit 报告项,NFV);顺延≤MAX_POSTPONE(5)保留、第 6 日仍
+        无真实 bar 剔 'postpone'。须传 axis_dates(升序交易日轴)。
+    axis_dates: 仅 'unified_announcement'/'missing_bar_only' 消费(公告日历锚 bisect 定位);
+      其余策略忽略。
     """
     if st_mode not in ("event_day", "legacy_row0"):
         raise ValueError(f"st_mode 非法: {st_mode}")
     if st_policy not in ("reject", "keep"):
         raise ValueError(f"st_policy 非法: {st_policy}(合法={{'reject','keep'}})")
-    if postpone_policy not in ("legacy", "unified", "unified_announcement"):
+    if postpone_policy not in ("legacy", "unified", "unified_announcement", "missing_bar_only"):
         raise ValueError(f"postpone_policy 非法: {postpone_policy}"
-                         "(合法={'legacy','unified','unified_announcement'})")
-    if postpone_policy == "unified_announcement" and axis_dates is None:
-        raise ValueError("postpone_policy='unified_announcement' 须传 axis_dates(升序交易日轴;"
+                         "(合法={'legacy','unified','unified_announcement','missing_bar_only'})")
+    if postpone_policy in ("unified_announcement", "missing_bar_only") and axis_dates is None:
+        raise ValueError(f"postpone_policy={postpone_policy!r} 须传 axis_dates(升序交易日轴;"
                          "公告日历锚须在轴上 bisect 定位,fail-closed 不猜)")
     yr = event.first_ann_date.year
     layer = getattr(event, "event_type_layer", "unknown")   # 层维度(合成自检 _Ev 无此属性 → unknown)
@@ -121,7 +129,7 @@ def clean_event(rows: list[PriceRow], event, date_index: dict,
         ce.notes.append("无价行(事件票在价视图无 bar)→ 剔除(no_price;数据残缺,保守偏差)")
         return ce
 
-    if postpone_policy == "unified_announcement":
+    if postpone_policy in ("unified_announcement", "missing_bar_only"):
         # 公告日历锚:锚交易日 = 轴内最后一个 ≤ ann_date 的交易日(无 → None,走 history 剔除)
         i = bisect_right(axis_dates, event.first_ann_date) - 1
         t_idx = i if i >= 0 else None
@@ -143,7 +151,7 @@ def clean_event(rows: list[PriceRow], event, date_index: dict,
         t_idx=t_idx if t_idx is not None else -1, event_type_layer=layer,
     )
     if st_mode == "event_day" and t_idx is not None and event_row is None:
-        if postpone_policy == "unified_announcement":
+        if postpone_policy in ("unified_announcement", "missing_bar_only"):
             ce.notes.append("锚交易日行缺失(停牌)→ ST 判定不可得,is_st=False 留注"
                             "(公告事件语义:锚日缺 bar 不构成剔除事由,顺延在 τ 轴处置)")
         else:
@@ -153,7 +161,8 @@ def clean_event(rows: list[PriceRow], event, date_index: dict,
     if t_idx is None:
         ce.rejected, ce.reject_reason, ce.reject_year = True, "history", yr
         ce.notes.append("公告日前交易轴无历史(日历锚 bisect 无落点)"
-                        if postpone_policy == "unified_announcement" else "事件日非交易日,无法定位")
+                        if postpone_policy in ("unified_announcement", "missing_bar_only")
+                        else "事件日非交易日,无法定位")
         return ce
 
     # 历史不足:估计窗左端越界(< 250 日历史)→ 剔除
@@ -199,11 +208,15 @@ def clean_event(rows: list[PriceRow], event, date_index: dict,
             ce.notes.append("事件日 T 停牌/缺行(事件日须为真实交易行)→ fail-closed 剔除"
                             "(event_day_anomaly;C1 二次回修:单独留痕,不与 T+1 顺延混淆)")
             return ce
-    # 'unified_announcement':公告事件语义,无事件日 bar 要求、无 event_day_anomaly(冻结原文
-    # 明令不引入 exp8 规则)——直接进 τ 轴顺延扫描(τ0 基点 = 锚交易日之后首个交易所交易日)。
+    # 'unified_announcement'/'missing_bar_only':公告事件语义,无事件日 bar 要求、无
+    # event_day_anomaly(冻结原文明令不引入 exp8 规则)——直接进 τ 轴顺延扫描
+    # (τ0 基点 = 锚交易日之后首个交易所交易日)。
 
     # 一字板顺延(item 8):τ=0 = 首个 T+1 起可成交(非一字板、非停牌)日。
     #   停牌(缺行/flag)与一字板(有 bar + one_word)判据**分离**(约束②);两者皆不可成交 → 顺延。
+    #   'missing_bar_only'(exp12 冻结口径 2026-07-23)例外:**仅停牌/缺 bar 阻塞**——
+    #   一字板日只要存在真实 bar 即取为 τ0 进入 CAR,不作顺延、不计入顺延计数。
+    mbo = postpone_policy == "missing_bar_only"
     tau0 = t_idx + 1
     postpone = 0
     pp_susp = pp_ow = 0        # unified 文案用:顺延日内停牌/一字分计(人令调整一;legacy 不消费)
@@ -213,13 +226,14 @@ def clean_event(rows: list[PriceRow], event, date_index: dict,
         row = by_idx.get(tau0)
         suspended = _suspended(tau0)             # 缺行 OR flag
         one_word = (row is not None and row.limit_status == "one_word")  # 有 bar + 触板
-        # 杂交检测(约束②):同位置既含停牌信号又是一字板 → 如实上报、不自行归类(保守仍视不可成交)
+        # 杂交检测(约束②):同位置既含停牌信号又是一字板 → 如实上报、不自行归类(保守仍视不可成交;
+        # missing_bar_only 下停牌信号侧照常阻塞,杂交注同样如实上报)
         if row is not None and one_word and (row.is_suspended or row.close is None):
             ce.notes.append(
                 f"⚠ 一字板×停牌信号杂交(idx={tau0}:limit_status='one_word' 且 "
                 f"is_suspended={row.is_suspended}/close={'None' if row.close is None else '有'})"
                 f"→ 如实标注、不自行归类,保守视为不可成交顺延")
-        blocked = suspended or one_word
+        blocked = suspended if mbo else (suspended or one_word)
         if not blocked:
             break
         if suspended:              # 杂交行(one_word 且停牌信号)保守计入停牌侧(杂交注另有上报)
@@ -232,6 +246,9 @@ def clean_event(rows: list[PriceRow], event, date_index: dict,
             ce.rejected, ce.reject_reason, ce.reject_year = True, "postpone", yr
             if postpone_policy == "legacy":
                 ce.notes.append(f"一字板顺延超 {MAX_POSTPONE} 日,事件不可进场 → 剔除")
+            elif mbo:
+                ce.notes.append(f"缺bar顺延超 {MAX_POSTPONE} 交易所交易日(第6日仍无真实bar),"
+                                f"事件不可进场 → 剔除(postpone;仅缺bar顺延,exp12 冻结口径 2026-07-23)")
             else:
                 _tag = "C1 二次回修" if postpone_policy == "unified" else "公告事件语义,人裁十项之七"
                 ce.notes.append(f"不可交易状态顺延超 {MAX_POSTPONE} 日(停牌{pp_susp}/一字{pp_ow}),"
@@ -242,10 +259,19 @@ def clean_event(rows: list[PriceRow], event, date_index: dict,
     if postpone:
         if postpone_policy == "legacy":
             ce.notes.append(f"一字板顺延 {postpone} 交易日,τ=0 移至 idx={tau0}(item 8)")
+        elif mbo:
+            ce.notes.append(f"缺bar顺延 {postpone} 交易日,τ=0 移至 idx={tau0}"
+                            f"(仅缺bar顺延,exp12 冻结口径 2026-07-23)")
         else:
             _tag = "C1 二次回修" if postpone_policy == "unified" else "公告事件语义,人裁十项之七"
             ce.notes.append(f"不可交易状态顺延 {postpone} 交易日(停牌{pp_susp}/一字{pp_ow}),"
                             f"τ=0 移至 idx={tau0}({_tag})")
+    # missing_bar_only:τ0 日一字板留痕(照冻结口径进入 CAR 不顺延;execution_limit_audit 报告项)
+    if mbo:
+        _r0 = by_idx.get(tau0)
+        if _r0 is not None and _r0.limit_status == "one_word":
+            ce.notes.append("τ0日一字板(有真实bar,照冻结口径进入CAR不顺延;"
+                            "execution_limit_audit 报告项,NOT_FOR_VERDICT)")
     return ce
 
 

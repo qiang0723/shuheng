@@ -406,7 +406,10 @@ def run_study(reader, pap: dict, *, benchmark_mode: str = "market",
       全文档唯一 verdict 键=顶层);False 默认=不加键,既有 result 逐字节不变。
     ── C1/C3/C6/P1-4 二次回修参数(人令 2026-07-17 深夜三;默认值=既有行为逐字节零回归)──
     postpone_policy: 'legacy' 默认=T/T+1 停牌 item7 前置剔除(既有)/'unified'=T+1 起停牌与
-      一字板统一顺延计数≤5、T 停牌 fail-closed 'event_day_anomaly'(exp8,C1)。
+      一字板统一顺延计数≤5、T 停牌 fail-closed 'event_day_anomaly'(exp8,C1)/
+      'unified_announcement'=公告日历锚统一顺延(exp20)/'missing_bar_only'=公告日历锚、
+      **仅停牌/缺 bar 顺延**,一字板有真实 bar 即为 τ0 进入 CAR 不顺延(exp12,冻结 PAP
+      digest 62a387a2…4353,2026-07-23;语义详见 cleaning.clean_event)。
     diagnostic_dims: 正交诊断维度元组(exp8=('listing_age','st'),C6);空默认=不产出、零新键。
     bias_statement_assert: **仅作逐字相等断言,非第二来源**(人令调整二):偏差声明唯一权威
       =pap['bias_statement'],runner 直接从 pap 读取原样携带、report 直接消费;本参数提供时
@@ -433,9 +436,11 @@ def run_study(reader, pap: dict, *, benchmark_mode: str = "market",
     if verdict_policy not in ("three_method", "adj_bmp_main_only"):
         raise ValueError(f"verdict_policy 非法: {verdict_policy}"
                          "(合法={'three_method','adj_bmp_main_only'})")
-    if postpone_policy not in ("legacy", "unified", "unified_announcement"):
+    if postpone_policy not in ("legacy", "unified", "unified_announcement",
+                               "missing_bar_only"):
         raise ValueError(f"postpone_policy 非法: {postpone_policy}"
-                         "(合法={'legacy','unified','unified_announcement'})")
+                         "(合法={'legacy','unified','unified_announcement',"
+                         "'missing_bar_only'})")
     for d in diagnostic_dims:
         if d not in _DIAG_DIM_SPECS:
             raise ValueError(f"diagnostic_dims 非法维度: {d}(合法={sorted(_DIAG_DIM_SPECS)})")

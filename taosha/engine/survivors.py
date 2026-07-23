@@ -31,10 +31,13 @@ def iter_survivors(event_src, by_sec, all_dates, date_index, mkt, robust_len, *,
     postpone_policy: T+1 起不可交易处置(C1 二次回修,2026-07-17 深夜三):'legacy' 默认=既有
       行为逐字(零回归)/'unified'=停牌与一字板统一顺延计数(exp8)/'unified_announcement'=
       公告事件语义(exp20,冻结 PAP v2:ann_date 日历锚,τ0=其后首个交易所交易日,统一顺延≤5,
-      无 event_day_anomaly);穿线至 clean_event,零判断。
+      无 event_day_anomaly)/'missing_bar_only'=公告日历锚同前、**仅停牌/缺 bar 顺延**,
+      一字板有真实 bar 即为 τ0 进入 CAR 不顺延(exp12,冻结 PAP digest 62a387a2…4353,
+      2026-07-23);穿线至 clean_event,零判断。
     """
     n_dates = len(all_dates)
-    _axis = all_dates if postpone_policy == "unified_announcement" else None
+    _axis = (all_dates if postpone_policy in ("unified_announcement", "missing_bar_only")
+             else None)
     _ret_cache: dict = {}
     for ev in event_src:
         rows = by_sec.get(ev.ts_code, [])
