@@ -69,7 +69,44 @@
   台账 25=14/3/7/1 **零写入**;study_snapshot=10 行 max=212(本单元恰增 manifest 一行,
   属令内授权);两台 git 净。
 
-## 6. 停取证点 · 待人
+## 6. 停取证点 · 待人〔已验收通过,persist 已另令执行,见 §7〕
 
 人验收取证包(§4 统计终态+§5 SHA/秘扫凭证)→ **另行决定 persist**(本令明示不授权,
 未做:预判开封对照/校准册/台账写入均属 persist 阶段)。未令不动。
+
+## 7. persist + 正式闭卷(人终令 2026-07-23,留痕 `st-removal-persist-order-2026-07-23.md`,F 条 `247ee88` 先行)
+
+### 7.1 前置只读断言(preassert_exp12.log,15/15 ALL_PASS)
+
+result 原件 SHA256==令值 `92ff3eac…4a7f`;verdict=NOT_SIG/事件 641/N_valid 473/主窗 N 463/
+CAAR `0.017953489818958123`/ADJ-BMP `0.24556225505262455` 六项逐字==令;result 内
+manifest=212+digest、PAP 锚==令 digest;exp12 仍 frozen 三槽空;DB PAP canonical==令 digest;
+台账 25=14/3/7/1;manifest 212 三处 digest 一致。
+
+### 7.2 persist 单事务(persist_exp12.log)
+
+既有状态机,taosha_app 同连接单事务:FOR UPDATE 行锁内再断言(frozen/PAP canonical/25 行)→
+`start_running(12)` → `finish(12, 已验收result原件)` → **一次 COMMIT**。零重跑零改写
+零旁路 SQL 零新增行(唯一输入=已验收原件逐字节)。
+
+### 7.3 persist 后核验(postverify_exp12.log,14/14 ALL_PASS)
+
+exp12=**done**、done_at=**2026-07-23 20:42:44.548957+08**、frozen_at 不变(19:45:23);
+库内 verdict=NOT_SIG;**parsed_equal=True**(库 result==原件解析对象,canonical 串双侧同
+sha `2afb5ae16ae4d4b6…`);PAP canonical 不变;台账 25=**14/2/8/1** 恰迁一行零新增;
+study_snapshot 仍 10 行 max=212;manifest 212 三处 digest 不变一致;三件产物 SHA 不变;
+两台 git 净同步。persist 件镜像入取证包(preassert `2a00a94b…`/persist `08837c7e…`/
+postverify `685bf42f…`,SHA256SUMS 追加)。
+
+### 7.4 闭卷留痕(人令原文四条,永不改述)
+
+1. **校准册第四条**:预判"主窗CAR为正、约+5%、把握度70%"(绑 digest `62a387a2…4353`)
+   对照实测 **+1.795%**:**方向命中,但幅度低于预判;ADJ-BMP 不显著,终态 NOT_SIG**。
+   (校准册四条:exp8 命中不显著/exp20 未命中/exp13 未命中/exp12 方向命中·幅度低于预判·
+   不显著;方向命中率 2/4。)
+2. **解读边界**:不得把朴素 t、日历法名义显著改读为有效结论;Corrado 反向分歧如实保留。
+3. **执行限制边界**:τ0 一字板 71/473 仅为价格观察,不构成可成交策略证据。
+4. **效力维持 llm/prescreen**(报告水印在场,禁写 full)。
+
+**▶exp12 正式闭卷 done/NOT_SIG,不再追加重跑或敏感性分析;停工交终签,等人后续排产另令
+(registered 余 14)。开工首动作=读 ops/STATE.md+查库。**
