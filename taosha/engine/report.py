@@ -84,6 +84,17 @@ def render(result: dict) -> str:
         L.append("═══ 淘沙 · 事件研究体检报告(exp20 业绩预告修正·signed 事件版)═══")
         L.append(f"快照批次: StudySnapshot={ss['snapshot_id']} digest={ss['digest']}"
                  f"  |  基准口径: {a['benchmark_mode']}(口径②)")
+    elif "high_pullback_selection" in a:
+        # exp11(冻结 PAP digest eaa54b3d…b6fc,冻结令 2026-07-24 五):真锚标题承 exp8/exp13
+        # 先例——键在场即须真实快照锚(present-but-None 同 fail-closed),禁回退合成标题或
+        # PAP 需求字典;其余路径渲染逐字节不变。
+        ss = a.get("study_snapshot")
+        if not isinstance(ss, dict) or ss.get("snapshot_id") is None or not ss.get("digest"):
+            raise SystemExit("report fail-closed: audit.high_pullback_selection 在场但缺真实 "
+                             "audit.study_snapshot.snapshot_id/digest,禁回退合成标题或 PAP 需求字典")
+        L.append("═══ 淘沙 · 事件研究体检报告(exp11 250日新高小幅回落·事件版)═══")
+        L.append(f"快照批次: StudySnapshot={ss['snapshot_id']} digest={ss['digest']}"
+                 f"  |  基准口径: {a['benchmark_mode']}(口径②)")
     else:
         if result.get("drawdown_diagnostic") is not None:
             L.append("═══ 淘沙 · 事件研究体检报告(#2b 回撤反抽·b1池 事件版)═══")
@@ -180,6 +191,39 @@ def render(result: dict) -> str:
         L.append("  口径: 一字板不控制CAR取样(照冻结口径进入CAR、不作顺延);本段为结构化"
                  "NOT_FOR_VERDICT执行限制报告,不改判决;cost键(含limit_up_board_untradeable)"
                  "仅为schema与执行审计字段;结果不得表述为可成交策略证据。")
+        L.append("")
+
+    # exp11 事件生成漏斗 + τ0 术语段(冻结 PAP digest eaa54b3d…b6fc reporting_commitments;
+    # 人终版收口令 2026-07-24:τ0 命名=「事件后首个有真实bar的价格观察日」,禁『可交易』字样;
+    # 无此键 → 段落不出=零回归)
+    hps = a.get("high_pullback_selection")
+    if hps:
+        cnt = hps.get("counters") or {}
+        ma = hps.get("ma20_filter_audit") or {}
+        L.append("【exp11 事件生成漏斗(L2 冻结规则;阶段语义 reporting_commitments 固定档序)】")
+        L.append(f"  输入行={cnt.get('input_rows')} 新高日={cnt.get('newhigh_days')}"
+                 f"(=阶段{cnt.get('stages')}+重置{cnt.get('resets_within_stage')};恒等式="
+                 f"{'OK' if hps.get('newhigh_identity_ok') else '⚠不成立(fail-closed 复核)'}) "
+                 f"伪新高(前史<250)={cnt.get('pseudo_newhigh_hist_insufficient')}")
+        L.append(f"  阶段结局五分: EVENT={cnt.get('outcome_EVENT')} "
+                 f"MA_KILL={cnt.get('outcome_MA_KILL')} DEEP_KILL={cnt.get('outcome_DEEP_KILL')} "
+                 f"NO_TOUCH={cnt.get('outcome_NO_TOUCH')} TRUNCATED={cnt.get('outcome_TRUNCATED')} "
+                 f"恒等式={'OK' if hps.get('funnel_identity_ok') else '⚠不成立(fail-closed 复核)'}")
+        L.append(f"  期外剔除: pre2011={cnt.get('out_of_period_pre2011')} "
+                 f"post={cnt.get('out_of_period_post')} "
+                 f"事件键唯一性违背={cnt.get('event_key_uniqueness_violations')}(fail-closed) "
+                 f"最终事件集={cnt.get('final_events')} 恒等式="
+                 f"{'OK' if hps.get('events_identity_ok') else '⚠不成立(fail-closed 复核)'}")
+        L.append(f"  MA20 筛选比例: 入带={ma.get('in_band')} 过线={ma.get('passed')} "
+                 f"通过率={_fmt(ma.get('pass_ratio'), 4)}"
+                 "(裁定四:筛选力弱也保留,不得据分布删改) [NOT_FOR_VERDICT]")
+        L.append("  τ0 口径: 事件后首个有真实bar的价格观察日(missing_bar_only;仅缺bar顺延"
+                 "≤5交易所交易日,第6日剔;一字板有真实bar即为τ0入CAR)。"
+                 "τ0一字板事件仅为价格观察,不得表述为可执行策略证据。 [NOT_FOR_VERDICT]")
+        recon = hps.get("reference_reconciliation")
+        if recon:
+            L.append(f"  参考对账(只读对账参考非硬断言,差异按血缘归因): "
+                     f"{recon.get('summary', '(见 result_json)')}")
         L.append("")
 
     # provenance 注记(人令 2026-07-19 一:沿 bias_statement 同机制,自 result 注记字段直接
