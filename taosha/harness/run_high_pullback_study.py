@@ -21,8 +21,9 @@
 
 用法:
   set -a; . /opt/quant/.env; set +a
-  # 本单元唯一授权模式(冻结令:漏斗按冻结规则复现,42,719 双跑参考):
-  python -m taosha.harness.run_high_pullback_study --exp-id 11 \
+  # 本单元唯一授权模式(冻结令:漏斗按冻结规则复现,42,719 双跑参考;
+  # recon 锚=批次向量==参考基的既有已发布 StudySnapshot,本单元=212):
+  python -m taosha.harness.run_high_pullback_study --exp-id 11 --recon-snapshot-id 212 \
       --pap-sha256-assert <digest> --recon-only [--json OUT]
   # 正式运行(另令;须 exp11 自己的研究 manifest):
   python -m taosha.harness.run_high_pullback_study --exp-id 11 --snapshot-id N \
@@ -53,6 +54,11 @@ EVENT_LAYER = "high_pullback"   # 单一层(无分层假设;strata_enabled=false
 # 只读对账参考非硬断言,差异按血缘归因停下报人)。
 REFERENCE_FINAL_EVENTS = 42719
 REFERENCE_BATCH_VECTOR = "daily=6/adj_factor=7/trade_cal=10"
+
+# 本单元 recon 只读对账锚(StudySnapshot 212=既有已发布 exp12 研究 manifest,批次向量
+# ==参考基;仅只读取数)。PAP snapshot_batch_req:正式运行须 exp11 自有研究 manifest,
+# 他实验 manifest 不得冒充 → 正式模式 fail-closed 名单(承 exp13 对 121 的同款闸)。
+RECON_ANCHOR_SNAPSHOT_IDS = frozenset({212})
 
 
 def engine_kwargs_from_pap(pap: dict) -> dict:
@@ -181,55 +187,12 @@ def selection_audit(sel: dict) -> dict:
                         "不追数不改规则,不一致须停下报人")}}
 
 
-def _decimal_price_rows_current():
-    """recon 取数(冻结令:既有钉批现值视图,与 42,719 参考同源同序;零收益列):
-
-    explore_reader_prices(daily/adj_factor max批内连接、排北交、holdout<2024-07-01 焊死)
-    × trade_cal max批开市日历轴内连接(已知 3 行日历外 bar 结构性剔除=参考同口径);
-    close=DB numeric 原生 Decimal(冻结闭区间精确算术保真)。零 manifest、零引擎调用;
-    正式运行(另令)不得走本函数(须 snapshot GUC 视图,_decimal_price_rows_snap)。
-    返回 (conn, rows 生成器, cal_index, last_cal_rank)。"""
-    import os
-
-    import psycopg
-
-    from taosha.reader.view import _ENV_QBASE, _load_env
-    root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    dsn = _load_env(os.path.join(root, ".env")).get(_ENV_QBASE)
-    if not dsn:
-        raise SystemExit(f"缺 {_ENV_QBASE}(.env);对账需引擎只读 DSN")
-    conn = psycopg.connect(dsn)
-    conn.execute("SET default_transaction_read_only = on")
-    cal = [d for (d,) in conn.execute(
-        "SELECT cal_date FROM trade_cal_snap "
-        "WHERE batch_id=(SELECT max(batch_id) FROM fact_batch "
-        "                WHERE source='tushare:trade_cal') AND is_open=1 "
-        "ORDER BY cal_date")]
-    cal_index = {d: i + 1 for i, d in enumerate(cal)}
-
-    from collections import namedtuple
-    Row = namedtuple("Row", "ts_code trade_date close board is_st")
-
-    def rows():
-        with conn.cursor(name="s11_recon_prices") as cur:
-            cur.itersize = 200_000
-            cur.execute(
-                "SELECT p.ts_code, p.trade_date, p.close, p.board, p.is_st "
-                "FROM explore_reader_prices p "
-                "JOIN (SELECT cal_date FROM trade_cal_snap "
-                "      WHERE batch_id=(SELECT max(batch_id) FROM fact_batch "
-                "                      WHERE source='tushare:trade_cal') "
-                "        AND is_open=1) c ON c.cal_date = p.trade_date "
-                "ORDER BY p.ts_code, p.trade_date")
-            for ts, d, close, board, st in cur:
-                yield Row(ts, d, close, board, bool(st))
-    return conn, rows, cal_index, len(cal)
-
-
 def _decimal_price_rows_snap(snapshot_id: int):
-    """正式运行事件生成取数(snapshot GUC 钉批视图;Decimal 保真,与 recon 同构):
-    explore_reader_prices_snap × explore_reader_calendar_snap(正式 ViewReader 轴语义),
-    close=DB numeric 原生 Decimal。仅事件几何列,零收益消费(CAR 由 ViewReader 契约流)。"""
+    """事件生成取数(snapshot GUC 钉批视图;recon 与正式同一函数=同构保真):
+    explore_reader_prices_snap × explore_reader_calendar_snap(正式 ViewReader 轴语义;
+    taosha_engine 角色结构上仅有 _snap 视图授权,现值视图零授权=引擎读数必经钉批),
+    close=DB numeric 原生 Decimal(冻结闭区间精确算术保真)。仅事件几何列,零收益消费
+    (CAR 由 ViewReader 契约流)。"""
     import os
 
     import psycopg
@@ -273,6 +236,10 @@ def main():
     ap.add_argument("--snapshot-id", type=int, default=None,
                     help="正式运行 StudySnapshot manifest ID(硬化② fail-closed;"
                          "须 exp11 自己的研究 manifest,另令生成)")
+    ap.add_argument("--recon-snapshot-id", type=int, default=None,
+                    help="--recon-only 只读对账锚 snapshot(承 exp13 先例;须为批次向量=="
+                         "42,719 参考基〔daily6/adj7/cal10〕的既有已发布 StudySnapshot,"
+                         "仅只读取数,不冒充 exp11 正式 manifest)")
     ap.add_argument("--pap-sha256-assert", required=True,
                     help="冻结令绑定 digest(仅逐字断言;权威=引擎重算,不一致 fail-closed)")
     ap.add_argument("--recon-only", action="store_true",
@@ -302,16 +269,20 @@ def main():
     print(f"engine_params(逐字消费冻结件)= { {k: v for k, v in kwargs.items()} }", flush=True)
 
     if a.recon_only:
-        # ── 冻结令:按冻结规则复现漏斗(42,719 双跑参考;零收益/零 manifest/零引擎)──
-        conn, rows, cal_index, last_rank = _decimal_price_rows_current()
+        # ── 冻结令:按冻结规则复现漏斗(42,719 双跑参考;零收益/零 manifest 生成/零引擎)──
+        if a.recon_snapshot_id is None:
+            raise SystemExit("--recon-only 须 --recon-snapshot-id(既有已发布 StudySnapshot "
+                             "只读对账锚,批次向量须==参考基 daily6/adj7/cal10;承 exp13 先例)")
+        conn, rows, cal_index, last_rank = _decimal_price_rows_snap(a.recon_snapshot_id)
         try:
-            events, sel = events_from_prices(rows(), cal_index, last_rank,
-                                             batch="recon_current_views")
+            events, sel = events_from_prices(
+                rows(), cal_index, last_rank,
+                batch=f"recon_snapshot:{a.recon_snapshot_id}")
         finally:
             conn.close()
         aud = selection_audit(sel)
-        print(f"\n[recon-only] 现值钉批+日历轴: 输入行={sel['counters']['input_rows']} "
-              f"日历轴={last_rank}")
+        print(f"\n[recon-only] snapshot={a.recon_snapshot_id} 钉批+日历轴: "
+              f"输入行={sel['counters']['input_rows']} 日历轴={last_rank}")
         print(f"主漏斗: {json.dumps(aud['funnel'], ensure_ascii=False)}")
         print(f"恒等式: newhigh={aud['newhigh_identity_ok']} "
               f"outcome={aud['funnel_identity_ok']} events={aud['events_identity_ok']}")
@@ -334,6 +305,11 @@ def main():
     if a.snapshot_id is None:
         raise SystemExit("正式运行须 --snapshot-id(硬化② fail-closed;本单元只授权 --recon-only;"
                          "exp11 研究 manifest 须另令生成,不得冒用他实验 manifest)")
+    if a.snapshot_id in RECON_ANCHOR_SNAPSHOT_IDS:
+        raise SystemExit(
+            f"fail-closed: StudySnapshot {a.snapshot_id} 仅为只读对账锚(他实验 manifest),"
+            "不得冒充 exp11 正式 manifest(PAP snapshot_batch_req);正式运行须另行生成、"
+            "发布 exp11 自己的研究 manifest")
 
     conn, rows, cal_index, last_rank = _decimal_price_rows_snap(a.snapshot_id)
     try:
