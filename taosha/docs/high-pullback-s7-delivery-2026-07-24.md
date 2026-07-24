@@ -65,3 +65,29 @@ exp11 仍 frozen(frozen_at 冻结值不变)/result_json·done_at 仍空/DB PAP c
 
 **▶停取证点:验收取证包与结果→另行决定 persist(校准册第五条随 persist 落笔);
 未令不动 result/manifest/台账/冻结载荷。开工首动作=读 ops/STATE.md+查库。**
+
+## 8. persist 闭卷留痕(2026-07-24 九终令;原文永不改述)
+
+persist 执行毕:既有状态机 taosha_app 单事务 `start_running(11)`→`finish(11, 已验收原件)`
+一次 **COMMIT,done_at=2026-07-24 21:58:14.608103+08**(脚本/root/s11persist/,前置断言 9/9+
+事务内 7/7,后核验 14/14:done/NOT_SIG/parsed_equal=True/canonical 双侧同 `26bfbd42…`/库 md5
+`0c212495…3572`/**台账 25=registered13/frozen2/done9/closed1** 恰迁一行/manifest 235 三处
+digest 不变/三件产物 SHA 不变/两台 git 净)。事务前置动作已一并闭合:①AWS 仓根 SHA256SUMS
+(0 字节、git 未跟踪,系 termfix 取证轮 cwd 误操作产物)确认后删除;②aliyun 无真实研究
+runner 进程确认后,仅终止 pgrep 自匹配残留监看壳(PID 389264+sleep 子进程),零误伤。
+
+**闭卷留痕四条(人令原文即口径):**
+
+1. **校准册第五条**:冻结预判原文**「主窗[0,+4]市场调整后CAR为正,把握度60%。」**;该预判
+   仅押方向、不押幅度、不预判统计显著性,绑定 PAP digest `eaa54b3d…b6fc`。实测 CAAR
+   **−0.4118%,方向未命中;ADJ-BMP 不显著,终态 NOT_SIG**。校准册五条:**2 命中、3 未命中**
+   (exp8 命中不显著/exp20 未命中/exp13 未命中/exp12 命中不显著/exp11 未命中)。
+2. 剔除率 8.17% 告警如实留;朴素 t(−11.533)/Corrado(−4.516)/日历(−6.249)名义显著
+   **不得改读**为有效结论(NFV,疑聚集假阳性,判决唯一=主窗 ADJ-BMP)。
+3. MA20 通过率 0.9655(66,745/69,130,正式运行实物)**仅审计**(裁定四:保留不删改);
+   τ0 术语(「事件后首个有真实bar的价格观察日」)与一字板句(「τ0一字板事件仅为价格观察,
+   不得表述为可执行策略证据。」)按冻结 PAP。
+4. 效力=llm/prescreen,不得写成 full 证据;报告强制水印。
+
+**▶exp11 正式闭卷 done/NOT_SIG。停工交终签,不再追加重跑或敏感性分析;
+等人终签与下一项排产令(registered 余 13)。开工首动作=读 ops/STATE.md+查库。**
