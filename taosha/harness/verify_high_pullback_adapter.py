@@ -166,8 +166,13 @@ with tempfile.TemporaryDirectory() as td:
           (False, False, False, False))
     # 「价格观察日」术语渲染(人终版收口令 2026-07-24)+ exp11 漏斗段零『可交易』
     check("⑤『价格观察日』术语渲染在场", "事件后首个有真实bar的价格观察日" in rendered, True)
-    check("⑤一字板审计句渲染在场(人令原文)",
+    check("⑤一字板审计句渲染在场(冻结 PAP 原文=唯一权威,人裁定 2026-07-24 七)",
           "τ0一字板事件仅为价格观察,不得表述为可执行策略证据" in rendered, True)
+    # tau_axis 个案展示修正(人裁定 2026-07-24 七,选 C;断言面=裁定原文三条)
+    check("⑤exp11 tau_axis 不含『首个可交易日』", "首个可交易日" in rendered, False)
+    tau_line = [ln for ln in rendered.splitlines() if ln.startswith("【逐日 AR 标准输出")]
+    check("⑤exp11 逐日 AR 段头=新 τ0 术语",
+          len(tau_line) >= 1 and "事件后首个有真实bar的价格观察日" in tau_line[0], True)
     sec = [ln for ln in rendered.splitlines()
            if ln.startswith("【exp11 事件生成漏斗") or ln.startswith("  τ0 口径")
            or ln.startswith("  MA20 筛选比例") or ln.startswith("  期外剔除")
@@ -186,6 +191,8 @@ with tempfile.TemporaryDirectory() as td:
     check("⑤exp8 渲染 exp11 标题/漏斗段零命中",
           ("exp11 250日新高小幅回落" in rendered8, "【exp11 事件生成漏斗" in rendered8),
           (False, False))
+    check("⑤既有实验 tau_axis 原样(exp8 报告仍含『首个可交易日』=特判不外溢)",
+          "首个可交易日" in rendered8, True)
 
 print(f"\n{N - FAIL}/{N} PASS" + ("" if FAIL == 0 else f"  ⚠ {FAIL} FAIL"))
 sys.exit(1 if FAIL else 0)

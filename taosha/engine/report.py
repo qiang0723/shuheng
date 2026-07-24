@@ -251,7 +251,15 @@ def render(result: dict) -> str:
     # ③ 逐日 AR + 主/稳健窗(item 8)
     pt = result.get("per_tau") or {}
     if pt:
-        L.append(f"【逐日 AR 标准输出(item 8;{pt['tau_axis']})】" + _nfv_tag(pt))
+        # exp11 个案展示修正(人裁定 2026-07-24 七,选 C):仅 exp11 报告路径将共用
+        # tau_axis 展示中的「首个可交易日」替换为冻结 τ0 术语「事件后首个有真实bar的
+        # 价格观察日」;runner 产值不动、他实验渲染逐字节不变;不建通用覆盖机制,
+        # 同类需求须另报人裁定,不得复制特判。
+        tau_axis_disp = pt["tau_axis"]
+        if "high_pullback_selection" in a:
+            tau_axis_disp = tau_axis_disp.replace(
+                "首个可交易日", "事件后首个有真实bar的价格观察日")
+        L.append(f"【逐日 AR 标准输出(item 8;{tau_axis_disp})】" + _nfv_tag(pt))
         L.append(f"  ρ̄={_fmt(pt['rho_bar'])}(行业内,{pt['rho_n_pairs']} 对;口径④)")
         L.append("  τ    N    AAR        BMP       ADJ-BMP")
         for r in pt["by_tau"]:
