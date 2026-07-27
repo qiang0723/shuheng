@@ -164,9 +164,15 @@ def main():
                 seen.add(key)
                 rows.append(r)
         rows.sort(key=lambda r: r["trade_date"])
+        # 源含非交易日占位行(Value=null、High/Low=0;实测如 2012-10-29 飓风休市、2013-09-02
+        # 劳动节)——非数据缺失,剔除并计数留痕(原始响应完整在证据包);真实行才自证交易日。
+        placeholders = [r for r in rows if r["close"] is None]
+        if placeholders:
+            log(f"非交易日占位行剔除 {len(placeholders)} 行: "
+                f"{[str(r['trade_date']) for r in placeholders]}")
+        rows = [r for r in rows if r["close"] is not None]
         dates = [r["trade_date"] for r in rows]
         assert len(dates) == len(set(dates)), "同日多行:源数据异常,停报"
-        assert all(r["close"] is not None for r in rows), "存在空 close:停报"
 
         # ── 精确裁剪(人令范围;缓冲行只留证据包)───────────────────────────────
         t0 = next(d for d in dates if map_ashare(d, open_days) >= first_open_2011)
@@ -208,6 +214,7 @@ def main():
                 "t0": str(t0), "t_end": str(t_end),
                 "first_open_2011": str(first_open_2011),
                 "last_open_pre_holdout": str(last_open_pre_holdout),
+                "placeholders_removed": [str(r["trade_date"]) for r in placeholders],
                 "windows": windows, "note": note}
     with open(os.path.join(a.evidence, "nasdaq_fetch_manifest.json"), "w", encoding="utf-8") as f:
         json.dump(manifest, f, ensure_ascii=False, indent=1)
