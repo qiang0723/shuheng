@@ -49,6 +49,18 @@ def _load_env(path: str) -> dict:
     return env
 
 
+def _resolve_dsn(name: str, explicit: Optional[str] = None,
+                 env_path: Optional[str] = None) -> Optional[str]:
+    """DSN 单一优先级：显式参数 → 容器环境 → 仓根 .env；绝不回显值。"""
+    if explicit:
+        return explicit
+    runtime_value = os.environ.get(name)
+    if runtime_value:
+        return runtime_value
+    root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    return _load_env(env_path or os.path.join(root, ".env")).get(name)
+
+
 class ViewReader:
     """契约实现之二:真 explore_reader 视图 + 市场基准表(role taosha_engine 只读)。
 
@@ -62,13 +74,12 @@ class ViewReader:
             raise RuntimeError(
                 "StudySnapshot fail-closed(硬化②): ViewReader 必须显式给 snapshot_id "
                 "(先 python -m taosha.experiment.snapshot --create),禁静默回退 *_current")
-        if qbase_dsn is None or taosha_dsn is None:
-            root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-            env = _load_env(env_path or os.path.join(root, ".env"))
-            qbase_dsn = qbase_dsn or env.get(_ENV_QBASE)
-            taosha_dsn = taosha_dsn or env.get(_ENV_TAOSHA)
+        qbase_dsn = _resolve_dsn(_ENV_QBASE, qbase_dsn, env_path)
+        taosha_dsn = _resolve_dsn(_ENV_TAOSHA, taosha_dsn, env_path)
         if not qbase_dsn or not taosha_dsn:
-            raise RuntimeError(f"缺 {_ENV_QBASE} / {_ENV_TAOSHA}(.env);ViewReader 需引擎只读 DSN")
+            raise RuntimeError(
+                f"缺 {_ENV_QBASE} / {_ENV_TAOSHA}(显式参数、环境变量或.env);"
+                "ViewReader 需引擎只读 DSN")
         self._qdsn = qbase_dsn
         self._tdsn = taosha_dsn
         self._sample = sample

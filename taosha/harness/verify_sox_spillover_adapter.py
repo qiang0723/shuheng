@@ -5,6 +5,9 @@ import copy
 import datetime as dt
 import json
 import math
+import os
+import tempfile
+from unittest import mock
 
 from taosha.engine.cleaning import clean_event
 from taosha.engine.report_sox_spillover import header_lines, selection_lines
@@ -12,6 +15,8 @@ from taosha.harness.run_sox_spillover_study import (
     PAP_DIGEST, SOURCE_ANCHOR_SNAPSHOT_ID, _run_formal, engine_kwargs_from_pap,
 )
 from taosha.reader.contract import CalendarRow, EventRow, PriceRow
+from taosha.reader.sox_spillover import SoxSpilloverReader
+from taosha.reader.view import _ENV_QBASE, _resolve_dsn
 
 
 class Checks:
@@ -81,6 +86,25 @@ def _verdict_key_count(obj) -> int:
 
 def main():
     c = Checks()
+    with tempfile.TemporaryDirectory() as tmp:
+        env_file = os.path.join(tmp, ".env")
+        with open(env_file, "w", encoding="utf-8") as fh:
+            fh.write(f"{_ENV_QBASE}=file-dsn\n")
+        with mock.patch.dict(os.environ, {_ENV_QBASE: "env-dsn"}, clear=True):
+            c.ok(_resolve_dsn(_ENV_QBASE, "explicit-dsn", env_file) == "explicit-dsn",
+                 "DSN显式参数优先")
+            c.ok(_resolve_dsn(_ENV_QBASE, env_path="/unreadable/not-opened") == "env-dsn",
+                 "容器环境优先于env文件且不触文件读取")
+        with mock.patch.dict(os.environ, {}, clear=True):
+            c.ok(_resolve_dsn(_ENV_QBASE, env_path=env_file) == "file-dsn", ".env兜底")
+            empty_file = os.path.join(tmp, "empty.env")
+            open(empty_file, "w", encoding="utf-8").close()
+            try:
+                SoxSpilloverReader(247, env_path=empty_file)
+            except RuntimeError:
+                c.ok(True, "三路均缺时fail-closed")
+            else:
+                c.ok(False, "缺DSN不得继续")
     pap = _pap()
     kwargs = engine_kwargs_from_pap(pap)
     c.ok(kwargs["tau0_on_anchor"] is True, "映射日当日τ0固定")

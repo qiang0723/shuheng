@@ -1,10 +1,9 @@
 """exp24 专属只读输入适配；不向通用 ViewReader 塞实验分支。"""
 from __future__ import annotations
 
-import os
 from typing import Optional
 
-from .view import _ENV_QBASE, _load_env
+from .view import _ENV_QBASE, _resolve_dsn
 
 
 class SoxSpilloverReader:
@@ -14,11 +13,9 @@ class SoxSpilloverReader:
                  env_path: Optional[str] = None):
         if snapshot_id is None:
             raise RuntimeError("SOX reader 必须显式给 StudySnapshot ID")
-        if qbase_dsn is None:
-            root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-            qbase_dsn = _load_env(env_path or os.path.join(root, ".env")).get(_ENV_QBASE)
+        qbase_dsn = _resolve_dsn(_ENV_QBASE, qbase_dsn, env_path)
         if not qbase_dsn:
-            raise RuntimeError(f"缺 {_ENV_QBASE}(.env)")
+            raise RuntimeError(f"缺 {_ENV_QBASE}(显式参数、环境变量或.env)")
         self._snapshot_id = int(snapshot_id)
         self._qdsn = qbase_dsn
 
