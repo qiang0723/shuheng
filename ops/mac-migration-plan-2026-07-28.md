@@ -33,12 +33,14 @@
 - [x] Mac GitHub key 已加(2026-07-28 人告知)
 - [x] Mac 网络拓扑固化(2026-07-28 人告知,见 §2)
 - [x] Mac 公钥加入 aliyun-new authorized_keys + 本 AWS 机 authorized_keys(2026-07-28 核实各 1 条)
-- [ ] Mac 侧验证(人做):`ssh root@47.103.32.81` 通 + `git clone git@github.com:qiang0723/shuheng.git` 通 + `ssh ubuntu@43.212.20.35` 通(拉 27G 历史用)
-- [ ] 验证通过后**立即**:关闭 aliyun-new 密码登录 + root 密码登录(22 现全网开放且 root+密码可登,窗口期风险高;先有钥匙再锁门,验证一过就锁)
+- [x] Mac 侧验证(2026-07-28 人告知三条全通):`ssh root@47.103.32.81` 通 + git clone 通 + `ssh ubuntu@43.212.20.35` 通
+- [x] 关密码登录已实施(2026-07-28):aliyun-new sshd=`PasswordAuthentication no`(含 50-cloud-init.conf 覆盖件同改)+`PermitRootLogin prohibit-password`;`sshd -t` 过+reload;实测=新连接密钥登录 OK、密码通道 `Permission denied (publickey)`;原配置备份 `/root/sshd_config.bak-20260728`+`/root/50-cloud-init.conf.bak-20260728`
+
+**→ 阶段 0 全部闭合(2026-07-28)。**
 
 ### 阶段 1 · 备份链改道 Mac Pro(~~原 OSS 方案作废~~,改判记 #1)
-- [ ] 27G/30 份历史密文:Mac 从本 AWS 机 `~/shuheng-backups` rsync 拉走,校验份数+抽验 SHA
-- [ ] Mac 侧每日拉取:适配 `offsite_pull_aws.sh` 为 Mac 版(launchd/cron;须容忍 Mac 关机漏拉=唤醒后补拉最近未取份),30 份轮转
+- [ ] 27G/30 份历史密文:Mac 从本 AWS 机 `~/shuheng-backups` rsync 拉走,校验份数+抽验 SHA(人在 Mac 执行,命令见下)
+- [ ] Mac 侧每日拉取部署:脚本已入仓=`qbase/sync/offsite_pull_mac.sh`+launchd 模板 `com.shuheng.offsite-pull.plist`(04:00 触发;补拉=每次 rsync 源端全部现存密文;⚠阿里云本地仅 5 份→连续漏跑 >4 天产生不可自愈缺份,长关机后手动跑);待人在 Mac load
 - [ ] 验收(骗不了人):Mac 连续两日拉取成功 + 从 Mac 密文解密→pg_restore 演练通过
 - [ ] 收尾:停用本 AWS 机 offsite_pull_aws.sh cron;文档改判(backup-chain 留档"AWS 异地"→"Mac 异地")
 - 阿里云侧零改动:backup.sh、本地 5 份留存均不变(拉取模式,接收端换人)
