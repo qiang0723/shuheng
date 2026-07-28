@@ -42,14 +42,14 @@
 
 ### 阶段 1 · 备份链改道 Mac Pro(~~原 OSS 方案作废~~,改判记 #1)
 - ~~[ ] 27G/30 份历史密文:Mac 从本 AWS 机 rsync 拉走~~ **作废(改判记 #9):历史份不迁;~~初始取数拉现存 5 份轮转至 3 份~~ 再作废(改判记 #10)→Mac 初始取数=跑 offsite_pull_mac.sh 只拉最近 3 天现存份(首拉≈今日 1 份 1.4G,3 天内自然爬满 3 份)**
-- [ ] Mac 侧每日拉取部署:脚本已入仓=`qbase/sync/offsite_pull_mac.sh`+launchd 模板 `com.shuheng.offsite-pull.plist`(04:00 触发;留存 3 份,改判记 #9;~~补拉=每次 rsync 源端全部现存密文、漏跑 >4 天不可自愈~~ 改判记 #10=只拉最近 3 天,⚠连续漏跑 >2 天窗口外缺份须手动 rsync 指定日期补,阿里云本地 5 份仍在);待人在 Mac load
-- [ ] 验收(骗不了人):Mac 连续两日拉取成功 + 从 Mac 密文解密→pg_restore 演练通过
-- [ ] 收尾:停用本 AWS 机 offsite_pull_aws.sh cron;文档改判(backup-chain 留档"AWS 异地"→"Mac 异地")
+- [x] Mac 侧每日拉取部署:脚本已入仓=`qbase/sync/offsite_pull_mac.sh`+launchd 模板 `com.shuheng.offsite-pull.plist`(04:00 触发;留存 3 份,改判记 #9;~~补拉=每次 rsync 源端全部现存密文、漏跑 >4 天不可自愈~~ 改判记 #10=只拉最近 3 天,⚠连续漏跑 >2 天窗口外缺份须手动 rsync 指定日期补,阿里云本地 5 份仍在);**已完成(2026-07-28 傍晚 Mac 实测):手动拉取 OK+今日密文 SHA=阿里云权威值;launchd 已 load 状态 0;plist 已指 Mac 实际仓路径 `~/Desktop/shuheng/shuheng/...`(⚠模板注释里的 `__HOME__/shuheng/quant/...` 默认路径与 Mac 仓位不符,装时须如此改)**
+- [x] ~~验收(骗不了人):Mac 连续两日拉取成功 + 从 Mac 密文解密→pg_restore 演练通过~~ **作废(改判记 #7)→当日替代口径已达成(2026-07-28)**:①Mac 手动拉取成功 ②Mac 侧密文 SHA 与阿里云对齐(`4c658b7a…8dce`)③境内解密→pg_restore 演练 PASS;另 Mac 端 gnupg 解密列档实证(见硬清单 c)。残余=次日 launchd 自动拉取未实地观察,明晨 04:00 后查 Mac `~/shuheng-backups/offsite.log` 应见 offsite OK(不阻塞删机,人已接受)
+- [x] 收尾:停用本 AWS 机 offsite_pull_aws.sh cron(2026-07-28 已停,crontab 已空);文档改判=backup-chain 头部收口注已落("AWS 异地"→"Mac 异地")
 - 阿里云侧零改动:backup.sh、本地 5 份留存均不变(拉取模式,接收端换人)
 
 ### 阶段 2 · 工作面迁移
-- [ ] 交付包(30M)+ john-test.pem 安全迁 Mac
-- [ ] Claude 记忆迁移:`~/.claude` 打包 → Mac;枢衡项目记忆目录按 Mac 新工作路径改名重挂(具体命令届时出一行清单)
+- [x] 交付包(30M)+ john-test.pem 安全迁 Mac(2026-07-28:rsync 至 Mac `~/Desktop/shuheng/aws-exit/`,`AWS_EXIT_MANIFEST_20260728.sha256` 179/179 全 OK,pem 已 chmod 600)
+- [ ] Claude 记忆迁移:`~/.claude` 打包 → Mac;枢衡项目记忆目录按 Mac 新工作路径改名重挂(命令已交人=rsync 全量至 `~/claude-aws-backup/` + 项目记忆目录重挂 `~/.claude/projects/-Users-john-Desktop-shuheng-shuheng/`;AWS 侧终笔记忆落定后此项才可执行)
 - [ ] Mac 试开工:读 STATE + 查库只读核对 + 试 push,全链路走通
 
 ### 阶段 3 · 收尾与删机(人做,全部验收过才动)
