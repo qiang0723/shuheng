@@ -67,7 +67,8 @@ def _est_window_idx(t_idx: int) -> tuple[int, int]:
 def clean_event(rows: list[PriceRow], event, date_index: dict,
                 st_mode: str = "event_day", st_policy: str = "reject",
                 postpone_policy: str = "legacy",
-                axis_dates: Optional[list] = None) -> CleanedEvent:
+                axis_dates: Optional[list] = None,
+                tau0_on_anchor: bool = False) -> CleanedEvent:
     """对一个事件做清洗几何 + 前置剔除(停牌/ST/顺延)。覆盖门槛留 compute 回填。
 
     rows: 该证券按 trade_date 升序的全期 PriceRow;event: EventRow;date_index: {date: idx}。
@@ -103,6 +104,9 @@ def clean_event(rows: list[PriceRow], event, date_index: dict,
         无真实 bar 剔 'postpone'。须传 axis_dates(升序交易日轴)。
     axis_dates: 仅 'unified_announcement'/'missing_bar_only' 消费(公告日历锚 bisect 定位);
       其余策略忽略。
+    tau0_on_anchor: False 默认=τ0 自锚后首个交易所交易日起算(既有实验逐字行为);
+      True=τ0 自锚交易日当日起算,仅供事件信息在当日开盘前已知且冻结 PAP 明定当日反应的
+      exp24 路径。只与 missing_bar_only 合法组合,调用方不得作为运行时选择。
     """
     if st_mode not in ("event_day", "legacy_row0"):
         raise ValueError(f"st_mode 非法: {st_mode}")
@@ -114,6 +118,10 @@ def clean_event(rows: list[PriceRow], event, date_index: dict,
     if postpone_policy in ("unified_announcement", "missing_bar_only") and axis_dates is None:
         raise ValueError(f"postpone_policy={postpone_policy!r} 须传 axis_dates(升序交易日轴;"
                          "公告日历锚须在轴上 bisect 定位,fail-closed 不猜)")
+    if not isinstance(tau0_on_anchor, bool):
+        raise ValueError("tau0_on_anchor 必须为 bool")
+    if tau0_on_anchor and postpone_policy != "missing_bar_only":
+        raise ValueError("tau0_on_anchor=True 只允许与 missing_bar_only 组合(fail-closed)")
     yr = event.first_ann_date.year
     layer = getattr(event, "event_type_layer", "unknown")   # 层维度(合成自检 _Ev 无此属性 → unknown)
 
@@ -217,7 +225,7 @@ def clean_event(rows: list[PriceRow], event, date_index: dict,
     #   'missing_bar_only'(exp12 冻结口径 2026-07-23)例外:**仅停牌/缺 bar 阻塞**——
     #   一字板日只要存在真实 bar 即取为 τ0 进入 CAR,不作顺延、不计入顺延计数。
     mbo = postpone_policy == "missing_bar_only"
-    tau0 = t_idx + 1
+    tau0 = t_idx if tau0_on_anchor else t_idx + 1
     postpone = 0
     pp_susp = pp_ow = 0        # unified 文案用:顺延日内停牌/一字分计(人令调整一;legacy 不消费)
     while True:

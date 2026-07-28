@@ -9,6 +9,8 @@ AMBIGUOUS)的事实陈述,不翻译成"值得交易"。
 """
 from __future__ import annotations
 
+from . import report_sox_spillover
+
 # item 9:固定偏差方向声明段(保守偏差方向;剔除类处置一律朝"低估效应"方向)
 BIAS_DECLARATION = (
     "【偏差方向声明(固定段,item 9)】\n"
@@ -95,6 +97,8 @@ def render(result: dict) -> str:
         L.append("═══ 淘沙 · 事件研究体检报告(exp11 250日新高小幅回落·事件版)═══")
         L.append(f"快照批次: StudySnapshot={ss['snapshot_id']} digest={ss['digest']}"
                  f"  |  基准口径: {a['benchmark_mode']}(口径②)")
+    elif "sox_spillover_selection" in a:
+        L.extend(report_sox_spillover.header_lines(a))
     else:
         if result.get("drawdown_diagnostic") is not None:
             L.append("═══ 淘沙 · 事件研究体检报告(#2b 回撤反抽·b1池 事件版)═══")
@@ -225,6 +229,10 @@ def render(result: dict) -> str:
             L.append(f"  参考对账(只读对账参考非硬断言,差异按血缘归因): "
                      f"{recon.get('summary', '(见 result_json)')}")
         L.append("")
+
+    sps = a.get("sox_spillover_selection")
+    if sps:
+        L.extend(report_sox_spillover.selection_lines(sps))
 
     # provenance 注记(人令 2026-07-19 一:沿 bias_statement 同机制,自 result 注记字段直接
     # 消费渲染冻结原文;默认无键 → 零新行零回归)

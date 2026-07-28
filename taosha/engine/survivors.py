@@ -19,6 +19,7 @@ from taosha.engine.cleaning import CleanedEvent, clean_event
 
 def iter_survivors(event_src, by_sec, all_dates, date_index, mkt, robust_len, *,
                    st_mode: str, st_policy: str = "reject", postpone_policy: str = "legacy",
+                   tau0_on_anchor: bool = False,
                    sec_returns: Optional[dict] = None,
                    reject_notes: bool = False) -> Iterator[tuple[CleanedEvent, Optional[tuple]]]:
     """逐事件产出 (ce, survivor):剔除 → (ce, None);存活 → (ce, (ev, ce, fit, est_ar_by_date, rows))。
@@ -34,6 +35,8 @@ def iter_survivors(event_src, by_sec, all_dates, date_index, mkt, robust_len, *,
       无 event_day_anomaly)/'missing_bar_only'=公告日历锚同前、**仅停牌/缺 bar 顺延**,
       一字板有真实 bar 即为 τ0 进入 CAR 不顺延(exp12,冻结 PAP digest 62a387a2…4353,
       2026-07-23);穿线至 clean_event,零判断。
+    tau0_on_anchor: False=既有锚后首日起算;True=锚日当日起算(exp24 冻结口径),
+      仅穿线至 clean_event,本函数零判断。
     """
     n_dates = len(all_dates)
     _axis = (all_dates if postpone_policy in ("unified_announcement", "missing_bar_only")
@@ -42,7 +45,8 @@ def iter_survivors(event_src, by_sec, all_dates, date_index, mkt, robust_len, *,
     for ev in event_src:
         rows = by_sec.get(ev.ts_code, [])
         ce = clean_event(rows, ev, date_index, st_mode=st_mode, st_policy=st_policy,
-                         postpone_policy=postpone_policy, axis_dates=_axis)
+                         postpone_policy=postpone_policy, axis_dates=_axis,
+                         tau0_on_anchor=tau0_on_anchor)
         if ce.rejected:
             yield ce, None
             continue

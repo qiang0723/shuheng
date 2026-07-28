@@ -383,8 +383,10 @@ def run_study(reader, pap: dict, *, benchmark_mode: str = "market",
               strata_enabled: bool = True, st_mode: str = "event_day",
               st_policy: str = "reject", verdict_policy: str = "three_method",
               nfv_structured: bool = False, postpone_policy: str = "legacy",
+              tau0_on_anchor: bool = False,
               diagnostic_dims: tuple = (),
               direction_signed_main: bool = False,
+              direction_layers: Optional[tuple] = None,
               direction_display: Optional[str] = None,
               effect_alignment_source: Optional[str] = None,
               bias_statement_assert: Optional[str] = None,
@@ -410,6 +412,8 @@ def run_study(reader, pap: dict, *, benchmark_mode: str = "market",
       'unified_announcement'=公告日历锚统一顺延(exp20)/'missing_bar_only'=公告日历锚、
       **仅停牌/缺 bar 顺延**,一字板有真实 bar 即为 τ0 进入 CAR 不顺延(exp12,冻结 PAP
       digest 62a387a2…4353,2026-07-23;语义详见 cleaning.clean_event)。
+    tau0_on_anchor: False 默认=锚后首日起算(既有实验零回归);True=锚日当日起算,
+      仅 exp24 driver 按冻结 PAP 固定传入,且只允许与 missing_bar_only 组合。
     diagnostic_dims: 正交诊断维度元组(exp8=('listing_age','st'),C6);空默认=不产出、零新键。
     bias_statement_assert: **仅作逐字相等断言,非第二来源**(人令调整二):偏差声明唯一权威
       =pap['bias_statement'],runner 直接从 pap 读取原样携带、report 直接消费;本参数提供时
@@ -424,6 +428,9 @@ def run_study(reader, pap: dict, *, benchmark_mode: str = "market",
       (up=+1/down=−1)施加于**事件级、逐 τ,先于一切聚合与检验**,并作用于该事件估计期异常
       残差及全部方向相关统计输入(AAR/CAAR/BMP/ADJ-BMP/Corrado 秩输入/日历法输入/事件间相关
       符号同一 signed 对象);raw AR 只保留给 direction 诊断层;禁止仅改最终 CAAR 或展示值符号。
+    direction_layers: None 默认=方向白名单须由 PAP structured axes 提供(exp20);
+      ('up','down') 仅供 exp24 driver 在冻结 PAP 已用文字明定该白名单、但未设 axes 对象时
+      显式补足机器断言面。不得接受其他值,不改变事件或统计语义。
     direction_display: 'raw' → direction 诊断层展示基准=raw AR(PAP display_basis;诊断层
       消费未 signed 的原始 SecurityEvent);None 默认=无 direction 轴语义,零新键。
     effect_alignment_source: 'adj_bmp_sign' → 产出 effect_alignment 四态上下文字段(全定义
@@ -450,10 +457,17 @@ def run_study(reader, pap: dict, *, benchmark_mode: str = "market",
     if effect_alignment_source not in (None, "adj_bmp_sign"):
         raise ValueError(f"effect_alignment_source 非法: {effect_alignment_source}"
                          "(合法={None,'adj_bmp_sign'})")
+    if direction_layers not in (None, ("up", "down")):
+        raise ValueError("direction_layers 非法(合法={None,('up','down')})")
+    if not isinstance(tau0_on_anchor, bool):
+        raise ValueError("tau0_on_anchor 必须为 bool")
+    if tau0_on_anchor and postpone_policy != "missing_bar_only":
+        raise ValueError("tau0_on_anchor=True 只允许与 missing_bar_only 组合(fail-closed)")
     # P1-4(人令调整二):偏差声明唯一权威=pap['bias_statement']——不接受任何调用方替代文本。
     pap_bias = pap.get("bias_statement")
     new_strategy = ((postpone_policy != "legacy") or bool(diagnostic_dims) or nfv_structured
-                    or direction_signed_main or (effect_alignment_source is not None))
+                    or direction_signed_main or tau0_on_anchor
+                    or (effect_alignment_source is not None))
     if new_strategy and not pap_bias:
         raise ValueError("回修新策略已启用(unified/diagnostic_dims/nfv_structured)但 pap 缺 "
                          "'bias_statement' → 拒绝运行(P1-4:权威来源唯一=冻结 PAP)")
@@ -505,10 +519,12 @@ def run_study(reader, pap: dict, *, benchmark_mode: str = "market",
     if "direction" in diagnostic_dims or direction_signed_main:
         frozen_dirs = _DIAG_DIM_SPECS["direction"]["layers"]
         pap_dirs = ((pap.get("diagnostic_dimensions") or {}).get("axes") or {}).get("direction")
-        if list(pap_dirs or ()) != list(frozen_dirs):
+        effective_dirs = pap_dirs if pap_dirs is not None else direction_layers
+        if list(effective_dirs or ()) != list(frozen_dirs):
             raise ValueError(f"direction 层白名单与 PAP diagnostic_dimensions.axes.direction "
-                             f"不逐项一致 → fail-closed(引擎={list(frozen_dirs)} / "
-                             f"PAP={pap_dirs!r};冻结 PAP v2 direction_fail_closed)")
+                             f"或显式冻结适配断言不逐项一致 → fail-closed"
+                             f"(引擎={list(frozen_dirs)} / PAP={pap_dirs!r} / "
+                             f"driver_assert={direction_layers!r})")
         bad_dir: dict = {}
         for ev in event_src:
             lay = getattr(ev, "event_type_layer", None)
@@ -559,6 +575,7 @@ def run_study(reader, pap: dict, *, benchmark_mode: str = "market",
     for ce, sv in iter_survivors(event_src, by_sec, all_dates, date_index, mkt, robust_len,
                                  st_mode=st_mode, st_policy=st_policy,
                                  postpone_policy=postpone_policy,
+                                 tau0_on_anchor=tau0_on_anchor,
                                  sec_returns=sec_returns, reject_notes=True):
         cleaned.append(ce)
         if sv is None:
@@ -659,7 +676,9 @@ def run_study(reader, pap: dict, *, benchmark_mode: str = "market",
                      secondary_lens=secondary_lens, st_policy=st_policy,
                      verdict_policy=verdict_policy, nfv_structured=nfv_structured,
                      postpone_policy=postpone_policy, diagnostic_dims=diagnostic_dims,
+                     tau0_on_anchor=tau0_on_anchor,
                      direction_signed_main=direction_signed_main,
+                     direction_layers=direction_layers,
                      direction_display=direction_display,
                      effect_alignment_source=effect_alignment_source,
                      diag_valid_events=diag_valid_events,
@@ -685,7 +704,9 @@ def _assemble(pap, cleaned, valid_events, benchmark_mode, main_len, robust_len,
               secondary_lens: tuple = (), st_policy: str = "reject",
               verdict_policy: str = "three_method", nfv_structured: bool = False,
               postpone_policy: str = "legacy", diagnostic_dims: tuple = (),
-              direction_signed_main: bool = False, direction_display: Optional[str] = None,
+              tau0_on_anchor: bool = False,
+              direction_signed_main: bool = False, direction_layers: Optional[tuple] = None,
+              direction_display: Optional[str] = None,
               effect_alignment_source: Optional[str] = None,
               diag_valid_events: Optional[list] = None,
               pap_bias: Optional[str] = None, pap_sha256: Optional[str] = None) -> dict:
@@ -705,7 +726,8 @@ def _assemble(pap, cleaned, valid_events, benchmark_mode, main_len, robust_len,
         rows = adj["rows"]
         aar = [_mean([se.event_abnormal[t] for se in ses]) for t in range(robust_len)]
         per_tau = {
-            "tau_axis": "τ=0:=T+1(首个可交易日,S2-DEC3)",
+            "tau_axis": ("τ=0:=event_date当日首个真实bar价格观察日(exp24冻结口径)"
+                         if tau0_on_anchor else "τ=0:=T+1(首个可交易日,S2-DEC3)"),
             "rho_bar": rho["rho_bar"], "rho_n_pairs": rho["n_pairs"], "rho_note": rho["note"],
             "by_tau": [{"tau": r["tau"], "n": r["n"], "aar": aar[r["tau"]],
                         "bmp": r["bmp"], "adj_bmp": r["adj_bmp"]} for r in rows],
@@ -896,19 +918,23 @@ def _assemble(pap, cleaned, valid_events, benchmark_mode, main_len, robust_len,
             "label": "NOT_FOR_VERDICT · 非权威结果:报告项,不判决、不参与判决、不得择优改判"
                      "(人裁 2026-07-17 回修单元 C6);唯一判决=顶层 verdict(主窗 ADJ-BMP)。"}
     if (st_policy != "reject" or verdict_policy != "three_method" or nfv_structured
-            or postpone_policy != "legacy" or diagnostic_dims
+            or postpone_policy != "legacy" or tau0_on_anchor or diagnostic_dims
             or direction_signed_main or direction_display is not None
             or effect_alignment_source is not None):
         result["audit"]["premend_params"] = {           # 非默认参数如实入审计(默认跑零新键);
             "st_policy": st_policy, "verdict_policy": verdict_policy,   # 含实际 postpone_policy
             "nfv_structured": nfv_structured, "postpone_policy": postpone_policy,
             "diagnostic_dims": list(diagnostic_dims)}   # (人令调整一:audit 记 postpone_policy)
+        if tau0_on_anchor:
+            result["audit"]["premend_params"]["tau0_on_anchor"] = True
         if direction_signed_main or direction_display is not None \
                 or effect_alignment_source is not None:  # exp20 三参数(冻结件消费如实入审计)
             result["audit"]["premend_params"].update({
                 "direction_signed_main": direction_signed_main,
                 "direction_display": direction_display,
                 "effect_alignment_source": effect_alignment_source})
+        if direction_layers is not None:
+            result["audit"]["premend_params"]["direction_layers"] = list(direction_layers)
     return result
 
 
