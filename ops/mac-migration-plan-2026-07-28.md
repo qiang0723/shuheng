@@ -53,7 +53,7 @@
 - [ ] Mac 试开工:读 STATE + 查库只读核对 + 试 push,全链路走通
 
 ### 阶段 3 · 收尾与删机(人做,全部验收过才动)
-- [ ] GitHub 撤销 AWS deploy key(shuheng_ops);aliyun-new authorized_keys 删 AWS 公钥(`…shuheng-ops-aws` 条目)
+- [ ] GitHub 撤销 AWS deploy key(shuheng_ops)〔待人〕;~~aliyun-new authorized_keys 删 AWS 公钥(`…shuheng-ops-aws` 条目)~~ **已删(2026-07-28 晚,硬清单 f):aliyun-new 与 aliyun-old 各 1 条均清(old 条目为清单外发现,直连公网清除;两机各留 `authorized_keys.bak-20260728-f`),Mac key 完好实测**
 - [ ] 文档终改判:STATE/ops 文档中 AWS 侧描述显式作废
 - [ ] **最后删机**(只删 43.212.20.35;aliyun-new / 老 AWS 雷达源机不动)
 
