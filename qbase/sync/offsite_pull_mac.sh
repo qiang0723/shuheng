@@ -27,5 +27,6 @@ if [ -n "$LATEST" ]; then
 else
   echo "$(date +%F\ %T) ❌ 无备份可拉"; exit 1
 fi
-# 异地保留 30 份
-ls -1t shuheng-*.tar.gz.gpg 2>/dev/null | tail -n +31 | xargs rm -f
+# 异地保留 3 份(人裁 2026-07-28 深夜改判:~~30 份~~→3 份;更早恢复点仅剩阿里云本地 5 份)
+ls -1t shuheng-*.tar.gz.gpg 2>/dev/null | tail -n +4 | xargs rm -f
+for s in shuheng-*.sha256; do [ -f "${s%.sha256}.tar.gz.gpg" ] || rm -f "$s"; done
