@@ -66,3 +66,25 @@ manifest 248 recon 首次输出失败的根因为：`selection_audit.pool_member
 1. 核 `f381949` 是否严格止于审计 JSON 日期键边界及fixture；
 2. 核交付档内 manifest 248、漏斗、result关键值与三件SHA的自洽性；
 3. A级（改变判决/样本/血缘/正式产物）才阻塞persist；B级表述项一次列清，C级默认不扩施工。
+
+## 6. persist 闭卷（2026-07-28）
+
+人于取证与Fable复核完成后明示“执行”，终令留痕见 `sox-spillover-persist-order-2026-07-28.md`。
+
+外审唯一B级项已在既有产物内指认闭合：`result.n_valid=13,703`、`result.car.main_window.n=13,656`；`result.per_tau.by_tau`及正式报告逐日AR段已披露τ0–τ4样本量依次为`13,703/13,690/13,689/13,680/13,674`。完整主窗沿既有 `_car_test` 口径，任一τ缺失即不进入CAR截面；不同τ缺失事件的并集形成完整主窗差额47。未新增计算、未改result、未重跑。
+
+执行前只读断言`22/22 PASS`。第一次操作脚本在数据库连接前因把 `audit.study_snapshot` 误断言为“只能含snapshot_id/digest两键”而停止；原件还含合法`content`向量。失败脚本与日志原样保留，随后再次执行同一套前置只读断言仍为`22/22 PASS`，证明数据库与产物零变化。断言仅收窄为逐字段核对snapshot ID和digest后，事务内`FOR UPDATE`断言`7/7 PASS`。
+
+实际数据库写事务只有一笔：以`taosha_app`同连接执行`start_running(24)→finish(24,已验收result原件)→一次COMMIT`，`done_at=2026-07-28 23:25:53.284244+08`；零研究重跑、零result改写、零旁路SQL、零新增行。
+
+persist后只读核验`15/15 PASS`：
+
+- exp24=`done`，顶层 verdict=`NOT_SIG`，`frozen_at`保持`2026-07-28 19:43:43.332816+08`；
+- 库内result与原件`parsed_equal=True`，canonical双侧SHA256=`3204cdbccb9b318c47179f944af9b2745dcad43d53eef4eb2233146d64859446`，库侧`jsonb::text` MD5=`fe01d0ae4998c318ce7446412f3ac639`；
+- 台账仍25行，分布=`registered 12 / frozen 2 / done 10 / closed 1`，恰迁exp24一行；
+- PAP canonical、manifest 248三处digest、result/report/log三件原件SHA全部不变；
+- persist脚本与日志已镜像进`/root/s24run/delivery/`，独立`SHA256SUMS.persist -c`全过；第一次失败痕迹未覆盖、未删除。
+
+闭卷固定读法：人的冻结预判原文“同向，把握度60%”仅绑定PAP digest `be26a7f43e1dca2602a4ab60931aae4db9e55781cbf1cba410dc2d4d0f738f27`；实测主窗signed CAAR=`+0.3305%`，方向命中，但ADJ-BMP=`+0.565`不显著，终态`NOT_SIG`。校准册第六条据此记为方向命中，六条方向读数为3命中/3未命中。不得认定存在可靠传导效应；朴素t/Corrado/日历法均为NOT_FOR_VERDICT。效力保持`human/full`，半PIT成分语义、剔除率28.85%告警和低功效预注册边界如实保留。
+
+**exp24正式闭卷；不再追加复核、重跑或敏感性分析。**
