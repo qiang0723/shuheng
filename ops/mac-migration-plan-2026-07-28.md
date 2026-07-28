@@ -11,6 +11,8 @@
 4. **挂账 #4 落定**:老 AWS 雷达源机(43.213.181.243)**保留不动**。
 5. **口径确认**:aliyun-new **不删除**;本迁移只删本 AWS 工作机(43.212.20.35),其余机器一律不动。
 6. 阶段 0 加钥已闭:Mac 公钥(`ssh-ed25519 …LU/WIZ john`)已在 aliyun-new root 与本 AWS 机 authorized_keys 各 1 条(2026-07-28 核实)。
+7. **三笔改判(人裁 2026-07-28,当日晚二):今日完成迁移即删机**(人当日起开发即用 Mac)。~~阶段 1"连续两日拉取"验收~~作废,改为**当日替代口径**=①Mac 手动拉取成功 ②Mac 侧密文 SHA 与阿里云逐一对齐 ③境内解密→pg_restore 恢复演练当日完成。残余风险已向人揭示并被接受=次日 launchd 自动拉取未实地观察(脚本已手动验证;若失败阿里云侧尚有 5 份滚动,不丢数据)。**恢复演练已 PASS(2026-07-28)**:今日密文 `shuheng-2026-07-28.tar.gz.gpg`(1.4G,SHA `4c658b7a…8dce`)解密→解包四件→qbase+taosha 双库 pg_restore 入临时库,核数与活库/台账全符(sox_daily_snap=3,395/sw_member_snap=208/entity_master=5,861/fact_batch=13 行含批 11 历史空洞与活库一致/experiment=25/study_snapshot=12/audit.ddl_audit=320),临时库已删现场已清。
+8. **GPG 口令离机(必做)**:解密口令仅存 aliyun-new `/etc/shuheng/backup_gpg.pass`,人须自拷一份存 Mac(境内,不经 git),否则 Mac 密文在"阿里云全损"场景下不可开。
 
 ## 0. 现状盘点:AWS 工作机身上挂着什么
 
