@@ -18,7 +18,9 @@ RUN groupadd --gid 10001 shuheng \
 WORKDIR /opt/quant
 
 COPY ops/runtime/requirements-qbase-ingest.lock /tmp/requirements.lock
+ARG PYPI_INDEX_URL=https://pypi.org/simple
 RUN python -m pip install --disable-pip-version-check --no-cache-dir \
+      --index-url "${PYPI_INDEX_URL}" \
       --requirement /tmp/requirements.lock \
     && rm /tmp/requirements.lock
 

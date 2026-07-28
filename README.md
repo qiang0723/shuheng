@@ -42,6 +42,9 @@ docker run --rm --network host --env-file /opt/quant/.env \
   shuheng-quant:$(git rev-parse --short HEAD) <明确授权的命令>
 ```
 
+若生产网络无法直连 Docker Hub/PyPI,只允许在构建命令中显式覆盖下载入口;
+基础镜像 SHA256 与依赖锁仍须保持不变,不得换成未钉版本。
+
 容器没有常驻服务;采集、研究运行和 persist 均为经人授权的一次性命令。
 
 ## 部署流水线(代码单向下行)
