@@ -50,10 +50,10 @@ notify(){ python3 "$HERE/feishu_notify.py" "$1" >/dev/null 2>&1 || true; }
   else echo "[4] ❌ 加密 FAILED"; FAIL=1; fi
   # 5. 校验和(basename,供 AWS 侧 -c 校验)
   ( cd "$BDIR" && sha256sum "shuheng-$DAY.tar.gz.gpg" > "shuheng-$DAY.sha256" && echo "[5] sha256: $(cut -d' ' -f1 "shuheng-$DAY.sha256")" )
-  # 6. 本地留存 14 份
+  # 6. 本地留存 5 份(2026-07-28 人裁改判,原 14;异地 AWS 30 份不动)
   for pat in "shuheng-*.tar.gz.gpg" "qbase-*.dump" "taosha-*.dump" "globals-*.sql"; do
-    ls -1t $BDIR/$pat 2>/dev/null | tail -n +15 | xargs -r rm -f; done
-  ls -1t "$GDIR"/guanlan-*.db 2>/dev/null | tail -n +15 | xargs -r rm -f
+    ls -1t $BDIR/$pat 2>/dev/null | tail -n +6 | xargs -r rm -f; done
+  ls -1t "$GDIR"/guanlan-*.db 2>/dev/null | tail -n +6 | xargs -r rm -f
   echo "=== 结果: $([ $FAIL -eq 0 ] && echo ✅成功 || echo ❌有失败) ==="
 } | tee "$LOG"
 
