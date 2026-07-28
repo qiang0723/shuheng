@@ -13,6 +13,7 @@ from taosha.engine.cleaning import clean_event
 from taosha.engine.report_sox_spillover import header_lines, selection_lines
 from taosha.harness.run_sox_spillover_study import (
     PAP_DIGEST, SOURCE_ANCHOR_SNAPSHOT_ID, _run_formal, engine_kwargs_from_pap,
+    selection_audit,
 )
 from taosha.reader.contract import CalendarRow, EventRow, PriceRow
 from taosha.reader.sox_spillover import SoxSpilloverReader
@@ -54,8 +55,12 @@ def _fake_selection():
         "surviving_up": 150, "surviving_down": 142, "expanded_candidates": 100,
         "duplicate_event_keys": 0, "duplicate_events_dropped": 0, "final_events": 100,
     }
-    return {"counters": counters, "trigger_event_dates": 292, "funnel_identity_ok": True,
-            "data_quality_disclosure": "388行currency空值;2015-02-02差异;NOT_FOR_VERDICT"}
+    return {
+        "counters": counters, "trigger_event_dates": 292, "funnel_identity_ok": True,
+        "data_quality_disclosure": "388行currency空值;2015-02-02差异;NOT_FOR_VERDICT",
+        "trigger_yearly": {2020: 1}, "collision_items": [], "member_rejects": [],
+        "duplicate_items": [], "pool_members_by_event_date": {dt.date(2020, 1, 3): 2},
+    }
 
 
 class _EngineReader:
@@ -162,6 +167,12 @@ def main():
     c.ok("388行currency空值" in lines and "2015-02-02" in lines, "数据质量披露")
     c.ok("NOT_FOR_VERDICT" in lines, "诊断水印")
     c.ok(not any(k == "verdict" for k in _fake_selection()), "诊断块零verdict键")
+    json_audit = selection_audit(_fake_selection(), pap)
+    c.ok(json_audit["pool_members_by_event_date"] == {"2020-01-03": 2},
+         "date审计键确定性转换为ISO字符串")
+    encoded_audit = json.dumps(json_audit, ensure_ascii=False)
+    c.ok(json.loads(encoded_audit)["pool_members_by_event_date"] == {"2020-01-03": 2},
+         "完整selection_audit可JSON序列化并读回ISO日期键")
 
     class Args:
         snapshot_id = SOURCE_ANCHOR_SNAPSHOT_ID

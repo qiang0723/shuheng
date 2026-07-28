@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import argparse
+import datetime as dt
 import json
 
 from taosha.compute.sox_spillover_rules import select_events
@@ -76,6 +77,16 @@ def assert_reference(selection: dict) -> None:
                          f"identity={selection['funnel_identity_ok']}")
 
 
+def _iso_date_counts(values: dict) -> dict[str, int]:
+    """把规则层 date 键确定性转换为 JSON 对象键；拒绝意外键型。"""
+    normalized = {}
+    for key, count in values.items():
+        if type(key) is not dt.date:
+            raise SystemExit(f"fail-closed: exp24成员日审计键非date:{type(key).__name__}")
+        normalized[key.isoformat()] = count
+    return dict(sorted(normalized.items()))
+
+
 def selection_audit(selection: dict, pap: dict) -> dict:
     counters = selection["counters"]
     return {
@@ -86,7 +97,8 @@ def selection_audit(selection: dict, pap: dict) -> dict:
         "holiday_collisions": selection["collision_items"],
         "member_rejects": selection["member_rejects"],
         "duplicate_items": selection["duplicate_items"],
-        "pool_members_by_event_date": selection["pool_members_by_event_date"],
+        "pool_members_by_event_date": _iso_date_counts(
+            selection["pool_members_by_event_date"]),
         "trigger_event_dates": counters["surviving_trigger_dates"],
         "data_quality_disclosure": pap["diagnostic_dimensions"]["data_quality_disclosure"],
         "note": "事件几何与数据质量审计，全部NOT_FOR_VERDICT；不拆分α、不改变顶层判决。",
