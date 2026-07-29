@@ -191,6 +191,8 @@ def main() -> int:
         print("环境无 TAOSHA_APP_DSN(应 source /opt/quant/.env,勿回显)", file=sys.stderr)
         return 2
     with psycopg.connect(dsn) as conn, conn.cursor() as cur:
+        cur.execute("SELECT count(*) FROM experiment")
+        ledger_rows_before = cur.fetchone()[0]
         # ── 结构断言: registry 物化普查 ──
         cur.execute("""SELECT count(*) FROM pg_trigger t JOIN pg_class c ON c.oid=t.tgrelid
                        WHERE c.relname='pap_legacy_registry' AND NOT t.tgisinternal""")
@@ -405,7 +407,9 @@ def main() -> int:
         n1 = cur.fetchone()[0]
         cur.execute("SELECT count(*) FROM experiment")
         n2 = cur.fetchone()[0]
-        _ok("Z1 回滚后零残留(探针 0 行/台账 25 行)", n1 == 0 and n2 == 25, f"probe={n1} total={n2}")
+        _ok("Z1 回滚后零残留(探针 0 行/台账行数前后不变)",
+            n1 == 0 and n2 == ledger_rows_before,
+            f"probe={n1} total={ledger_rows_before}→{n2}")
         conn.rollback()
 
     # ── 层③: 策略驱动启动校验(子进程实测,exp3=legacy 在册) ──
