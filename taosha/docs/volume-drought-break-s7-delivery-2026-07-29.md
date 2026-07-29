@@ -60,3 +60,26 @@
 ## 5. 停止线
 
 **本轮不授权、也未执行persist。** 结果原件、manifest与运行后冻结状态先交人验收并供Fable作GitHub侧独立复核；persist须由John另行明确授权。
+
+## 6. persist闭卷（2026-07-29）
+
+John以“批准执行”授权persist。执行前先将Fable复核的三项B级注记闭合于既有证据，不改result、不重跑研究：
+
+- `n_eff_rho`按引擎既有口径以`N_valid=11,432`为基数；唯一权威ADJ-BMP仍由主窗完整样本`N=11,312`计算，该诊断口径不参与verdict；
+- result既有逐τ披露为`11,432 / 11,409 / 11,386 / 11,375 / 11,366`，不同τ缺失事件的并集形成主窗差额`11,432-11,312=120`；
+- KP有效样本公式为`N*(1-rho)/(1+(N-1)*rho)`；生产基础镜像RepoDigest读回为`m.daocloud.io/docker.io/library/python@sha256:fc74d22ffd0d5ac395a4b7bdda75a4539758862c49ebf3005647084631e63789`。
+
+persist前置只读断言`25/25 PASS`。随后仅以已验收原件`/root/s10run/result_exp10.json`为输入，经`taosha_app`同连接单事务执行`start_running(10) → finish(10,result) → 一次COMMIT`；事务内`FOR UPDATE`断言`7/7 PASS`，提交时间为`2026-07-29 13:15:03.198872+08`。零重跑、零改写、零旁路、零新增行。
+
+persist后只读核验`16/16 PASS`：
+
+- exp10=`done`，顶层verdict=`NOT_SIG`，`frozen_at=2026-07-29 10:35:58.418183+08`保持不变；
+- 库内result与原件`parsed_equal=True`，canonical双侧SHA256=`ebb98103b597fc140e272f88d68e8bee6276e3e99339a224d9f672757f71a1a1`，库侧`md5(jsonb::text)=9212ab7b8c204e525e078dbd698665c6`；
+- PAP canonical、manifest 271三处digest及三件原始产物SHA均不变；
+- 台账仍25行，分布由`11/3/10/1`恰迁一行为`registered 11 / frozen 2 / done 11 / closed 1`；study_snapshot仍14行、max=271。
+
+校准册第七条：冻结预判原文“正，把握度60%”（仅押主窗方向、绑定PAP digest `18d7322c…0aff1`）对照实测主窗CAAR `-0.6846%`，方向未命中；ADJ-BMP不显著，终态`NOT_SIG`。七条方向读数为`3命中/4未命中`。
+
+闭卷固定读法：不得认定存在可靠的正向或负向效应；朴素t、Corrado与日历法名义显著均为`NOT_FOR_VERDICT`；效力维持`llm/prescreen`。exp10至此正式闭卷，不再追加重跑或敏感性分析。
+
+persist证据目录=`/root/s10persist/`，三脚本、三日志及`SHA256SUMS`校验全部通过。
