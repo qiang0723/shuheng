@@ -92,3 +92,33 @@ ADJ-BMP=`-5.522936355365047`；family trial 2 的双侧`alpha=0.025`下显著。
 
 **本轮不授权、也未执行persist。** 结果原件、manifest和运行后冻结状态先交人验收并供
 Fable作GitHub侧独立复核；persist须由John另行明确授权。
+
+## 6. persist与正式闭卷（2026-07-30）
+
+John随后明确授权：“批准 exp568 persist，并按上述固定读法正式闭卷。”终令见
+`taosha/docs/st-imposition-persist-order-2026-07-30.md`。
+
+- persist前只读断言`28/28 PASS`；三件原件SHA、exp568冻结状态、PAP canonical、
+  manifest 294三处digest、result关键值与台账`10/3/11/2`全部符合终令；
+- `taosha_app`同连接单事务执行
+  `start_running(568) → finish(568, 已验收result原件) → 一次COMMIT`，
+  `done_at=2026-07-30 00:36:07.188912+08`；零重跑、零改写、零旁路、零新增行；
+- persist后只读核验`17/17 PASS`：exp568=`done/SIG`，库内result与原件
+  `parsed_equal=True`，canonical双侧SHA=
+  `3aa01a38045171624fa03d311e3e5fa3ab1803a457ebf787b890edb54ae52f35`；
+  台账26行=`registered 10 / frozen 2 / done 12 / closed 2`，恰迁一行；PAP、
+  manifest 294三处digest与三件原始产物SHA均未改变；
+- persist证据目录=`/root/s568persist/`，三件脚本、三件日志及`SHA256SUMS`自检全通过。
+
+闭卷固定读法：冻结预判原文“负，把握度60%”仅押主窗方向，不押幅度或统计显著性；
+实测主窗CAAR为`-15.9295%`，故校准册第八条只记**方向命中**，研究的独立统计终态为
+`SIG`，不得合写为“预判命中且显著”。方向校准累计为`4命中/4未命中`。
+
+本CAAR包含一字板与涨跌停价格观察；正式结果已有τ0执行受限披露：一字板`383`、涨停
+`4`、跌停`64`，合计`451/565=79.82%`，不得读作可成交收益或可执行策略。industry
+unknown=`179/565=31.68%`，行业诊断在本实验实质不可用，但不进入market benchmark顶层
+判决；不得表述为行业中性已核过。效力保持`llm/prescreen`，本次`SIG`不构成human/full
+足额证据，不自动登记、复验或升级效力。剔除率、N_eff口径、辅助三法及次级/稳健窗
+全部按正式result原样保留且`NOT_FOR_VERDICT`。
+
+**exp568至此正式闭卷，不再追加复核、重跑或敏感性分析。**
