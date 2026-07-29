@@ -223,7 +223,7 @@ def execution_limit_audit_from_result(result: dict) -> dict:
             "ratio": (ow / n) if n else None}
 
 
-def _recon_namechange_rows_currentview() -> list[dict]:
+def recon_namechange_rows_currentview() -> list[dict]:
     """对账模式取数:explore_reader_namechange **现值面**(max-batch 路由;零 manifest 依赖)。
 
     只读名称段元数据、零收益读取(冻结令三节授权面)。列面/holdout/排北与 _snap 面同口径
@@ -293,7 +293,7 @@ def main():
 
     if a.recon_only:
         # ── 冻结令三节:漏斗按冻结规则复现(零收益/零 manifest/零引擎)──────────────
-        rows = _recon_namechange_rows_currentview()
+        rows = recon_namechange_rows_currentview()
         batches = sorted({r["snapshot_batch"] for r in rows})
         events, sel = events_from_namechange(rows, batch="recon_currentview")
         aud = selection_audit(sel)

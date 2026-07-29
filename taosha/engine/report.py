@@ -9,7 +9,7 @@ AMBIGUOUS)的事实陈述,不翻译成"值得交易"。
 """
 from __future__ import annotations
 
-from . import report_sox_spillover, report_volume_drought
+from . import report_sox_spillover, report_st_imposition, report_volume_drought
 
 # item 9:固定偏差方向声明段(保守偏差方向;剔除类处置一律朝"低估效应"方向)
 BIAS_DECLARATION = (
@@ -76,6 +76,8 @@ def render(result: dict) -> str:
         L.append("═══ 淘沙 · 事件研究体检报告(exp12 ST/风险警示完整撤销·事件版)═══")
         L.append(f"快照批次: StudySnapshot={ss['snapshot_id']} digest={ss['digest']}"
                  f"  |  基准口径: {a['benchmark_mode']}(口径②)")
+    elif "st_imposition_selection" in a:
+        L.extend(report_st_imposition.header_lines(a))
     elif "earnings_revision_selection" in a:
         # exp20(冻结 PAP v2 digest e1d18dc1…7fd5):真锚标题承 exp8 先例——键在场即须真实快照锚
         # (present-but-None 同 fail-closed),禁回退合成标题或 PAP 需求字典。
@@ -198,6 +200,10 @@ def render(result: dict) -> str:
                  "NOT_FOR_VERDICT执行限制报告,不改判决;cost键(含limit_up_board_untradeable)"
                  "仅为schema与执行审计字段;结果不得表述为可成交策略证据。")
         L.append("")
+
+    sis = a.get("st_imposition_selection")
+    if sis:
+        L.extend(report_st_imposition.selection_lines(sis))
 
     # exp11 事件生成漏斗 + τ0 术语段(冻结 PAP digest eaa54b3d…b6fc reporting_commitments;
     # 人终版收口令 2026-07-24:τ0 命名=「事件后首个有真实bar的价格观察日」,禁『可交易』字样;
