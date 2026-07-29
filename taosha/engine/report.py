@@ -97,6 +97,15 @@ def render(result: dict) -> str:
         L.append("═══ 淘沙 · 事件研究体检报告(exp11 250日新高小幅回落·事件版)═══")
         L.append(f"快照批次: StudySnapshot={ss['snapshot_id']} digest={ss['digest']}"
                  f"  |  基准口径: {a['benchmark_mode']}(口径②)")
+    elif "volume_drought_selection" in a:
+        # exp10:真锚标题同事件版先例；键在场但快照锚不完整即 fail-closed。
+        ss = a.get("study_snapshot")
+        if not isinstance(ss, dict) or ss.get("snapshot_id") is None or not ss.get("digest"):
+            raise SystemExit("report fail-closed: audit.volume_drought_selection 在场但缺真实 "
+                             "audit.study_snapshot.snapshot_id/digest")
+        L.append("═══ 淘沙 · 事件研究体检报告(exp10 成交额干涸后首次放量收阳·事件版)═══")
+        L.append(f"快照批次: StudySnapshot={ss['snapshot_id']} digest={ss['digest']}"
+                 f"  |  基准口径: {a['benchmark_mode']}(口径②)")
     elif "sox_spillover_selection" in a:
         L.extend(report_sox_spillover.header_lines(a))
     else:
@@ -230,6 +239,36 @@ def render(result: dict) -> str:
                      f"{recon.get('summary', '(见 result_json)')}")
         L.append("")
 
+    vds = a.get("volume_drought_selection")
+    if vds:
+        cnt = vds.get("counters") or {}
+        terminal = vds.get("breakout_terminal_audit") or {}
+        L.append("【exp10 事件生成漏斗(L2 冻结规则;首次放量终局)】")
+        L.append(f"  视图输入={cnt.get('view_rows')} 日历外={cnt.get('calendar_outside_rows')} "
+                 f"异常bar={cnt.get('invalid_real_bar_rows')} "
+                 f"有效扫描={cnt.get('eligible_real_rows')} 股票={cnt.get('stocks')}")
+        L.append(f"  armed阶段={cnt.get('armed_segments')} → 事件={cnt.get('events_all_periods')} "
+                 f"非收阳拒绝={cnt.get('breakout_not_positive_all_periods')} "
+                 f"日历缺bar打断={cnt.get('armed_gap_breaks')} "
+                 f"异常bar打断={cnt.get('armed_invalid_breaks')} "
+                 f"右删失={cnt.get('right_censored_armed')} 恒等式="
+                 f"{'OK' if vds.get('armed_terminal_identity_ok') else '⚠不成立(fail-closed 复核)'}")
+        L.append(f"  首次放量终局={cnt.get('first_breakout_terminals')} "
+                 f"恒等式={'OK' if vds.get('breakout_terminal_identity_ok') else '⚠不成立'}; "
+                 f"pre2011={cnt.get('events_pre2011')} 最终事件={cnt.get('events_study')} "
+                 f"事件键重复={cnt.get('event_key_uniqueness_violations')} "
+                 f"selection SHA={vds.get('selection_sha256')}")
+        L.append(f"  非收阳终局审计: 首次放量={terminal.get('first_breakout_total')} / "
+                 f"收阳入事件={terminal.get('positive_events')} / "
+                 f"非收阳拒绝={terminal.get('not_positive_rejected')}。"
+                 "仅报告事件几何计数,不得读取或展示其后收益。 [NOT_FOR_VERDICT]")
+        L.append("  τ0 口径: 事件后首个有真实bar的价格观察日(missing_bar_only;仅缺bar顺延"
+                 "≤5个交易所交易日,第6日剔);不得表述为可执行策略证据。")
+        recon = vds.get("reference_reconciliation") or {}
+        L.append(f"  冻结前参考对账: 事件={recon.get('got_final_events')} "
+                 f"exact_match={recon.get('exact_match')} [NOT_FOR_VERDICT]")
+        L.append("")
+
     sps = a.get("sox_spillover_selection")
     if sps:
         L.extend(report_sox_spillover.selection_lines(sps))
@@ -259,12 +298,10 @@ def render(result: dict) -> str:
     # ③ 逐日 AR + 主/稳健窗(item 8)
     pt = result.get("per_tau") or {}
     if pt:
-        # exp11 个案展示修正(人裁定 2026-07-24 七,选 C):仅 exp11 报告路径将共用
-        # tau_axis 展示中的「首个可交易日」替换为冻结 τ0 术语「事件后首个有真实bar的
-        # 价格观察日」;runner 产值不动、他实验渲染逐字节不变;不建通用覆盖机制,
-        # 同类需求须另报人裁定,不得复制特判。
+        # missing_bar_only 价格观察语义组(exp11/exp10):仅展示层统一 τ0 术语；runner
+        # 产值不动，其他实验逐字节不变。第二个同语义实验触发共用谓词，未复制特判。
         tau_axis_disp = pt["tau_axis"]
-        if "high_pullback_selection" in a:
+        if "high_pullback_selection" in a or "volume_drought_selection" in a:
             tau_axis_disp = tau_axis_disp.replace(
                 "首个可交易日", "事件后首个有真实bar的价格观察日")
         L.append(f"【逐日 AR 标准输出(item 8;{tau_axis_disp})】" + _nfv_tag(pt))
