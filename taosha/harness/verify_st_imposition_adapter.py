@@ -102,6 +102,7 @@ check("driver内部排序确定性", [event.event_id for event in events2],
 audit = selection_audit(selection)
 check("漏斗+组成双恒等式", (audit["funnel_identity_ok"],
                            audit["composition_audit"]["identity_ok"]), (True, True))
+check("证券数结构化", audit["final_securities"], 2)
 check("组成审计NFV且零verdict键", (
     audit["composition_audit"]["not_for_verdict"],
     sum(1 for key in json.dumps(audit, ensure_ascii=False).split('"') if key == "verdict"),
@@ -143,6 +144,7 @@ with tempfile.TemporaryDirectory() as directory:
           "═══ 淘沙 · 事件研究体检报告(exp568 ST/风险警示实施·事件版)═══")
     check("组成审计渲染且NFV", ("带星ST=1" in rendered,
                                 "不计算分层CAR或显著性" in rendered), (True, True))
+    check("事件/证券双口径渲染", "最终事件集=2 涉及证券=2" in rendered, True)
     check("trial2与llm/prescreen水印在场",
           "family=delist_warning_financial trial=2 α=0.025 source=llm power=prescreen"
           in rendered, True)

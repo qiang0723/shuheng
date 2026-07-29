@@ -37,12 +37,14 @@ def selection_lines(selection: dict) -> list[str]:
         f"ann>start={counters.get('ann_after_start_fail_closed')} "
         f"研究期外={counters.get('out_of_period')} "
         f"事件键重复剔除={counters.get('event_key_duplicate_fail_closed')}",
-        f"  最终事件集={counters.get('final_events')} 恒等式="
+        f"  最终事件集={counters.get('final_events')} "
+        f"涉及证券={selection.get('final_securities')} 恒等式="
         f"{'OK' if selection.get('funnel_identity_ok') else '⚠不成立(fail-closed复核)'}",
         f"  组成审计 [NOT_FOR_VERDICT]: 带星ST={composition.get('starred_events')} "
         f"不带星ST={composition.get('plain_st_events')} "
         f"恒等式={'OK' if composition.get('identity_ok') else '⚠不成立(fail-closed复核)'};"
         "仅数量/比例/逐年分布,不计算分层CAR或显著性",
-        f"  batch7参考对账(765仅参考非硬断言): {reference.get('summary', '(见result_json)')}",
+        f"  batch7参考对账(765事件/646证券仅参考非硬断言): "
+        f"{reference.get('summary', '(见result_json)')}",
         "",
     ]

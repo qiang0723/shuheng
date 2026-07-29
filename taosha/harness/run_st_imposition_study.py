@@ -88,14 +88,19 @@ def _yearly(events: list[dict], *, variant: str | None = None) -> dict[str, int]
 
 def reference_reconciliation(selection: dict) -> dict:
     counters = selection["counters"]
+    final_securities = len({event["ts_code"] for event in selection["events"]})
     deltas = {key: counters.get(key, 0) - value
               for key, value in REFERENCE_BATCH7.items()}
     return {
         "reference": REFERENCE_BATCH7,
         "layer_deltas": deltas,
+        "reference_final_securities": 646,
+        "final_securities": final_securities,
+        "final_securities_delta": final_securities - 646,
         "summary": (
             f"最终事件集 {counters.get('final_events')}"
             f"(参考765,Δ={deltas['final_events']});"
+            f"证券 {final_securities}(参考646,Δ={final_securities - 646});"
             f"带星 {counters.get('starred_events')}"
             f"(参考560,Δ={deltas['starred_events']});"
             f"不带星 {counters.get('plain_st_events')}"
@@ -126,6 +131,7 @@ def selection_audit(selection: dict) -> dict:
     }
     return {
         "counters": counters,
+        "final_securities": len({event["ts_code"] for event in selection["events"]}),
         "funnel_identity_ok": funnel_identity_ok(counters),
         "reject_reasons": selection["reject_reasons"],
         "itemized_rejects": itemized,
