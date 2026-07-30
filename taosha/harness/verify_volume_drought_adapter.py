@@ -128,8 +128,8 @@ with tempfile.TemporaryDirectory() as td:
     restored = copy.deepcopy(result)
     del restored["audit"]["experiment_identity"]
     check("A5 身份写入恰新增audit一键",
-          json.dumps(restored, ensure_ascii=False, indent=2, default=str).encode() + b"\n",
-          before_identity)
+          json.dumps(restored, ensure_ascii=False, indent=2, default=str).encode() + b"\n"
+          == before_identity, True)
     rendered = report_mod.render(result)
     check("A5 exp10真锚标题", rendered.splitlines()[0],
           "═══ 淘沙 · 事件研究体检报告(exp10 成交额干涸后首次放量收阳·事件版)═══")

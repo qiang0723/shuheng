@@ -172,7 +172,7 @@ with tempfile.TemporaryDirectory() as td:
     del restored["audit"]["experiment_identity"]
     check("A8 身份写入恰新增audit一键",
           (json.dumps(restored, ensure_ascii=False, indent=2, sort_keys=True,
-                      default=str) + "\n").encode(), before_identity)
+                      default=str) + "\n").encode() == before_identity, True)
     rendered = report_mod.render(result)
     check("A8 exp16真锚标题", rendered.splitlines()[0],
           "═══ 淘沙 · 事件研究体检报告(exp16 年末相对强势·事件版)═══")
