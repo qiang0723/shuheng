@@ -130,20 +130,19 @@ def select_yearend_events(price_rows, market_returns: dict,
 
     by_key = Counter((event["ts_code"], event["event_date"]) for event in events)
     duplicate_keys = {key for key, count in by_key.items() if count > 1}
-    if duplicate_keys:
-        raise ValueError(
-            f"事件键重复组={len(duplicate_keys)}——fail-closed，不合并不择一")
-    yearly = Counter(event["event_date"][:4] for event in events)
-    counters["event_key_duplicate_groups"] = 0
-    counters["event_key_duplicate_rows_dropped"] = 0
-    counters["final_events"] = len(events)
-    counters["final_securities"] = len({event["ts_code"] for event in events})
-    counters["event_dates"] = len({event["event_date"] for event in events})
+    final = [event for event in events
+             if (event["ts_code"], event["event_date"]) not in duplicate_keys]
+    yearly = Counter(event["event_date"][:4] for event in final)
+    counters["event_key_duplicate_groups"] = len(duplicate_keys)
+    counters["event_key_duplicate_rows_dropped"] = len(events) - len(final)
+    counters["final_events"] = len(final)
+    counters["final_securities"] = len({event["ts_code"] for event in final})
+    counters["event_dates"] = len({event["event_date"] for event in final})
     for key in COUNTER_KEYS:
         counters.setdefault(key, 0)
     return {
-        "events": events,
+        "events": final,
         "counters": dict(counters),
         "events_yearly": dict(sorted(yearly.items())),
-        "selection_sha256": selection_sha(events),
+        "selection_sha256": selection_sha(final),
     }

@@ -84,10 +84,12 @@ duplicate.sort(key=lambda row: (row.ts_code, row.trade_date))
 check("F7 重复raw bar拒绝", "重复bar" in fails(
     lambda: select_yearend_events(duplicate, MARKET, WINDOWS)), True)
 
-# F8 两个规则窗映射同一事件键时直接fail-closed。
+# F8 两个规则窗映射同一事件键时涉事行全剔，不择一保留。
 dup_windows = {2011: WINDOWS[2011], 2012: dict(WINDOWS[2011])}
-check("F8 重复事件键fail-closed", "事件键重复" in fails(
-    lambda: select_yearend_events(rows(), MARKET, dup_windows)), True)
+s = select_yearend_events(rows(), MARKET, dup_windows)
+check("F8 重复事件键全剔", (s["counters"]["final_events"],
+                            s["counters"]["event_key_duplicate_groups"],
+                            s["counters"]["event_key_duplicate_rows_dropped"]), (0, 1, 2))
 
 # F8b 同票日期顺序必须严格递增，不能依赖字典静默重排。
 unordered = rows()
