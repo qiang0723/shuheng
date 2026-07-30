@@ -138,7 +138,22 @@ def _connect(dsn: str, snapshot_id: int):
     return conn
 
 
-def _selection(snapshot_id: int) -> tuple[dict, dict]:
+def _market_returns(tconn, panel_dates: set[dt.date], market_batch_id: int | None):
+    """recon显式钉batch88；正式路径只走manifest路由视图。"""
+    if market_batch_id is None:
+        query = (
+            "SELECT trade_date,ret_eqw FROM market_return_snap "
+            "WHERE trade_date=ANY(%s) ORDER BY trade_date")
+        params = (sorted(panel_dates),)
+    else:
+        query = (
+            "SELECT trade_date,ret_eqw FROM market_eqw_return "
+            "WHERE batch_id=%s AND trade_date=ANY(%s) ORDER BY trade_date")
+        params = (market_batch_id, sorted(panel_dates))
+    return {day: value for day, value in tconn.execute(query, params)}
+
+
+def _selection(snapshot_id: int, market_batch_id: int | None = None) -> tuple[dict, dict]:
     """钉批日历/价格/市场收益最小列面 → 冻结选择规则。"""
     from taosha.reader.view import _ENV_QBASE, _ENV_TAOSHA, _resolve_dsn
 
@@ -159,9 +174,7 @@ def _selection(snapshot_id: int) -> tuple[dict, dict]:
         panel_dates = {day for window in windows.values()
                        for day in (window["base_date"], *window["last10"])}
         event_dates = {window["event_date"] for window in windows.values()}
-        market_returns = {day: value for day, value in tconn.execute(
-            "SELECT trade_date,ret_eqw FROM market_return_snap "
-            "WHERE trade_date=ANY(%s) ORDER BY trade_date", (sorted(panel_dates),))}
+        market_returns = _market_returns(tconn, panel_dates, market_batch_id)
 
         Row = namedtuple("YearendRow", "ts_code trade_date close")
         price_rows = []
@@ -228,7 +241,8 @@ def main() -> None:
     if args.recon_only:
         if args.recon_snapshot_id != SOURCE_ANCHOR_SNAPSHOT_ID:
             raise SystemExit("recon只允许source snapshot74")
-        selection, snapshot_info = _selection(args.recon_snapshot_id)
+        selection, snapshot_info = _selection(
+            args.recon_snapshot_id, market_batch_id=MARKET_BATCH_ID)
         assert_reference(selection)
         payload = {"mode": "recon_only", "pap_sha256": digest,
                    "source_snapshot": snapshot_info, "selection_audit": selection_audit(selection)}

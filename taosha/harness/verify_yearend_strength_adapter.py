@@ -16,7 +16,7 @@ from taosha.harness.make_ashare_fixture import generate, write_csv
 from taosha.harness.run_ashare_study import synth_pap
 from taosha.harness.run_yearend_strength_study import (
     ENGINE_PARAM_KEYS, PAP_DIGEST, engine_kwargs_from_pap,
-    event_rows, execution_limit_audit, selection_audit,
+    _market_returns, event_rows, execution_limit_audit, selection_audit,
 )
 from taosha.reader.contract import EventRow, PriceRow
 from taosha.reader.synthetic import SyntheticReader
@@ -68,6 +68,24 @@ bad_tau = dict(pap, event_def=pap["event_def"].replace("τ0=event_date当日", "
 check("A3 τ0文本缺失fail-closed", "event_def" in failure(
     lambda: engine_kwargs_from_pap(bad_tau)), True)
 
+
+class MarketConn:
+    def __init__(self):
+        self.sql = ""
+        self.params = ()
+
+    def execute(self, sql, params):
+        self.sql, self.params = sql, params
+        return [(dt.date(2020, 1, 2), 0.01)]
+
+
+market_conn = MarketConn()
+_market_returns(market_conn, {dt.date(2020, 1, 2)}, 88)
+check("A4 recon显式钉market88", ("market_eqw_return" in market_conn.sql,
+                                  market_conn.params[0]), (True, 88))
+_market_returns(market_conn, {dt.date(2020, 1, 2)}, None)
+check("A4 正式路径只走manifest视图", "market_return_snap" in market_conn.sql, True)
+
 fixture_selection = {
     "events": [{"ts_code": "000001.SZ", "event_date": "2015-01-05"}],
     "counters": {"panel_any": 1, "panel_full_11": 1, "panel_partial_rejected": 0,
@@ -78,8 +96,8 @@ fixture_selection = {
     "event_bar_present": 1, "event_bar_missing": 0,
 }
 events = event_rows(fixture_selection, "fixture")
-check("A4 EventRow单层", (len(events), events[0].event_type_layer), (1, "yearend_strength"))
-check("A4 审计恒等式", selection_audit(fixture_selection)["panel_identity_ok"], True)
+check("A5 EventRow单层", (len(events), events[0].event_type_layer), (1, "yearend_strength"))
+check("A5 审计恒等式", selection_audit(fixture_selection)["panel_identity_ok"], True)
 
 # 同日τ0须在清洗行为面成立，不能只验证driver参数值。
 axis = [dt.date(2019, 1, 1) + dt.timedelta(days=index) for index in range(400)]
@@ -101,12 +119,12 @@ def clean_at(missing=(), one_word=False):
     )
 
 
-check("A5 同日有bar即τ0", clean_at().tau0_idx, 300)
-check("A5 ST keep不剔除", clean_at().rejected, False)
+check("A6 同日有bar即τ0", clean_at().tau0_idx, 300)
+check("A6 ST keep不剔除", clean_at().rejected, False)
 one_word = clean_at(one_word=True)
-check("A5 一字板有bar不顺延", (one_word.tau0_idx, one_word.postponed), (300, 0))
-check("A5 缺bar顺延5日", clean_at(missing=range(300, 305)).tau0_idx, 305)
-check("A5 第6日仍缺bar剔除", clean_at(missing=range(300, 306)).reject_reason,
+check("A6 一字板有bar不顺延", (one_word.tau0_idx, one_word.postponed), (300, 0))
+check("A6 缺bar顺延5日", clean_at(missing=range(300, 305)).tau0_idx, 305)
+check("A6 第6日仍缺bar剔除", clean_at(missing=range(300, 306)).reject_reason,
       "postpone")
 
 
@@ -118,7 +136,7 @@ def render_attempt(result):
 
 
 _, error = render_attempt({"audit": {"yearend_strength_selection": {}}})
-check("A6 缺快照锚fail-closed", "yearend_strength_selection" in error, True)
+check("A7 缺快照锚fail-closed", "yearend_strength_selection" in error, True)
 
 with tempfile.TemporaryDirectory() as td:
     prices, event_csv, meta = (os.path.join(td, name) for name in ("p.csv", "e.csv", "m.json"))
@@ -140,12 +158,12 @@ with tempfile.TemporaryDirectory() as td:
     result["audit"]["study_snapshot"] = {"snapshot_id": 0, "digest": "fixture"}
     result["audit"]["yearend_strength_selection"] = audit
     rendered = report_mod.render(result)
-    check("A7 exp16真锚标题", rendered.splitlines()[0],
+    check("A8 exp16真锚标题", rendered.splitlines()[0],
           "═══ 淘沙 · 事件研究体检报告(exp16 年末相对强势·事件版)═══")
-    check("A7 同日价格观察术语", "event_date当日首个真实bar价格观察日" in rendered, True)
-    check("A7 执行限制NFV", "exp16 τ0执行限制审计" in rendered
+    check("A8 同日价格观察术语", "event_date当日首个真实bar价格观察日" in rendered, True)
+    check("A8 执行限制NFV", "exp16 τ0执行限制审计" in rendered
           and "不等于可成交收益或策略证据" in rendered, True)
-    check("A7 递归verdict唯一", json.dumps(result, ensure_ascii=False).count('"verdict"'), 1)
+    check("A8 递归verdict唯一", json.dumps(result, ensure_ascii=False).count('"verdict"'), 1)
 
 print(f"\n{N - FAIL}/{N} PASS" + ("" if FAIL == 0 else f"  ⚠ {FAIL} FAIL"))
 raise SystemExit(1 if FAIL else 0)
