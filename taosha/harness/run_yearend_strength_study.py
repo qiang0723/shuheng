@@ -153,13 +153,19 @@ def _market_returns(tconn, panel_dates: set[dt.date], market_batch_id: int | Non
     return {day: value for day, value in tconn.execute(query, params)}
 
 
+def _taosha_dsn_name(market_batch_id: int | None) -> str:
+    """recon直读已发布批须用app角色；连接仍强制read-only。"""
+    return "TAOSHA_APP_DSN" if market_batch_id is not None else "TAOSHA_ENGINE_TAOSHA_DSN"
+
+
 def _selection(snapshot_id: int, market_batch_id: int | None = None) -> tuple[dict, dict]:
     """钉批日历/价格/市场收益最小列面 → 冻结选择规则。"""
-    from taosha.reader.view import _ENV_QBASE, _ENV_TAOSHA, _resolve_dsn
+    from taosha.reader.view import _ENV_QBASE, _resolve_dsn
 
-    qdsn, tdsn = _resolve_dsn(_ENV_QBASE), _resolve_dsn(_ENV_TAOSHA)
+    taosha_dsn_name = _taosha_dsn_name(market_batch_id)
+    qdsn, tdsn = _resolve_dsn(_ENV_QBASE), _resolve_dsn(taosha_dsn_name)
     if not qdsn or not tdsn:
-        raise SystemExit(f"缺 {_ENV_QBASE}/{_ENV_TAOSHA}")
+        raise SystemExit(f"缺 {_ENV_QBASE}/{taosha_dsn_name}")
     qconn, tconn = _connect(qdsn, snapshot_id), _connect(tdsn, snapshot_id)
     try:
         manifest = tconn.execute(

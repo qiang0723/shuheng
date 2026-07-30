@@ -16,7 +16,8 @@ from taosha.harness.make_ashare_fixture import generate, write_csv
 from taosha.harness.run_ashare_study import synth_pap
 from taosha.harness.run_yearend_strength_study import (
     ENGINE_PARAM_KEYS, PAP_DIGEST, engine_kwargs_from_pap,
-    _market_returns, event_rows, execution_limit_audit, selection_audit,
+    _market_returns, _taosha_dsn_name, event_rows, execution_limit_audit,
+    selection_audit,
 )
 from taosha.reader.contract import EventRow, PriceRow
 from taosha.reader.synthetic import SyntheticReader
@@ -85,6 +86,9 @@ check("A4 recon显式钉market88", ("market_eqw_return" in market_conn.sql,
                                   market_conn.params[0]), (True, 88))
 _market_returns(market_conn, {dt.date(2020, 1, 2)}, None)
 check("A4 正式路径只走manifest视图", "market_return_snap" in market_conn.sql, True)
+check("A4 recon连接强制只读app角色", _taosha_dsn_name(88), "TAOSHA_APP_DSN")
+check("A4 正式连接维持engine角色", _taosha_dsn_name(None),
+      "TAOSHA_ENGINE_TAOSHA_DSN")
 
 fixture_selection = {
     "events": [{"ts_code": "000001.SZ", "event_date": "2015-01-05"}],
