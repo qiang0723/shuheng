@@ -25,6 +25,19 @@ ENGINE_PARAM_KEYS = frozenset({
 })
 
 
+def attach_experiment_identity(result: dict, row) -> dict:
+    """只从台账行附加正式报告身份；不接受 PAP/CLI 代填或覆盖。"""
+    audit = result.get("audit")
+    if not isinstance(audit, dict) or "experiment_identity" in audit:
+        raise SystemExit("fail-closed: exp16实验身份水印缺审计容器或试图覆盖")
+    identity = {key: row[key] for key in
+                ("exp_id", "family", "family_trial", "source_type", "verdict_power")}
+    if identity["source_type"] != "llm" or identity["verdict_power"] != "prescreen":
+        raise SystemExit("fail-closed: exp16台账身份必须为llm/prescreen")
+    audit["experiment_identity"] = identity
+    return identity
+
+
 def engine_kwargs_from_pap(pap: dict) -> dict:
     """逐字消费exp16自己的8键参数；τ0同日是冻结文本的确定性适配常量。"""
     ep = pap.get("engine_params")
@@ -273,6 +286,7 @@ def main() -> None:
     audit = selection_audit(selection)
     audit["execution_limit_audit"] = execution_limit_audit(result)
     result["audit"]["study_snapshot"] = snapshot_info
+    attach_experiment_identity(result, row)
     result["audit"]["yearend_strength_selection"] = audit
     rendered = report.render(result)
     print("\n" + rendered)

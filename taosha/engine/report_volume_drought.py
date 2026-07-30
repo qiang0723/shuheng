@@ -14,10 +14,19 @@ def header_lines(audit: dict) -> list[str]:
             "report fail-closed: audit.volume_drought_selection 在场但缺真实 "
             "audit.study_snapshot.snapshot_id/digest"
         )
+    identity = audit.get("experiment_identity")
+    required = ("exp_id", "family", "family_trial", "source_type", "verdict_power")
+    if not isinstance(identity, dict) or any(identity.get(key) is None for key in required):
+        raise SystemExit("report fail-closed: exp10报告缺台账实验身份水印")
+    if identity["source_type"] != "llm" or identity["verdict_power"] != "prescreen":
+        raise SystemExit("report fail-closed: exp10报告身份非llm/prescreen")
     return [
         "═══ 淘沙 · 事件研究体检报告(exp10 成交额干涸后首次放量收阳·事件版)═══",
         f"快照批次: StudySnapshot={snapshot['snapshot_id']} digest={snapshot['digest']}"
         f"  |  基准口径: {audit['benchmark_mode']}(口径②)",
+        f"实验身份: exp{identity['exp_id']} family={identity['family']} "
+        f"trial={identity['family_trial']} source={identity['source_type']} "
+        f"power={identity['verdict_power']}",
     ]
 
 

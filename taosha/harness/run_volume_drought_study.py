@@ -27,6 +27,19 @@ REFERENCE_BATCH_VECTOR = "daily=6/trade_cal=10"
 RECON_ANCHOR_SNAPSHOT_IDS = frozenset({248})
 
 
+def attach_experiment_identity(result: dict, row) -> dict:
+    """只从台账行附加正式报告身份；不接受 PAP/CLI 代填或覆盖。"""
+    audit = result.get("audit")
+    if not isinstance(audit, dict) or "experiment_identity" in audit:
+        raise SystemExit("fail-closed: exp10实验身份水印缺审计容器或试图覆盖")
+    identity = {key: row[key] for key in
+                ("exp_id", "family", "family_trial", "source_type", "verdict_power")}
+    if identity["source_type"] != "llm" or identity["verdict_power"] != "prescreen":
+        raise SystemExit("fail-closed: exp10台账身份必须为llm/prescreen")
+    audit["experiment_identity"] = identity
+    return identity
+
+
 def engine_kwargs_from_pap(pap: dict) -> dict:
     ep = pap.get("engine_params")
     if not isinstance(ep, dict):
@@ -235,6 +248,7 @@ def main() -> None:
     result = runner.run_study(reader, pap, events=events,
                               pap_sha256_assert=args.pap_sha256_assert, **kwargs)
     result["audit"]["study_snapshot"] = reader.snapshot_info
+    attach_experiment_identity(result, row)
     result["audit"]["volume_drought_selection"] = selection_audit(selection)
     rendered = report.render(result)
     print("\n" + rendered)

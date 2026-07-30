@@ -1,6 +1,7 @@
 """exp16 driver、报告与同日τ0专项fixture（零DB、合成数据）。"""
 from __future__ import annotations
 
+import copy
 import dataclasses
 import datetime as dt
 import hashlib
@@ -15,7 +16,7 @@ from taosha.experiment.pap import canonical_pap_sha256
 from taosha.harness.make_ashare_fixture import generate, write_csv
 from taosha.harness.run_ashare_study import synth_pap
 from taosha.harness.run_yearend_strength_study import (
-    ENGINE_PARAM_KEYS, PAP_DIGEST, engine_kwargs_from_pap,
+    ENGINE_PARAM_KEYS, PAP_DIGEST, attach_experiment_identity, engine_kwargs_from_pap,
     _market_returns, _taosha_dsn_name, event_rows, execution_limit_audit,
     selection_audit,
 )
@@ -161,12 +162,29 @@ with tempfile.TemporaryDirectory() as td:
     audit["execution_limit_audit"] = execution_limit_audit(result)
     result["audit"]["study_snapshot"] = {"snapshot_id": 0, "digest": "fixture"}
     result["audit"]["yearend_strength_selection"] = audit
+    before_identity = (json.dumps(
+        result, ensure_ascii=False, indent=2, sort_keys=True, default=str) + "\n").encode()
+    attach_experiment_identity(result, {
+        "exp_id": 16, "family": "yearend_strength", "family_trial": 1,
+        "source_type": "llm", "verdict_power": "prescreen",
+    })
+    restored = copy.deepcopy(result)
+    del restored["audit"]["experiment_identity"]
+    check("A8 身份写入恰新增audit一键",
+          (json.dumps(restored, ensure_ascii=False, indent=2, sort_keys=True,
+                      default=str) + "\n").encode(), before_identity)
     rendered = report_mod.render(result)
     check("A8 exp16真锚标题", rendered.splitlines()[0],
           "═══ 淘沙 · 事件研究体检报告(exp16 年末相对强势·事件版)═══")
     check("A8 同日价格观察术语", "event_date当日首个真实bar价格观察日" in rendered, True)
     check("A8 执行限制NFV", "exp16 τ0执行限制审计" in rendered
           and "不等于可成交收益或策略证据" in rendered, True)
+    check("A8 llm/prescreen水印在场",
+          "family=yearend_strength trial=1 source=llm power=prescreen" in rendered, True)
+    missing_identity = copy.deepcopy(result)
+    del missing_identity["audit"]["experiment_identity"]
+    _, error = render_attempt(missing_identity)
+    check("A8 删除身份水印fail-closed", "实验身份水印" in error, True)
     check("A8 递归verdict唯一", json.dumps(result, ensure_ascii=False).count('"verdict"'), 1)
 
 print(f"\n{N - FAIL}/{N} PASS" + ("" if FAIL == 0 else f"  ⚠ {FAIL} FAIL"))

@@ -1,4 +1,5 @@
 """exp10 driver/report/DDL 专项 fixture（零 DB、合成事件研究）。"""
+import copy
 import dataclasses
 import datetime as dt
 import hashlib
@@ -17,7 +18,8 @@ from taosha.experiment.pap import canonical_pap_sha256  # noqa: E402
 from taosha.harness.make_ashare_fixture import generate, write_csv  # noqa: E402
 from taosha.harness.run_ashare_study import synth_pap  # noqa: E402
 from taosha.harness.run_volume_drought_study import (  # noqa: E402
-    ENGINE_PARAM_KEYS, engine_kwargs_from_pap, events_from_volume_rows, selection_audit,
+    ENGINE_PARAM_KEYS, attach_experiment_identity, engine_kwargs_from_pap,
+    events_from_volume_rows, selection_audit,
 )
 from taosha.reader.synthetic import SyntheticReader  # noqa: E402
 
@@ -117,12 +119,29 @@ with tempfile.TemporaryDirectory() as td:
                           verdict_policy="adj_bmp_main_only")
     result["audit"]["study_snapshot"] = {"snapshot_id": 0, "digest": "fixture"}
     result["audit"]["volume_drought_selection"] = audit
+    before_identity = json.dumps(
+        result, ensure_ascii=False, indent=2, default=str).encode() + b"\n"
+    attach_experiment_identity(result, {
+        "exp_id": 10, "family": "volume_drought_break", "family_trial": 1,
+        "source_type": "llm", "verdict_power": "prescreen",
+    })
+    restored = copy.deepcopy(result)
+    del restored["audit"]["experiment_identity"]
+    check("A5 身份写入恰新增audit一键",
+          json.dumps(restored, ensure_ascii=False, indent=2, default=str).encode() + b"\n",
+          before_identity)
     rendered = report_mod.render(result)
     check("A5 exp10真锚标题", rendered.splitlines()[0],
           "═══ 淘沙 · 事件研究体检报告(exp10 成交额干涸后首次放量收阳·事件版)═══")
     check("A5 价格观察日术语", "事件后首个有真实bar的价格观察日" in rendered, True)
     check("A5 exp10逐日段零首个可交易日", "首个可交易日" in rendered, False)
     check("A5 拒绝组NFV且无收益展示", "仅报告事件几何计数,不得读取或展示其后收益" in rendered, True)
+    check("A5 llm/prescreen水印在场",
+          "family=volume_drought_break trial=1 source=llm power=prescreen" in rendered, True)
+    missing_identity = copy.deepcopy(result)
+    del missing_identity["audit"]["experiment_identity"]
+    _, error = render_attempt(missing_identity)
+    check("A5 删除身份水印fail-closed", "实验身份水印" in error, True)
 
 print(f"\n{N - FAIL}/{N} PASS" + ("" if FAIL == 0 else f"  ⚠ {FAIL} FAIL"))
 sys.exit(1 if FAIL else 0)
