@@ -54,7 +54,8 @@ Tushare 官方资料确认：`express`/`express_vip` 提供全部历史并实时
 - forecast：`ann_date`=公告日，`end_date`=报告期，`net_profit_min/max`=预告净利润上下限（万元），
   `first_ann_date`=首次公告日；来源：[业绩预告接口说明](https://tushare.pro/document/2?doc_id=45)。
 - express：`ann_date`=公告日，`end_date`=报告期，`n_income`=净利润（元）；接口没有
-  `first_ann_date` 或 `update_flag`。`end_date` 只能作连接键，严禁冒充事件日。
+  `first_ann_date`。`update_flag` 不在该页默认字段清单中，但可按官方 FAQ 在 `fields` 中显式请求；
+  2026-07-30 补探针已证该字段存在。`end_date` 只能作连接键，严禁冒充事件日。
 
 因此单位换算是确定的：`actual_wan = express.n_income / 10,000`。但官方快报文档只写“净利润”，
 没有逐字写明“归属母公司股东的净利润”；预告文档的区间字段也简称“预告净利润”，同时另列
@@ -91,13 +92,14 @@ Tushare 官方资料确认：`express`/`express_vip` 提供全部历史并实时
 未冻结机械口径可写为：同票同报告期存在快报前公开且上下沿完整的 forecast；
 `n_income/10000 > upper` 记 `up`，`< lower` 记 `down`；区间内或恰等边界不成事件。
 
-PAP 草案须把以下三项作为人裁菜单，工地不代裁：
+PAP 草案须明确以下三项；第 1、3 项由人裁，第 2 项按官方字段语义收口：
 
 1. **预告基准版本**：快报前最近一次公开预告，或首次预告。技术建议为最近一次，因为它对应
    事件前市场已知信息；但全量事件集合差异须待 express 入库后只读量化。
-2. **快报首次披露锚**：接口无 `first_ann_date/update_flag`。全量采集后须审计同票同期多行；
-   多公告日时是取最早快报日，还是冲突整组剔除，须人裁。源若只保留修订后的现值且无法恢复
-   首次披露日，则相应组 fail-closed，不得用报告期末回填。
+2. **快报首次披露锚**：接口无 `first_ann_date`，但显式请求可得到 `update_flag`；官方 FAQ 定义
+   `0=初始数据 / 1=修正后数据`。草案应以 `update_flag=0` 的 `ann_date` 作为首次快报候选；全量
+   采集后若同票同期缺初始行、存在多条初始行或初始行字段冲突，整组 fail-closed，不得用报告期末
+   或修正行日期回填。
 3. **实际利润会计口径**：`n_income/10000` 与 forecast 区间的归属范围经公司公告抽核一致后方可
    冻结；若不一致或无法证明，exp17 停止，不得改用同比幅度、文字类型或其他代理。
 
@@ -118,14 +120,32 @@ PAP 草案须把以下三项作为人裁菜单，工地不代裁：
 2. 对全量 express 给出行数/证券数/报告期组数/时间覆盖/缺失/重复/修订/孤儿与逐年分布；
 3. 量化最近预告 vs 首次预告的配对数、`up/down/inside/boundary` 与事件集合差异；
 4. 用官方公司快报原文闭合 `n_income` 的会计归属口径；
-5. 人对 §5 三项作最终裁定。
+5. 人对 §5 的预告版本与实际利润口径作最终裁定，并确认初始快报行的 fail-closed 规则。
 
 任何一项未闭合，终版 PAP 不得冻结。
 
 ## 8. 证据与边界
 
 - 阿里云只读证据：`/root/s17gate/`；`inventory.log` SHA256=`9693e819…a95ae6b`，
-  `probe.log` SHA256=`a37ed4df…655f92`，`SHA256SUMS -c` 全部通过。
+  `probe.log` SHA256=`a37ed4df…655f92`，`update_flag_probe.log` SHA256=`ff6bb4a3…cffd29`，
+  `SHA256SUMS -c` 全部通过。
 - 网络访问仅官方文档与 10 票逐票小样本接口；零全市场 express 拉取、零缓存、零落库。
 - 未读取任何事件日后价格、收益、CAR、显著性或既有正式结果；未改生产代码与数据库。
 - 完成本报告即停交验点，等待人复核后另令 PAP 草案；未令不施工数据前置。
+
+## 9. 外部复核后补核（2026-07-30，正文错误项显式作废）
+
+Fable 对 commit `3101fe6` 复核指出：官方 FAQ 说明财务类修订字段可能须在 `fields` 显式请求，
+所以本报告原版“express 没有 `update_flag`”的判断证据不足。该旧判断自本节起**作废**，以上 §3、
+§5.2 已按补探针实物改正。来源：[Tushare 常见问题第 7 条](https://tushare.pro/document/1?doc_id=122)。
+
+补探针仍为原 10 票、零落库，显式请求
+`ts_code,ann_date,end_date,n_income,update_flag`：92/92 行成功返回该列，全部为 `update_flag=0`，
+多行报告期仍为 0；未观测到修正行，仅能证明字段和初始值语义可用，不能外推全量无修订。
+
+另外两项复核意见登记为下一份 PAP 草案令的硬约束，不在本轮施工：
+
+1. `direction_signed_main` 必须由 PAP 的 `diagnostic_dimensions.axes.direction` 显式给出
+   `up/down` 白名单，不使用 exp24 专属 `direction_layers` 旁路；
+2. 数据盲期先锁死严格比较、恰等不成事件、同日预告不算前置信息及 up/down 定义；express
+   落地后只允许闭合数据身份、初始/修订行冲突和人裁版本选择，不得依据分布改阈值、边界或方向判据。
