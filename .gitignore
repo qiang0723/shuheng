@@ -18,6 +18,7 @@ venv/
 
 # local logs / scratch
 *.log
+.pnpm-store/
 
 # 第三方 AI 工具环境文件(仓级规则权威=CLAUDE.md;人裁2026-07-16:环境文件排除)
 AGENTS.md

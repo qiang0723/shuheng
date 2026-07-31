@@ -1,0 +1,58 @@
+:root {
+  --bg: #071016;
+  --surface: #0d1820;
+  --surface-2: #111f29;
+  --surface-3: #162630;
+  --line: #20333e;
+  --line-soft: #192a34;
+  --text: #edf3f2;
+  --muted: #91a4aa;
+  --faint: #61757d;
+  --mint: #76d3ad;
+  --mint-soft: #16372f;
+  --amber: #e4b861;
+  --amber-soft: #3a2d16;
+  --red: #ec8d87;
+  --red-soft: #3e2224;
+  --blue: #7bb7d3;
+  --blue-soft: #173242;
+  --sidebar: 248px;
+  --radius: 16px;
+  --shadow: 0 22px 80px rgb(0 0 0 / 22%);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html { background: var(--bg); scroll-behavior: smooth; }
+body { margin: 0; background: var(--bg); color: var(--text); font-family: "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", system-ui, sans-serif; }
+a { color: inherit; text-decoration: none; }
+button, input { font: inherit; }
+button { color: inherit; }
+::selection { color: #06110d; background: var(--mint); }
+
+.app-shell { min-height: 100vh; display: grid; grid-template-columns: var(--sidebar) minmax(0, 1fr); }
+.sidebar { position: fixed; inset: 0 auto 0 0; width: var(--sidebar); display: flex; flex-direction: column; padding: 28px 22px; border-right: 1px solid var(--line-soft); background: #09131a; z-index: 10; }
+.main-column { grid-column: 2; min-width: 0; }
+.topbar { min-height: 58px; padding: 0 36px; display: flex; align-items: center; justify-content: space-between; gap: 24px; border-bottom: 1px solid var(--line-soft); color: var(--muted); font-size: 13px; }
+.topbar > div { display: flex; align-items: center; gap: 8px; }
+.topbar-meta { color: var(--faint); }
+.live-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--mint); box-shadow: 0 0 0 5px rgb(118 211 173 / 10%); }
+.page-frame { width: min(1520px, 100%); margin: 0 auto; padding: 34px 38px 72px; }
+.page-stack { display: grid; gap: 22px; }
+.mono { font-family: "SFMono-Regular", Consolas, monospace; letter-spacing: -0.02em; }
+
+@media (max-width: 980px) {
+  :root { --sidebar: 100%; }
+  .app-shell { display: block; }
+  .sidebar { position: static; width: 100%; height: auto; padding: 18px 22px; flex-direction: row; align-items: center; gap: 24px; border-right: 0; border-bottom: 1px solid var(--line-soft); }
+  .main-column { grid-column: auto; }
+  .sidebar-note { display: none !important; }
+  .topbar { padding: 0 22px; }
+  .page-frame { padding: 24px 22px 56px; }
+}
+
+@media (max-width: 680px) {
+  .sidebar { align-items: flex-start; flex-direction: column; }
+  .topbar-meta { display: none !important; }
+  .page-frame { padding-inline: 16px; }
+}
