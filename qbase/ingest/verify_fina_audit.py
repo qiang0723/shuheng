@@ -15,6 +15,11 @@ from qbase.ingest.seed_fina_audit import (
     validate_frame,
     ymd,
 )
+from qbase.ingest.verify_fina_audit_disclosure import (
+    evenly_spaced,
+    is_initial_document_title,
+    is_revision_title,
+)
 
 
 def main() -> int:
@@ -70,6 +75,12 @@ def main() -> int:
         check("混票拒绝", "混入其他证券" in str(exc), True)
     else:
         raise AssertionError("混票未拒绝")
+
+    check("初始年度报告标题", is_initial_document_title("2023年年度报告", 2023), True)
+    check("摘要不作原件", is_initial_document_title("2023年年度报告摘要", 2023), False)
+    check("修订标题", is_revision_title("2023年年度报告（修订稿）", 2023), True)
+    check("均匀抽样", evenly_spaced([{"x": i} for i in range(10)], 3),
+          [{"x": 0}, {"x": 4}, {"x": 9}])
 
     print(f"verify_fina_audit: {checks}/{checks} PASS")
     return 0
