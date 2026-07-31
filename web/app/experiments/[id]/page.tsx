@@ -3,9 +3,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { FieldGuide } from "../../components/FieldGuide";
 import { MetricGrid } from "../../components/MetricGrid";
+import { ProvenancePanel } from "../../components/ProvenancePanel";
 import { PowerBadge, StatusBadge, VerdictBadge } from "../../components/StatusBadge";
 import { getExperiment } from "../../../lib/fixtures";
-import { percent, powerLabels, sourceLabels } from "../../../lib/format";
+import { familyLabel, percent, powerLabels, sourceLabels } from "../../../lib/format";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
@@ -23,7 +24,7 @@ export default async function ExperimentDetailPage({ params }: { params: Promise
     <main className="page-stack">
       <Link className="back-link" href="/experiments">← 返回实验台账</Link>
       <header className="detail-heading">
-        <div><span className="eyebrow">实验 {experiment.id}·第{experiment.familyTrial}轮</span><h1>{experiment.name}</h1><p>内部研究族标识：<span className="mono">{experiment.family}</span></p></div>
+        <div><span className="eyebrow">实验 {experiment.id}·第{experiment.familyTrial}轮</span><h1>{experiment.name}</h1><p>所属研究家族：{familyLabel(experiment.family)}</p></div>
         <div className="badge-stack"><StatusBadge status={experiment.status} /><VerdictBadge verdict={experiment.verdict} /><PowerBadge power={experiment.verdictPower} /></div>
       </header>
 
@@ -40,6 +41,7 @@ export default async function ExperimentDetailPage({ params }: { params: Promise
 
       {experiment.id === 568 && <section className="boundary-callout"><strong>执行边界</strong><p>该结果包含一字跌停锁死价格观察，不得读作可成交收益或可执行策略。</p></section>}
       {experiment.id === 7 && <section className="boundary-callout"><strong>样本边界</strong><p>这是合成冒烟测试，不属于正式真实研究，也不计入当前唯一真实显著结果。</p></section>}
+      <ProvenancePanel experiment={experiment} />
       <FieldGuide />
     </main>
   );

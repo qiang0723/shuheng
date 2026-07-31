@@ -43,7 +43,12 @@ export function ExperimentLedger({ experiments }: { experiments: Experiment[] })
             {visible.map((row) => (
               <tr key={row.id}>
                 <td className="mono">{row.id}</td>
-                <td><Link href={`/experiments/${row.id}`}><strong>{row.name}</strong></Link></td>
+                <td>
+                  <Link href={`/experiments/${row.id}`}>
+                    <strong>{row.name}</strong>
+                    {row.id === 7 && <small>合成冒烟·不计正式研究</small>}
+                  </Link>
+                </td>
                 <td><StatusBadge status={row.status} /></td>
                 <td><VerdictBadge verdict={row.verdict} /></td>
                 <td><PowerBadge power={row.verdictPower} /><small className="cell-note">{powerLabels[row.verdictPower]}</small></td>
@@ -54,7 +59,7 @@ export function ExperimentLedger({ experiments }: { experiments: Experiment[] })
           </tbody>
         </table>
       </div>
-      <div className="table-footer">当前显示 {visible.length} / {experiments.length} 条·数据快照 2026-07-31 12:02（UTC+8）</div>
+      <div className="table-footer">当前显示 {visible.length} / {experiments.length} 条·数据快照 2026-07-31 10:57:18（UTC+8）</div>
     </section>
   );
 }

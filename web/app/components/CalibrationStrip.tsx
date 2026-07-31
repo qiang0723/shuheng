@@ -13,7 +13,7 @@ export function CalibrationStrip({ experiments }: { experiments: Experiment[] })
             <span className="calibration-name"><strong>{experiment.name}</strong><small>事件 {experiment.id}</small></span>
             <span className="calibration-prediction">密封{metric.predictedDirection === "positive" ? "正" : "负"}·{percent(metric.confidence, 0)}</span>
             <span className={metric.directionHit ? "hit yes" : "hit no"}>{metric.directionHit ? "方向命中" : "方向未中"}</span>
-            <span className="calibration-return">{signedPercent(metric.caar, 2)}</span>
+            <span className="calibration-return"><small>主窗累计异常收益</small>{signedPercent(metric.caar, 2)}</span>
           </Link>
         );
       })}
