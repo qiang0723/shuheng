@@ -29,13 +29,16 @@ MAX_ROWS_PER_SECURITY = 1000
 
 
 def load_env(path: str) -> dict[str, str]:
-    env: dict[str, str] = {}
+    keys = ("TUSHARE_TOKEN", "QBASE_APP_DSN")
+    env = {key: os.environ[key] for key in keys if os.environ.get(key)}
+    if len(env) == len(keys):
+        return env
     with open(path, encoding="utf-8") as handle:
         for raw in handle:
             line = raw.strip()
             if line and not line.startswith("#") and "=" in line:
                 key, value = line.split("=", 1)
-                env[key.strip()] = value.strip().strip('"').strip("'")
+                env.setdefault(key.strip(), value.strip().strip('"').strip("'"))
     return env
 
 

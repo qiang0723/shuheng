@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """exp18 fina_audit 采集件离线最小验证。"""
+import os
 from datetime import datetime, timezone
+from unittest.mock import patch
 
 import pandas as pd
 
@@ -9,6 +11,7 @@ from qbase.ingest.seed_fina_audit import (
     frame_record,
     normalize_record,
     normalized_rows,
+    load_env,
     validate_frame,
     ymd,
 )
@@ -46,6 +49,10 @@ def main() -> int:
     rows, raw = normalized_rows(responses, pull_time)
     check("原始行", raw, 2)
     check("整行去重", len(rows), 1)
+
+    with patch.dict(os.environ, {"TUSHARE_TOKEN": "token", "QBASE_APP_DSN": "dsn"}, clear=True):
+        check("环境变量优先且不读文件", load_env("/不存在/也不应读取"),
+              {"TUSHARE_TOKEN": "token", "QBASE_APP_DSN": "dsn"})
 
     bad = frame.rename(columns={"audit_sign": "unexpected"})
     try:
