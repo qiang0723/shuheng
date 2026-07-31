@@ -4,7 +4,9 @@
 > 本文件 + 数据库实物 = 真身;会话记忆是草稿。**断链恢复第一动作 = 查库 + 读本文件。**
 > 改判纪律:口径/指针改判须在此**显式作废旧条目(内容+原因)**,不留新旧并存。
 
-最后更新:2026-07-31 五十二笔(**⏳exp568 persist与exp16 v2 persist外审欠账已整理成GitHub自足交接件，停等待Fable终签**。交接=`taosha/docs/fable-persist-review-handoff-2026-07-31.md`，精确钉定exp568提交`6827032→c82b561`与exp16提交`03dd8f2→dcc61ba`、四份权威档SHA、逐案核项、GitHub可核面与阿里云凭证采信边界；请求Fable分别给A/B/C、二元终签和证据边界，一次出清，不重开研究。四档SHA本地重算全符，两段闭卷diff均仅交付档+STATE；**本单元零生产代码/零DB写/零研究重跑/零PAP/manifest/result修改。下一步=Fable读取GitHub交接件并回执；两条均通过即关闭欠账，未回执不代签。**)
+最后更新:2026-07-31 五十三笔(**✅Fable对exp568 persist与exp16 v2 persist两条欠账均终签通过，外审欠账正式关闭**。回执分案：exp568=`A0/B0/C1→通过`，exp16 v2=`A0/B0/C1→通过`；C项均仅留注记、零施工。Fable独立核了四份档SHA、两段提交链与纯文档diff、算术/台账守恒、固定读法及v1/v2边界；阿里云事务/库内parsed_equal/manifest实物/远端取证继续明确为依施工凭证采信，不冒充独立确认。收口档=`taosha/docs/fable-persist-review-acceptance-2026-07-31.md`。十条校准仍=`5命中/5未命中`，判决与台账零变化；阶段复盘包`0ece5ed`及exp17 persist不在本次Fable范围，未被顺带视为已审。**零生产代码/零DB写/零result·PAP·manifest修改；当前无外审欠账，无后台研究任务，继续按08-03/08-04排期。**)
+
+〔上一条存档:2026-07-31 五十二笔〕(**⏳exp568 persist与exp16 v2 persist外审欠账已整理成GitHub自足交接件，停等待Fable终签**。交接=`taosha/docs/fable-persist-review-handoff-2026-07-31.md`，精确钉定exp568提交`6827032→c82b561`与exp16提交`03dd8f2→dcc61ba`、四份权威档SHA、逐案核项、GitHub可核面与阿里云凭证采信边界；请求Fable分别给A/B/C、二元终签和证据边界，一次出清，不重开研究。四档SHA本地重算全符，两段闭卷diff均仅交付档+STATE；**本单元零生产代码/零DB写/零研究重跑/零PAP/manifest/result修改。下一步=Fable读取GitHub交接件并回执；两条均通过即关闭欠账，未回执不代签。**)
 
 〔上一条存档:2026-07-31 五十一笔〕(**✅十条实验阶段复盘完成，今天不启动第11条正式实验**。只读实核数据库与闭卷原件：校准册10条=`5命中/5未命中`；正式真实研究13条仅exp568一条SIG且效力`llm/prescreen`；已完成`human/full`真实研究4条、`SIG=0`；台账26=`registered8/frozen2/done14/closed2`。交付目录=`taosha/docs/stage-review-10-experiments-2026-07-31/`，含只读数据快照/SQL、已执行notebook(5个代码单元全执行、0 error)、artifact源、HTML报告与验证记录。阶段裁定：吞吐目标已超额，当前瓶颈从执行转向上游假设供给；2026-07-31收口复盘并冻结排产，08-01~02周末不启研究主线，08-03先做“分析师预期”时间戳语义窄核并重排registered池，08-04第21天检查点由John拍下一条，默认仅考虑exp18 `audit_qualified`只读窄闸、不直接冻结；exp25继续封存。Fable尚欠exp568 persist与exp16 v2 persist独立终签复核，须在08-04检查点前闭合。**本单元零生产代码/零DB写/零manifest/零研究运行/零persist。**)
 
