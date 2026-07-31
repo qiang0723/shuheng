@@ -2,6 +2,7 @@
 """exp18 fina_audit 采集件离线最小验证。"""
 import os
 from datetime import datetime, timezone
+from pathlib import Path
 from unittest.mock import patch
 
 import pandas as pd
@@ -86,6 +87,10 @@ def main() -> int:
     check("均匀抽样", evenly_spaced([{"x": i} for i in range(10)], 3),
           [{"x": 0}, {"x": 4}, {"x": 9}])
     check("无公告安全返回", select_documents([], 2023), ([], []))
+
+    ddl = Path("qbase/sql/025_audit_qualified_reader.sql").read_text(encoding="utf-8")
+    check("append-only拒绝TRUNCATE",
+          "BEFORE TRUNCATE ON public.fina_audit_snap" in ddl, True)
 
     print(f"verify_fina_audit: {checks}/{checks} PASS")
     return 0

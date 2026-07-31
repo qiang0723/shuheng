@@ -44,6 +44,11 @@ CREATE TRIGGER trg_freeze_fina_audit_snap
   BEFORE UPDATE OR DELETE ON public.fina_audit_snap
   FOR EACH ROW EXECUTE FUNCTION public._freeze_appendonly();
 
+DROP TRIGGER IF EXISTS trg_fina_audit_snap_no_truncate ON public.fina_audit_snap;
+CREATE TRIGGER trg_fina_audit_snap_no_truncate
+  BEFORE TRUNCATE ON public.fina_audit_snap
+  FOR EACH STATEMENT EXECUTE FUNCTION public._no_truncate();
+
 CREATE OR REPLACE VIEW public.explore_reader_fina_audit AS
 SELECT a.ts_code, a.ann_date, a.end_date, a.audit_result,
        a.audit_fees, a.audit_agency, a.audit_sign,
