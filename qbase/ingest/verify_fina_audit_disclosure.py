@@ -22,7 +22,10 @@ from qbase.ingest.seed_fina_audit import SOURCE, load_env
 TARGET = ("保留意见", "无法表示意见", "否定意见")
 SHANGHAI = ZoneInfo("Asia/Shanghai")
 REVISION_WORDS = ("更正", "修订", "更新", "补充")
-NON_DOCUMENT_WORDS = ("摘要", "提示性公告", "披露时间", "预约", "问询", "回复", "说明", "取消")
+NON_DOCUMENT_WORDS = (
+    "摘要", "提示性公告", "披露时间", "延期披露", "预约", "问询", "回复", "取消",
+    "审计进展", "涉及事项", "独立董事", "董事会", "监事会", "专项说明",
+)
 
 
 def normalized_title(title: str) -> str:
@@ -91,15 +94,18 @@ def stratified_sample(candidates: list[dict], per_opinion: int) -> list[dict]:
             for item in evenly_spaced(groups.get(opinion, []), per_opinion)]
 
 
-def select_document(announcements: list[dict], year: int) -> tuple[dict | None, list[dict]]:
+def select_documents(announcements: list[dict], year: int) -> tuple[list[dict], list[dict]]:
     initial = [item for item in announcements if is_initial_document_title(item["title"], year)]
     revisions = [item for item in announcements if is_revision_title(item["title"], year)]
     if not initial:
-        return None, revisions
-    earliest = min(announcement_date(item) for item in initial if announcement_date(item))
+        return [], revisions
+    dated = [item for item in initial if announcement_date(item)]
+    if not dated:
+        return [], revisions
+    earliest = min(announcement_date(item) for item in dated)
     same_day = [item for item in initial if announcement_date(item) == earliest]
     same_day.sort(key=lambda item: ("审计报告" not in item["title"], item["title"]))
-    return same_day[0], revisions
+    return same_day, revisions
 
 
 def download_pdf(record: dict, pdf_dir: Path) -> tuple[Path, str]:
@@ -127,29 +133,43 @@ def audit_candidate(candidate: dict, evidence: Path) -> dict:
     metadata_path = evidence / "announcement_metadata" / f"{candidate['ts_code']}_{candidate['end_date']}.json"
     metadata_path.write_text(json.dumps(announcements, ensure_ascii=False, indent=1,
                                         default=str, sort_keys=True) + "\n", encoding="utf-8")
-    document, revisions = select_document(announcements, candidate["end_date"].year)
+    documents, revisions = select_documents(announcements, candidate["end_date"].year)
     result = {
         **candidate,
         "announcement_count": len(announcements),
-        "initial_document_found": document is not None,
+        "initial_document_found": bool(documents),
         "revision_titles": [{"date": announcement_date(item), "title": item["title"],
                              "source_url": item["source_url"]} for item in revisions],
     }
-    if document is None:
+    if not documents:
         return result
-    path, pdf_sha = download_pdf(document, evidence / "pdf")
-    content, pages = extract_text(path)
-    compact_content = re.sub(r"\s+", "", content)
-    source_date = announcement_date(document)
+    attempts = []
+    selected = None
+    for document in documents:
+        path, pdf_sha = download_pdf(document, evidence / "pdf")
+        content, pages = extract_text(path)
+        contains = candidate["audit_result"] in re.sub(r"\s+", "", content)
+        attempts.append({
+            "announcement_id": document["announcement_id"], "title": document["title"],
+            "source_url": document["source_url"], "pdf_sha256": pdf_sha,
+            "pdf_pages": pages, "contains_audit_result": contains,
+        })
+        if contains and selected is None:
+            selected = document
+    source = selected or documents[0]
+    source_attempt = next(item for item in attempts
+                          if item["announcement_id"] == source["announcement_id"])
+    source_date = announcement_date(source)
     result.update({
-        "source_announcement_id": document["announcement_id"],
-        "source_title": document["title"],
+        "source_announcement_id": source["announcement_id"],
+        "source_title": source["title"],
         "source_date": source_date,
-        "source_url": document["source_url"],
-        "source_pdf_sha256": pdf_sha,
-        "source_pdf_pages": pages,
+        "source_url": source["source_url"],
+        "source_pdf_sha256": source_attempt["pdf_sha256"],
+        "source_pdf_pages": source_attempt["pdf_pages"],
+        "source_document_attempts": attempts,
         "ann_date_matches_first_document": source_date == candidate["ann_date"],
-        "initial_pdf_contains_audit_result": candidate["audit_result"] in compact_content,
+        "initial_pdf_contains_audit_result": selected is not None,
     })
     return result
 

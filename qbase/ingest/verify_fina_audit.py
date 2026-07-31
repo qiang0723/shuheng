@@ -19,6 +19,7 @@ from qbase.ingest.verify_fina_audit_disclosure import (
     evenly_spaced,
     is_initial_document_title,
     is_revision_title,
+    select_documents,
 )
 
 
@@ -79,8 +80,12 @@ def main() -> int:
     check("初始年度报告标题", is_initial_document_title("2023年年度报告", 2023), True)
     check("摘要不作原件", is_initial_document_title("2023年年度报告摘要", 2023), False)
     check("修订标题", is_revision_title("2023年年度报告（修订稿）", 2023), True)
+    check("延期披露不是原件", is_initial_document_title("关于延期披露2023年年度报告的公告", 2023), False)
+    check("涉及事项不是审计原件", is_initial_document_title(
+        "独立董事关于2023年度保留意见审计报告涉及事项的意见", 2023), False)
     check("均匀抽样", evenly_spaced([{"x": i} for i in range(10)], 3),
           [{"x": 0}, {"x": 4}, {"x": 9}])
+    check("无公告安全返回", select_documents([], 2023), ([], []))
 
     print(f"verify_fina_audit: {checks}/{checks} PASS")
     return 0
