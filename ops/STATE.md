@@ -4,7 +4,9 @@
 > 本文件 + 数据库实物 = 真身;会话记忆是草稿。**断链恢复第一动作 = 查库 + 读本文件。**
 > 改判纪律:口径/指针改判须在此**显式作废旧条目(内容+原因)**,不留新旧并存。
 
-最后更新:2026-07-31 六十六笔(**✅`0ece5ed`十实验阶段复盘包限域外审通过，全部已知外审欠账关闭，全程按 UTC+8 / Asia/Shanghai**。Fable结论=`A0/B1/C2→通过`；独立复算确认校准10条5/5、Wilson`23.7%–76.3%`、正式真实研究13条SIG1、full效力真实研究4条SIG0、台账26=`8/2/14/2`，notebook 5代码单元重执行全过，artifact临时重建SHA=`17d2bdd…02a0`三方一致。B1=trial2临界值说明仅在artifact显示层而非HTML正文，归显示层限制；C1=4条full实为human2+literature2；C2=ledger快照缺done_at需STATE交叉。三项均只注记、零施工。收口档=`taosha/docs/stage-review-fable-acceptance-2026-07-31.md`。**显式作废六十五笔“等待Fable”状态，原因=复盘包已通过；当前零外审欠账、零后台研究任务。exp18仍停语义硬门；下一研究或08-02/08-04决策须John另令，不自行开工。**)
+最后更新:2026-08-02 六十七笔(**✅08-02收割会排产裁定完成，全程按 UTC+8 / Asia/Shanghai**。John原文=`转向公司公告类，08-04 排 exp19 dividend_surprise 冻结前只读准确性窄闸。`，逐字留痕=`docs/harvest-meeting-ruling-2026-08-02.md`。题源轮巡正式由分析师预期类转向公司公告类；2026-08-04只排exp19 `dividend_surprise`冻结前只读窄闸，边界=数据实物/公告锚/年度每股分红同比口径/修订与多版本污染/候选量/现有判决形态。**本笔仅排产，不授权提前采集、落库、生产代码、PAP、冻结、manifest、收益、运行或persist；exp18继续停语义硬门，其余候选不并行。当前零外审欠账、零后台任务。**)
+
+〔上一条存档:2026-07-31 六十六笔〕(**✅`0ece5ed`十实验阶段复盘包限域外审通过，全部已知外审欠账关闭，全程按 UTC+8 / Asia/Shanghai**。Fable结论=`A0/B1/C2→通过`；独立复算确认校准10条5/5、Wilson`23.7%–76.3%`、正式真实研究13条SIG1、full效力真实研究4条SIG0、台账26=`8/2/14/2`，notebook 5代码单元重执行全过，artifact临时重建SHA=`17d2bdd…02a0`三方一致。B1=trial2临界值说明仅在artifact显示层而非HTML正文，归显示层限制；C1=4条full实为human2+literature2；C2=ledger快照缺done_at需STATE交叉。三项均只注记、零施工。收口档=`taosha/docs/stage-review-fable-acceptance-2026-07-31.md`。**显式作废六十五笔“等待Fable”状态，原因=复盘包已通过；当前零外审欠账、零后台研究任务。exp18仍停语义硬门；下一研究或08-02/08-04决策须John另令，不自行开工。**)
 
 〔上一条存档:2026-07-31 六十五笔〕(**✅exp18 `audit_qualified`数据闭合外审收口通过，并启动`0ece5ed`十实验阶段复盘包限域外审交接，全程按 UTC+8 / Asia/Shanghai**。Fable对exp18结论=`A0/B1/C2→通过，正确停在首次披露语义硬门`；B/C仅作自然触碰注记，不返工、不重启exp18，收口档=`taosha/docs/audit-qualified-fable-review-acceptance-2026-07-31.md`。复盘包交接=`taosha/docs/stage-review-fable-handoff-2026-07-31.md`，对象固定为commit`0ece5ed`与生成时点`2026-07-31 10:57:18+08:00`；本地预检=10条校准5/5、正式真实研究13条SIG1、human/full真实研究4条SIG0、台账26=`8/2/14/2`，notebook原代码5单元顺序执行零错误，临时重建artifact SHA=`17d2bdd…02a0`与仓内原件一致。**当前停止线=只等待Fable对历史快照的A/B/C与二元结论；不启动exp19，不并行研究施工，不把包内历史排期当作当前排期。**)
 
