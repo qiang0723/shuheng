@@ -4,7 +4,9 @@
 > 本文件 + 数据库实物 = 真身;会话记忆是草稿。**断链恢复第一动作 = 查库 + 读本文件。**
 > 改判纪律:口径/指针改判须在此**显式作废旧条目(内容+原因)**,不留新旧并存。
 
-最后更新:2026-08-02 六十七笔(**✅08-02收割会排产裁定完成，全程按 UTC+8 / Asia/Shanghai**。John原文=`转向公司公告类，08-04 排 exp19 dividend_surprise 冻结前只读准确性窄闸。`，逐字留痕=`docs/harvest-meeting-ruling-2026-08-02.md`。题源轮巡正式由分析师预期类转向公司公告类；2026-08-04只排exp19 `dividend_surprise`冻结前只读窄闸，边界=数据实物/公告锚/年度每股分红同比口径/修订与多版本污染/候选量/现有判决形态。**本笔仅排产，不授权提前采集、落库、生产代码、PAP、冻结、manifest、收益、运行或persist；exp18继续停语义硬门，其余候选不并行。当前零外审欠账、零后台任务。**)
+最后更新:2026-08-05 六十八笔(**✅exp19 `dividend_surprise`冻结前只读准确性窄闸毕，二元结论=可进入PAP草案，全程按 UTC+8 / Asia/Shanghai**。令=`taosha/docs/dividend-surprise-narrow-gate-order-2026-08-05.md`，报告=`taosha/docs/dividend-surprise-narrow-gate-report-2026-08-05.md`。基线=exp19 registered三槽空/零snapshot·manifest·产物，台账26=`8/2/14/2`；qbase fact_batch15行(`batch_id`非连续)、无dividend事实或视图。Tushare官方`dividend`接口可用，30票形态探针=1,443行/年度1,011行/583组；研究窗355组中2011–2018的178/178组均无预案阶段行，2019–2024严格初始预案可判177组，实施值不得回填历史初始预案。严格相邻对147，其中上年零27不可作百分比；余120对按未冻结50%核验值=增14/减6/区间内100，恰等±50%各1，仅为形态样本不外推。现有signed单事件集ADJ-BMP路径足够，零新统计能力；冻结前硬门=全量append-only dividend资产+current/snap+历史初始预案值可证明范围+零/缺失分母人裁与全量污染量化。**本轮零生产代码/DB写/全量采集/PAP/冻结/manifest/收益/运行/persist；下一步只能John另令NOT-FROZEN PAP草案。exp18继续停原语义硬门，其余候选不并行。**)
+
+〔上一条存档:2026-08-02 六十七笔〕(**✅08-02收割会排产裁定完成，全程按 UTC+8 / Asia/Shanghai**。John原文=`转向公司公告类，08-04 排 exp19 dividend_surprise 冻结前只读准确性窄闸。`，逐字留痕=`docs/harvest-meeting-ruling-2026-08-02.md`。题源轮巡正式由分析师预期类转向公司公告类；2026-08-04只排exp19 `dividend_surprise`冻结前只读窄闸，边界=数据实物/公告锚/年度每股分红同比口径/修订与多版本污染/候选量/现有判决形态。**本笔仅排产，不授权提前采集、落库、生产代码、PAP、冻结、manifest、收益、运行或persist；exp18继续停语义硬门，其余候选不并行。当前零外审欠账、零后台任务。**)
 
 〔上一条存档:2026-07-31 六十六笔〕(**✅`0ece5ed`十实验阶段复盘包限域外审通过，全部已知外审欠账关闭，全程按 UTC+8 / Asia/Shanghai**。Fable结论=`A0/B1/C2→通过`；独立复算确认校准10条5/5、Wilson`23.7%–76.3%`、正式真实研究13条SIG1、full效力真实研究4条SIG0、台账26=`8/2/14/2`，notebook 5代码单元重执行全过，artifact临时重建SHA=`17d2bdd…02a0`三方一致。B1=trial2临界值说明仅在artifact显示层而非HTML正文，归显示层限制；C1=4条full实为human2+literature2；C2=ledger快照缺done_at需STATE交叉。三项均只注记、零施工。收口档=`taosha/docs/stage-review-fable-acceptance-2026-07-31.md`。**显式作废六十五笔“等待Fable”状态，原因=复盘包已通过；当前零外审欠账、零后台研究任务。exp18仍停语义硬门；下一研究或08-02/08-04决策须John另令，不自行开工。**)
 
