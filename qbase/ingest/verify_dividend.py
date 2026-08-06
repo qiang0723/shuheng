@@ -63,6 +63,9 @@ def main() -> int:
     later = dict(member, div_proc="实施")
     check("实施值不回填", classify_group([later])[0], "initial_missing")
 
+    check("画像只用命名列读取dict_row",
+          'batch_row["batch_id"]' in Path("qbase/ingest/profile_dividend.py").read_text(), True)
+
     groups = {
         ("000001.SZ", date(2022, 12, 31)): [member],
         ("000001.SZ", date(2023, 12, 31)): [member],

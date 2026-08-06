@@ -18,9 +18,10 @@ from qbase.ingest.dividend_common import HOLDOUT, SOURCE, required_env
 def load_rows(dsn: str) -> tuple[int, list[dict]]:
     with psycopg.connect(dsn, options="-c default_transaction_read_only=on",
                          row_factory=dict_row) as conn:
-        batch_id = conn.execute(
-            "SELECT max(batch_id) FROM fact_batch WHERE source=%s", (SOURCE,)
-        ).fetchone()[0]
+        batch_row = conn.execute(
+            "SELECT max(batch_id) AS batch_id FROM fact_batch WHERE source=%s", (SOURCE,)
+        ).fetchone()
+        batch_id = batch_row["batch_id"]
         if batch_id is None:
             raise RuntimeError("无tushare:dividend正式批次")
         rows = conn.execute(
