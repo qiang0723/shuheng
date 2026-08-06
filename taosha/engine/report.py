@@ -11,6 +11,7 @@ from __future__ import annotations
 
 from . import (
     report_earnings_flash_gap,
+    report_dividend_surprise,
     report_sox_spillover,
     report_st_imposition,
     report_volume_drought,
@@ -113,6 +114,8 @@ def render(result: dict) -> str:
         L.extend(report_yearend_strength.header_lines(a))
     elif "earnings_flash_gap_selection" in a:
         L.extend(report_earnings_flash_gap.header_lines(a))
+    elif "dividend_surprise_selection" in a:
+        L.extend(report_dividend_surprise.header_lines(a))
     else:
         if result.get("drawdown_diagnostic") is not None:
             L.append("═══ 淘沙 · 事件研究体检报告(#2b 回撤反抽·b1池 事件版)═══")
@@ -263,6 +266,10 @@ def render(result: dict) -> str:
     efg = a.get("earnings_flash_gap_selection")
     if efg:
         L.extend(report_earnings_flash_gap.selection_lines(efg))
+
+    dss = a.get("dividend_surprise_selection")
+    if dss:
+        L.extend(report_dividend_surprise.selection_lines(dss))
 
     # provenance 注记(人令 2026-07-19 一:沿 bias_statement 同机制,自 result 注记字段直接
     # 消费渲染冻结原文;默认无键 → 零新行零回归)
