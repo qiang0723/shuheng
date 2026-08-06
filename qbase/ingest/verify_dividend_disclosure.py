@@ -21,10 +21,20 @@ from qbase.ingest import cninfo
 from qbase.ingest.dividend_common import SOURCE, required_env
 
 SHANGHAI = ZoneInfo("Asia/Shanghai")
-TITLE_TERMS = ("利润分配预案", "利润分配方案", "年度利润分配", "权益分派预案")
-TITLE_EXCLUDES = ("实施", "股东大会", "决议", "修订", "更正", "进展", "取消", "问询", "回复")
+TITLE_TERMS = (
+    "利润分配预案", "分配利润预案", "利润分配方案", "年度利润分配",
+    "权益分派预案", "特别分红方案", "年度报告",
+)
+TITLE_EXCLUDES = (
+    "实施", "股东大会", "决议", "修订", "更正", "进展", "取消", "问询", "回复",
+    "说明会", "披露提示",
+)
 CASH_PATTERN = re.compile(
     r"每\s*10\s*股.{0,60}?(?:派发|派送|派|发放|分配)"
+    r"(?:现金红利|现金股利|现金)?(?:人民币)?\s*([0-9]+(?:\.[0-9]+)?)\s*元.{0,20}?含税"
+)
+PER_SHARE_PATTERN = re.compile(
+    r"每\s*股.{0,40}?(?:派发|派送|派|发放|分配)"
     r"(?:现金红利|现金股利|现金)?(?:人民币)?\s*([0-9]+(?:\.[0-9]+)?)\s*元.{0,20}?含税"
 )
 
@@ -47,6 +57,17 @@ def cash_per_ten_values(text: str) -> list[Decimal]:
     compact = re.sub(r"\s+", "", text or "")
     values = []
     for match in CASH_PATTERN.finditer(compact):
+        try:
+            values.append(Decimal(match.group(1)))
+        except InvalidOperation:
+            continue
+    return values
+
+
+def cash_per_share_values(text: str) -> list[Decimal]:
+    compact = re.sub(r"\s+", "", text or "")
+    values = []
+    for match in PER_SHARE_PATTERN.finditer(compact):
         try:
             values.append(Decimal(match.group(1)))
         except InvalidOperation:
@@ -118,16 +139,19 @@ def download_and_extract(document: dict, pdf_dir: Path) -> tuple[str, dict]:
 
 def audit_candidate(candidate: dict, evidence: Path) -> dict:
     documents = fetch_documents(candidate, evidence)
-    expected = candidate["cash_div_tax"] * Decimal(10)
+    expected_share = candidate["cash_div_tax"]
+    expected_ten = expected_share * Decimal(10)
     attempts = []
     for document in documents:
         text, meta = download_and_extract(document, evidence / "pdf")
-        values = cash_per_ten_values(text)
+        per_share = cash_per_share_values(text)
+        per_ten = cash_per_ten_values(text)
         attempts.append({
             "announcement_id": document["announcement_id"], "title": document["title"],
             "source_url": document["source_url"], "source_date": announcement_date(document),
-            "cash_per_ten_values": values, "expected_cash_per_ten_tax": expected,
-            "exact_value_match": expected in values, **meta,
+            "cash_per_share_values": per_share, "cash_per_ten_values": per_ten,
+            "expected_cash_div_tax_per_share": expected_share,
+            "exact_value_match": expected_share in per_share or expected_ten in per_ten, **meta,
         })
     passed = [attempt for attempt in attempts if attempt["exact_value_match"]]
     return {**candidate, "proposal_documents_on_ann_date": len(documents),
@@ -156,7 +180,7 @@ def run(dsn: str, evidence: Path, per_year: int) -> dict:
     passed = sum(row["pass"] for row in results)
     return {
         "source": "CNINFO official metadata and original PDF",
-        "test": "ann_date exact-day proposal document + exact cash_div_tax*10 phrase with 含税",
+        "test": "ann_date exact-day original document + exact tax-inclusive cash_div_tax in per-share or per-10-share units",
         "candidate_count": len(candidates), "sample_count": len(sample),
         "pass_count": passed, "failure_count": len(sample) - passed,
         "evidence_status": "PASS" if sample and passed == len(sample)

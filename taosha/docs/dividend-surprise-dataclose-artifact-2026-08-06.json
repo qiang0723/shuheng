@@ -1,0 +1,292 @@
+{
+  "surface": "report",
+  "manifest": {
+    "version": 1,
+    "surface": "report",
+    "title": "exp19 dividend_surprise 数据闭合报告",
+    "description": "全量 dividend 数据资产、历史初始预案覆盖、公告原件证据与 B2 研究期起点菜单。",
+    "generatedAt": "2026-08-06T03:39:57Z",
+    "cards": [
+      {
+        "id": "source_rows",
+        "description": "Tushare dividend batch 17 的全量忠实行数。",
+        "dataset": "summary",
+        "sourceId": "profile_source",
+        "metrics": [{"label": "全量事实行", "field": "source_rows", "format": "compact"}]
+      },
+      {
+        "id": "annual_groups",
+        "description": "holdout 前、排北交所的年度 12 月 31 日组。",
+        "dataset": "summary",
+        "sourceId": "profile_source",
+        "metrics": [{"label": "年度组", "field": "annual_groups", "format": "compact"}]
+      },
+      {
+        "id": "qualified_share",
+        "description": "满足 E1 严格单行初始预案规则的年度组占比；历史断点使全期占比仅约一半。",
+        "dataset": "summary",
+        "sourceId": "profile_source",
+        "metrics": [{"label": "严格初始预案可识别率", "field": "qualified_rate", "format": "percent"}]
+      },
+      {
+        "id": "audit_share",
+        "description": "首轮及两次不放宽日期/金额的原件识别复核合并结果。",
+        "dataset": "summary",
+        "sourceId": "disclosure_source",
+        "metrics": [{"label": "公告原件样本通过率", "field": "audit_rate", "format": "percent"}]
+      },
+      {
+        "id": "menu_events",
+        "description": "若 John 选择 2021-01-01 起点，冻结清洗前的机械候选参考；不构成正式运行硬断言。",
+        "dataset": "summary",
+        "sourceId": "profile_source",
+        "metrics": [{"label": "B2-P1 候选参考", "field": "menu_events", "format": "compact"}]
+      }
+    ],
+    "charts": [
+      {
+        "id": "coverage_chart",
+        "title": "严格初始预案年度覆盖率",
+        "subtitle": "财年 2011–2023；2018 年出现结构性断点，覆盖率由接近零跃至约 100%。",
+        "intent": "trend",
+        "question": "E1 严格初始预案规则在哪些财年形成连续覆盖？",
+        "rationale": "13 个年度点足以显示覆盖断点，折线比年度明细表更容易识别时序结构。",
+        "type": "line",
+        "dataset": "coverage_by_fiscal_year",
+        "sourceId": "profile_source",
+        "encodings": {
+          "x": {"field": "year", "type": "ordinal", "label": "财年"},
+          "y": {"field": "qualified_rate", "type": "quantitative", "label": "可识别率", "format": "percent"},
+          "tooltip": [
+            {"field": "groups", "type": "quantitative", "label": "年度组"},
+            {"field": "qualified", "type": "quantitative", "label": "可识别组"}
+          ]
+        },
+        "valueFormat": "percent",
+        "labels": {"values": "endpoints"},
+        "palette": {"kind": "sequential", "name": "blue"},
+        "settings": {"showPoints": "always", "sort": "none"},
+        "surface": {"surface": "card", "viewMode": "both"},
+        "layout": "full"
+      },
+      {
+        "id": "audit_chart",
+        "title": "公告原件抽核通过率",
+        "subtitle": "按公告年；初轮失败经同日官方原件与每股/每10股等价单位复核，日期和金额仍须精确匹配。",
+        "intent": "comparison",
+        "question": "哪个公告年份仍存在无法由原件精确证明的初始预案值？",
+        "rationale": "八个离散公告年适合柱形比较；2019 年的单一失败直接可见。",
+        "type": "bar",
+        "dataset": "audit_by_year",
+        "sourceId": "disclosure_source",
+        "encodings": {
+          "x": {"field": "year", "type": "ordinal", "label": "公告年"},
+          "y": {"field": "pass_rate", "type": "quantitative", "label": "通过率", "format": "percent"},
+          "tooltip": [
+            {"field": "sample", "type": "quantitative", "label": "样本"},
+            {"field": "pass", "type": "quantitative", "label": "通过"}
+          ]
+        },
+        "valueFormat": "percent",
+        "labels": {"values": "all"},
+        "palette": {"kind": "sequential", "name": "blue"},
+        "referenceLines": [{"axis": "y", "value": 1, "label": "全部通过", "color": "neutral", "lineStyle": "dashed"}],
+        "settings": {"showValues": true, "sort": "none"},
+        "surface": {"surface": "card", "viewMode": "both"},
+        "layout": "full"
+      }
+    ],
+    "tables": [
+      {
+        "id": "b2_menu_table",
+        "title": "B2 可证明研究期起点菜单",
+        "subtitle": "只列证据支持的最早连续起点与停止项；由 John 另裁，不按事件数代选。",
+        "dataset": "b2_menu",
+        "sourceId": "combined_source",
+        "defaultSort": {"field": "start_date", "direction": "asc"},
+        "density": "spacious",
+        "layout": "full",
+        "columns": [
+          {"field": "option", "label": "选项", "type": "text"},
+          {"field": "start_date", "label": "起点", "type": "text"},
+          {"field": "candidate_events", "label": "候选参考", "format": "number"},
+          {"field": "evidence", "label": "证据", "type": "text"},
+          {"field": "cost", "label": "代价/边界", "type": "text"}
+        ]
+      },
+      {
+        "id": "quality_table",
+        "title": "年度组污染与缺失",
+        "subtitle": "组级计数可重叠，仅作数据质量披露，不进入事件判决。",
+        "dataset": "quality_counts",
+        "sourceId": "quality_source",
+        "defaultSort": {"field": "count", "direction": "desc"},
+        "density": "dense",
+        "layout": "full",
+        "columns": [
+          {"field": "metric", "label": "质量面", "type": "text"},
+          {"field": "count", "label": "数量", "format": "number"},
+          {"field": "denominator", "label": "分母", "type": "text"},
+          {"field": "interpretation", "label": "读法", "type": "text"}
+        ]
+      },
+      {
+        "id": "failure_table",
+        "title": "仍未闭合的原件差异",
+        "subtitle": "唯一失败样本；不做舍入容忍、不以实施值回填。",
+        "dataset": "audit_failures",
+        "sourceId": "disclosure_source",
+        "defaultSort": {"field": "ann_date", "direction": "asc"},
+        "density": "spacious",
+        "layout": "full",
+        "columns": [
+          {"field": "ts_code", "label": "证券", "type": "text"},
+          {"field": "ann_date", "label": "公告日", "type": "date"},
+          {"field": "table_value", "label": "表内每股值", "type": "text"},
+          {"field": "document_value", "label": "原件每股值", "type": "text"},
+          {"field": "result", "label": "结果", "type": "text"}
+        ]
+      }
+    ],
+    "sources": [
+      {"id": "profile_source", "label": "dividend 全量画像", "path": "qbase/ingest/profile_dividend.py"},
+      {"id": "quality_source", "label": "独立 SQL 污染对账", "path": "taosha/docs/dividend-surprise-dataclose-report-2026-08-06.md"},
+      {"id": "disclosure_source", "label": "巨潮官方公告原件抽核", "path": "qbase/ingest/verify_dividend_disclosure.py"},
+      {"id": "combined_source", "label": "B2 起点证据合并", "path": "taosha/docs/dividend-surprise-dataclose-report-2026-08-06.md"}
+    ],
+    "blocks": [
+      {"id": "title", "type": "markdown", "body": "# exp19 dividend_surprise 数据闭合报告"},
+      {"id": "decision", "type": "markdown", "body": "## 结论：数据资产闭合，研究期仍待 John 裁定\n\n全量 `dividend` 事实、只读视图与源级 StudySnapshot 已闭合。历史覆盖与官方原件证据只支持一个最早连续起点候选：**2021-01-01**；它不是自动裁定。若不接受缩短后的研究期，应停止 exp19。当前不得进入终版 PAP、冻结或运行。"},
+      {"id": "metrics", "type": "metric-strip", "cardIds": ["source_rows", "annual_groups", "qualified_share", "audit_share", "menu_events"]},
+      {"id": "coverage_finding", "type": "markdown", "sourceId": "profile_source", "body": "## 历史覆盖不是渐进缺失，而是结构性断点\n\n财年 2011–2015 的严格初始预案可识别组为 **0**，2016–2017 各仅 **1** 组；2018 年起覆盖率跃至 99.7% 以上。实施、通过或修订阶段虽有值，也不能回填初始预案。"},
+      {"id": "coverage_chart_block", "type": "chart", "chartId": "coverage_chart", "layout": "full"},
+      {"id": "audit_finding", "type": "markdown", "sourceId": "disclosure_source", "body": "## 原件证据把最早可选起点推迟到 2021\n\n20 个跨年样本经首轮与两次只读复核后 **19/20** 精确匹配。唯一失败为 `603259.SH`：表内每股 `0.58002`，同日官方原件为每股 `0.58`，不得按舍入视作相等。公告年 2020–2024 的 15 个样本全部通过，因此若从 2021 年事件开始，所需的上年基线证据可连续覆盖。"},
+      {"id": "audit_chart_block", "type": "chart", "chartId": "audit_chart", "layout": "full"},
+      {"id": "failure_block", "type": "table", "tableId": "failure_table", "layout": "full"},
+      {"id": "menu_finding", "type": "markdown", "body": "## B2 只剩一个非冗余起点候选\n\n`2020-01-01` 会消费公告年 2019 的上年基线，而该年仍有精确数值不一致；`2021-01-01` 是最早避开该失败且延伸至 holdout 的连续起点。更晚年份没有新增证据优势，只会无理由缩短样本，因此不另列自由度。"},
+      {"id": "menu_table_block", "type": "table", "tableId": "b2_menu_table", "layout": "full"},
+      {"id": "quality_finding", "type": "markdown", "sourceId": "quality_source", "body": "## 污染量化支持 E1 严格单行，而不支持历史回填\n\n年度范围共 52,027 组，其中 25,560 组没有严格初始预案，25,558 组虽有后续阶段值仍不得回填。多阶段、多公告日、多金额和修订组均已单独计数；这些组级指标可重叠。"},
+      {"id": "quality_table_block", "type": "table", "tableId": "quality_table", "layout": "full"},
+      {"id": "method", "type": "markdown", "body": "## 方法与边界\n\n- L1 逐证券全历史忠实落库，只去完全相同行；current/snap 视图焊死 `ann_date < 2024-07-01` 与排北交所。\n- 画像使用 A1/C1/D1/E1 已裁口径；边界命中 698 是 up/down 的重叠诊断，不另加到主漏斗。\n- 原件复核保持 `ann_date` 精确相等、税前现金值精确相等；只扩充同日官方原件识别与每股/每10股等价单位，不放宽金额。\n- 本单元零收益读取、零终版 PAP、零冻结、零研究 manifest、零运行、零 persist。"},
+      {"id": "limitations", "type": "markdown", "body": "## 限制与稳健性\n\n公告原件为分层抽样而非逐组穷举，能证明的是抽核覆盖，不是所有 26,467 个严格初始组逐一人工确认。B2-P1 仍须在终版前由 John 明确选择；冻结实现必须继续对个体异常组 fail-closed。机械候选 5,055 未经过行情覆盖、估计窗、顺延或事件键清洗，不能解释为正式样本数。可移植 HTML 已通过 schema、打包与结构验证；本机无兼容 Chromium，浏览器级图表与交互 QA 未执行，语义回退表完整。"},
+      {"id": "next", "type": "markdown", "body": "## 下一步\n\nJohn 只需二选一：明确裁定 `2021-01-01` 为研究期起点，随后另令终版 PAP；或停止 exp19。两种选择之外不得自行换锚、容忍 `0.58002→0.58`、回填实施值或按候选数量另选年份。"}
+    ]
+  },
+  "snapshot": {
+    "version": 1,
+    "generatedAt": "2026-08-06T03:39:57Z",
+    "status": "partial",
+    "datasets": {
+      "summary": [{"source_rows": 177873, "annual_groups": 52027, "qualified_rate": 0.5087166279, "audit_rate": 0.95, "menu_events": 5055}],
+      "coverage_by_fiscal_year": [
+        {"year": "2011", "groups": 1643, "qualified": 0, "qualified_rate": 0.0},
+        {"year": "2012", "groups": 1809, "qualified": 0, "qualified_rate": 0.0},
+        {"year": "2013", "groups": 1896, "qualified": 0, "qualified_rate": 0.0},
+        {"year": "2014", "groups": 1988, "qualified": 0, "qualified_rate": 0.0},
+        {"year": "2015", "groups": 2025, "qualified": 0, "qualified_rate": 0.0},
+        {"year": "2016", "groups": 2427, "qualified": 1, "qualified_rate": 0.0004120313},
+        {"year": "2017", "groups": 2791, "qualified": 1, "qualified_rate": 0.0003582945},
+        {"year": "2018", "groups": 3600, "qualified": 3588, "qualified_rate": 0.9966666667},
+        {"year": "2019", "groups": 3829, "qualified": 3827, "qualified_rate": 0.9994776704},
+        {"year": "2020", "groups": 4290, "qualified": 4286, "qualified_rate": 0.9990675991},
+        {"year": "2021", "groups": 4705, "qualified": 4697, "qualified_rate": 0.9982996812},
+        {"year": "2022", "groups": 4970, "qualified": 4967, "qualified_rate": 0.9993963783},
+        {"year": "2023", "groups": 5106, "qualified": 5100, "qualified_rate": 0.9988249119}
+      ],
+      "audit_by_year": [
+        {"year": "2017", "sample": 1, "pass": 1, "pass_rate": 1.0},
+        {"year": "2018", "sample": 1, "pass": 1, "pass_rate": 1.0},
+        {"year": "2019", "sample": 3, "pass": 2, "pass_rate": 0.6666666667},
+        {"year": "2020", "sample": 3, "pass": 3, "pass_rate": 1.0},
+        {"year": "2021", "sample": 3, "pass": 3, "pass_rate": 1.0},
+        {"year": "2022", "sample": 3, "pass": 3, "pass_rate": 1.0},
+        {"year": "2023", "sample": 3, "pass": 3, "pass_rate": 1.0},
+        {"year": "2024", "sample": 3, "pass": 3, "pass_rate": 1.0}
+      ],
+      "b2_menu": [
+        {"order": 1, "option": "B2-P1", "start_date": "2021-01-01", "candidate_events": 5055, "evidence": "公告年2020–2024抽核15/15；财年2019–2023严格初始覆盖均>99.8%", "cost": "研究期缩短；机械候选仅NFV，仍待冻结清洗"},
+        {"order": 2, "option": "B2-STOP", "start_date": "不设", "candidate_events": 0, "evidence": "若不接受2021起点或认为抽核证据不足", "cost": "停止exp19，不冻结、不换锚、不回填"}
+      ],
+      "quality_counts": [
+        {"metric": "无严格初始预案组", "count": 25560, "denominator": "52,027 年度组", "interpretation": "不进入E1；不得以后续阶段值回填"},
+        {"metric": "有后续值但无初始预案组", "count": 25558, "denominator": "52,027 年度组", "interpretation": "实施/通过值存在仍不能冒充初始值"},
+        {"metric": "多阶段组", "count": 26487, "denominator": "52,027 年度组", "interpretation": "阶段共存，组级计数可与其他项重叠"},
+        {"metric": "flag1修订组", "count": 955, "denominator": "52,027 年度组", "interpretation": "修订版本存在；E1只取flag0"},
+        {"metric": "多现金分红值组", "count": 936, "denominator": "52,027 年度组", "interpretation": "阶段/修订值漂移，不折叠"},
+        {"metric": "多公告日组", "count": 78, "denominator": "52,027 年度组", "interpretation": "公告锚污染，消费层按冻结规则处理"},
+        {"metric": "cash_div_tax空行", "count": 3, "denominator": "97,543 年度范围行", "interpretation": "数值不可判"},
+        {"metric": "base_date空行", "count": 15986, "denominator": "97,543 年度范围行", "interpretation": "披露但不用于A1数值回填"},
+        {"metric": "base_share空行", "count": 15986, "denominator": "97,543 年度范围行", "interpretation": "披露但不用于A1数值回填"},
+        {"metric": "完全重复行", "count": 0, "denominator": "177,873 全量行", "interpretation": "L1整行去重后为0"}
+      ],
+      "audit_failures": [
+        {"ts_code": "603259.SH", "ann_date": "2019-06-19", "table_value": "0.58002/股", "document_value": "0.58/股（5.80/10股）", "result": "精确不一致；fail-closed"}
+      ]
+    },
+    "accessIssues": [
+      {"id": "research_start_pending", "scope": "exp19 freeze eligibility", "sourceId": "combined_source", "message": "John 尚未裁定 2021-01-01 起点或停止项；在此之前不得生成终版 PAP 或冻结。"}
+    ]
+  },
+  "sources": [
+    {
+      "id": "profile_source",
+      "label": "dividend 全量画像",
+      "path": "qbase/ingest/profile_dividend.py",
+      "query": {
+        "engine": "PostgreSQL + Python",
+        "language": "python",
+        "sql": "SELECT ts_code,end_date,ann_date,div_proc,stk_div,stk_bo_rate,stk_co_rate,cash_div,cash_div_tax,record_date,ex_date,pay_date,div_listdate,imp_ann_date,base_date,base_share,update_flag FROM public.dividend_snap WHERE batch_id=(SELECT max(batch_id) FROM public.fact_batch WHERE source='tushare:dividend') ORDER BY ts_code,end_date,ann_date,div_proc,update_flag",
+        "description": "从 qbase.public.dividend_snap batch 17 只读计算年度组、E1覆盖和A1/C1/D1候选漏斗。",
+        "executed_at": "2026-08-06T03:18:00Z",
+        "tables_used": ["qbase.public.dividend_snap", "qbase.public.fact_batch"],
+        "filters": ["end_date=12-31", "ann_date<2024-07-01", "排除北交所", "E1严格单行"]
+      }
+    },
+    {
+      "id": "quality_source",
+      "label": "独立 SQL 污染对账",
+      "path": "taosha/docs/dividend-surprise-dataclose-report-2026-08-06.md",
+      "query": {
+        "engine": "PostgreSQL",
+        "language": "sql",
+        "sql": "WITH src AS (SELECT * FROM dividend_snap WHERE batch_id=17 AND end_date IS NOT NULL AND to_char(end_date,'MMDD')='1231' AND ann_date<DATE '2024-07-01' AND ts_code !~ '\\\\.BJ$'), g AS (SELECT ts_code,end_date,count(DISTINCT div_proc) stage_n,count(DISTINCT ann_date) ann_n,count(DISTINCT cash_div_tax) cash_n,bool_or(update_flag='1') has_flag1,count(*) FILTER (WHERE div_proc='预案' AND update_flag='0') initial_n FROM src GROUP BY ts_code,end_date) SELECT count(*) FROM g;",
+        "description": "独立于画像脚本的只读 SQL，量化多阶段、多公告日、多金额、修订与初始缺失。",
+        "executed_at": "2026-08-06T03:28:00Z",
+        "tables_used": ["qbase.public.dividend_snap"],
+        "filters": ["batch_id=17", "年度12月31日", "holdout前", "排除北交所"]
+      }
+    },
+    {
+      "id": "disclosure_source",
+      "label": "巨潮官方公告原件抽核",
+      "path": "qbase/ingest/verify_dividend_disclosure.py",
+      "query": {
+        "engine": "CNInfo official metadata/PDF + Python",
+        "language": "python",
+        "sql": "WITH src AS (SELECT d.* FROM public.dividend_snap d WHERE d.batch_id=(SELECT max(batch_id) FROM public.fact_batch WHERE source='tushare:dividend') AND d.end_date IS NOT NULL AND to_char(d.end_date,'MMDD')='1231' AND d.ann_date<DATE '2024-07-01' AND d.ts_code !~ '\\\\.BJ$'), grouped AS (SELECT ts_code,end_date,count(*) FILTER (WHERE div_proc='预案' AND update_flag='0') initial_n,min(ann_date) FILTER (WHERE div_proc='预案' AND update_flag='0') ann_date,min(cash_div_tax) FILTER (WHERE div_proc='预案' AND update_flag='0') cash_div_tax FROM src GROUP BY ts_code,end_date) SELECT ts_code,end_date,ann_date,cash_div_tax FROM grouped WHERE initial_n=1 AND ann_date IS NOT NULL AND cash_div_tax>0 ORDER BY extract(year FROM ann_date),ann_date,ts_code",
+        "description": "按公告年等距抽样，核对同日官方原件与税前现金分红精确值；首轮失败另做同日原件和等价单位只读复核。",
+        "executed_at": "2026-08-06T03:23:00Z",
+        "tables_used": ["qbase.public.dividend_snap", "CNInfo official announcement metadata", "CNInfo original PDF"],
+        "filters": ["严格初始预案", "cash_div_tax>0", "每公告年最多3例", "日期精确相等", "税前金额精确相等"]
+      }
+    },
+    {
+      "id": "combined_source",
+      "label": "B2 起点证据合并",
+      "path": "taosha/docs/dividend-surprise-dataclose-report-2026-08-06.md",
+      "query": {
+        "engine": "Reviewed evidence synthesis",
+        "language": "text",
+        "sql": "SELECT ts_code,end_date,ann_date,cash_div_tax FROM public.explore_reader_dividend_snap WHERE ann_date>=DATE '2020-01-01' ORDER BY ann_date,ts_code,end_date",
+        "description": "B2 起点只按历史覆盖与公告证据形成，不按事件数、方向比例或收益结果选择。",
+        "executed_at": "2026-08-06T03:39:57Z",
+        "tables_used": ["dividend_profile.json", "dividend_disclosure_audit.json", "dividend_disclosure_unit_followup.json"]
+      }
+    }
+  ],
+  "package_info": {
+    "root": "taosha/docs",
+    "manifestPath": "dividend-surprise-dataclose-artifact-2026-08-06.json",
+    "snapshotPath": "dividend-surprise-dataclose-artifact-2026-08-06.json"
+  }
+}

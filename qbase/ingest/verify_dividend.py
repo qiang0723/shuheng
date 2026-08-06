@@ -13,7 +13,11 @@ import pandas as pd
 from qbase.ingest.dividend_common import FIELD_NAMES, normalize_source_row, required_env
 from qbase.ingest.profile_dividend import candidate_funnel, classify_group
 from qbase.ingest.seed_dividend import validate_frame
-from qbase.ingest.verify_dividend_disclosure import cash_per_ten_values, is_proposal_title
+from qbase.ingest.verify_dividend_disclosure import (
+    cash_per_share_values,
+    cash_per_ten_values,
+    is_proposal_title,
+)
 
 
 def main() -> int:
@@ -79,9 +83,14 @@ def main() -> int:
     check("恰边界计数", funnel["exact_boundary"], 1)
 
     check("预案标题", is_proposal_title("2023年度利润分配预案公告"), True)
+    check("词序变体标题", is_proposal_title("关于2020年度分配利润预案的公告"), True)
+    check("年报原件标题", is_proposal_title("2023年年度报告"), True)
+    check("年报说明会排除", is_proposal_title("2023年度报告网上说明会公告"), False)
     check("实施标题排除", is_proposal_title("2023年度权益分派实施公告"), False)
     text = "公司拟向全体股东每10股派发现金红利1.50元（含税）。"
     check("税前金额精确抽取", cash_per_ten_values(text), [Decimal("1.50")])
+    per_share = "公司拟向全体股东每股派发现金红利0.113元（含税）。"
+    check("每股税前金额精确抽取", cash_per_share_values(per_share), [Decimal("0.113")])
     check("无保真含税词不接受", cash_per_ten_values("每10股派发现金红利1.50元"), [])
 
     ddl = Path("qbase/sql/026_dividend_surprise_reader.sql").read_text(encoding="utf-8")
