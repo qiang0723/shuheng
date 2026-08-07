@@ -135,10 +135,11 @@ def append_checkpoint(path: Path, item: dict) -> None:
         os.fsync(handle.fileno())
 
 
-def run(dsn: str, evidence: Path, per_year: int, all_candidates: bool) -> dict:
+def run(dsn: str, evidence: Path, per_year: int, all_candidates: bool,
+        study_start: date) -> dict:
     (evidence / "announcement_metadata").mkdir(parents=True, exist_ok=True)
     (evidence / "pdf").mkdir(parents=True, exist_ok=True)
-    candidates = load_candidates(dsn)
+    candidates = [row for row in load_candidates(dsn) if row["ann_date"] >= study_start]
     selected = candidates if all_candidates else sample_by_year(candidates, per_year)
     checkpoint = evidence / "repurchase_disclosure_results.jsonl"
     results = checkpoint_rows(checkpoint)
@@ -157,6 +158,7 @@ def run(dsn: str, evidence: Path, per_year: int, all_candidates: bool) -> dict:
     passed = sum(item["pass"] for item in ordered)
     return {"source": "CNINFO official metadata and original PDF body",
             "mode": "all" if all_candidates else "yearly_sample",
+            "study_start_evidence_scope": study_start,
             "candidate_count": len(candidates), "tested_count": len(ordered),
             "pass_count": passed, "failure_count": len(ordered) - passed,
             "evidence_status": "PASS" if ordered and passed == len(ordered) else "FAIL",
@@ -169,10 +171,11 @@ def main() -> int:
     parser.add_argument("--evidence", required=True)
     parser.add_argument("--per-year", type=int, default=2)
     parser.add_argument("--all", action="store_true")
+    parser.add_argument("--study-start", default="2011-01-01")
     args = parser.parse_args()
     evidence = Path(args.evidence)
     payload = run(required_env("QBASE_APP_DSN")["QBASE_APP_DSN"], evidence,
-                  args.per_year, args.all)
+                  args.per_year, args.all, date.fromisoformat(args.study_start))
     (evidence / "repurchase_disclosure_audit.json").write_text(
         json.dumps(payload, ensure_ascii=False, indent=1, sort_keys=True,
                    default=json_default) + "\n", encoding="utf-8"
