@@ -4,15 +4,17 @@ from __future__ import annotations
 import re
 from decimal import Decimal, InvalidOperation
 
-TITLE_TERMS = ("回购股份方案", "回购公司股份方案", "回购股份预案", "回购报告书")
-TITLE_EXCLUDES = ("进展", "实施", "完成", "结果", "期限届满", "股份变动", "修订", "调整")
+TITLE_EXCLUDES = (
+    "进展", "实施", "完成", "结果", "期限届满", "股份变动", "修订", "调整",
+    "法律意见", "独立意见", "核查意见", "债权人", "董事会决议", "监事会决议",
+)
 INITIAL_PATTERNS = (
     re.compile(r"董事会.{0,180}(?:审议通过|通过).{0,180}回购.{0,100}(?:方案|议案)"),
     re.compile(r"回购.{0,100}(?:方案|议案).{0,180}(?:经|由).{0,100}董事会.{0,80}(?:审议通过|通过)"),
 )
 REVISION_PATTERN = re.compile(r"(?:回购方案|回购股份方案).{0,40}(?:修订|调整|变更)")
 PRICE_PATTERN = re.compile(
-    r"回购(?:股份)?价格.{0,60}?(?:不超过|上限为|最高为)\s*(?:人民币)?\s*"
+    r"回购(?:股份)?价格.{0,60}?(?:不超过|上限为|最高为|为)\s*(?:人民币)?\s*"
     r"([0-9]+(?:\.[0-9]+)?)\s*元\s*/?\s*股"
 )
 PURPOSE_PATTERNS = {
@@ -39,9 +41,7 @@ def compact(value: str) -> str:
 
 def is_candidate_title(value: str) -> bool:
     text = compact(value)
-    return any(term in text for term in TITLE_TERMS) and not any(
-        term in text for term in TITLE_EXCLUDES
-    )
+    return "回购" in text and not any(term in text for term in TITLE_EXCLUDES)
 
 
 def decimal_values(pattern: re.Pattern, text: str) -> list[Decimal]:
