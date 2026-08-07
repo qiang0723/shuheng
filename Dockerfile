@@ -26,6 +26,10 @@ RUN python -m pip install --disable-pip-version-check --no-cache-dir \
 
 COPY --chown=shuheng:shuheng . /opt/quant
 
+# Fail image construction before deployment if new code exceeds the size
+# budget or any grandfathered hotspot grows beyond its reviewed baseline.
+RUN python -m ops.verify_code_size
+
 USER shuheng
 
 # The image has no long-running service. Every research/ingest operation must be
