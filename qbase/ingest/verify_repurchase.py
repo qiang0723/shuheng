@@ -94,6 +94,15 @@ def test_disclosure() -> None:
     check("库存正文", purpose_evidence(inventory)["category"], "inventory")
     check("混合用途", purpose_evidence(mixed)["category"], "other_explicit")
     check("无证据不可分类", purpose_evidence("公司经营正常")["category"], "unclassifiable")
+    check("限制股正文注销", purpose_evidence(
+        "公司同意将本次回购注销的限制性股票办理注销手续。"
+    )["category"], "cancellation")
+    check("减资注销正文", purpose_evidence(
+        "公司将办理减少注册资本和股份注销登记等手续。"
+    )["category"], "cancellation")
+    check("标题不得单独判用途", purpose_evidence(
+        "关于回购注销部分限制性股票的公告"
+    )["category"], "unclassifiable")
     check("标题只定位正例", is_candidate_title("关于回购股份方案的公告"), True)
     check("限制股注销原件可定位", is_candidate_title("关于回购注销部分限制性股票的公告"), True)
     check("法律意见非发行人原件", is_candidate_title("关于回购注销的法律意见书"), False)
@@ -104,6 +113,9 @@ def test_disclosure() -> None:
     check("价格零容差", document_evidence(text, Decimal("12.51"))["exact_high_limit_match"], False)
     fixed = "董事会审议通过回购股份方案，回购价格为8.20元/股。" + cancellation
     check("固定回购价精确匹配", document_evidence(fixed, Decimal("8.20"))[
+        "exact_high_limit_match"], True)
+    not_higher = "董事会审议通过回购股份方案，回购股份的价格不高于12元/股。" + inventory
+    check("不高于价格精确匹配", document_evidence(not_higher, Decimal("12"))[
         "exact_high_limit_match"], True)
     revision = text + "本次回购股份方案调整价格上限。"
     check("修订正文拒绝", document_evidence(revision, Decimal("12.50"))[
