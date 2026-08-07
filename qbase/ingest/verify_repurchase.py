@@ -16,7 +16,7 @@ from qbase.ingest.repurchase_common import (
     FIELD_NAMES, month_windows, normalize_source_row, required_env, window_key,
 )
 from qbase.ingest.repurchase_disclosure import (
-    document_evidence, is_candidate_title, purpose_evidence,
+    document_evidence, has_revision_marker, is_candidate_title, purpose_evidence,
 )
 from qbase.ingest.seed_repurchase import API_ROW_CEILING, load_responses, validate_frame
 
@@ -117,9 +117,11 @@ def test_disclosure() -> None:
     not_higher = "董事会审议通过回购股份方案，回购股份的价格不高于12元/股。" + inventory
     check("不高于价格精确匹配", document_evidence(not_higher, Decimal("12"))[
         "exact_high_limit_match"], True)
-    revision = text + "本次回购股份方案调整价格上限。"
+    revision = text + "这是调整后的回购股份方案。"
     check("修订正文拒绝", document_evidence(revision, Decimal("12.50"))[
         "first_disclosure_supported"], False)
+    future_adjustment = text + "若政策调整，本回购方案按调整后的政策实施。"
+    check("未来政策调整非修订件", has_revision_marker(future_adjustment), False)
     check("标题不参与用途", proof["purpose"]["title_used_for_purpose"], False)
 
 
