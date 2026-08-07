@@ -35,7 +35,17 @@ def load_rows(dsn: str) -> tuple[int, list[dict]]:
 
 def in_scope(row: dict) -> bool:
     return bool(row["ann_date"] and row["ann_date"] < HOLDOUT
-                and row["ts_code"] and not row["ts_code"].endswith(".BJ"))
+                and row["ts_code"] and row["ts_code"].endswith((".SH", ".SZ")))
+
+
+def suffix_bucket(ts_code: str | None) -> str:
+    if ts_code and ts_code.endswith(".SH"):
+        return "SH"
+    if ts_code and ts_code.endswith(".SZ"):
+        return "SZ"
+    if ts_code and ts_code.endswith(".BJ"):
+        return "BJ"
+    return "OTHER"
 
 
 def group_by_event(rows: list[dict]) -> dict[tuple[str, date], list[dict]]:
@@ -93,6 +103,10 @@ def build_profile(batch_id: int, rows: list[dict]) -> dict:
         all_yearly[year].update(values)
     ambiguous = {code: dates for code, dates in by_security.items() if len(dates) > 1}
     exact_duplicate_rows = len(rows) - len({row_signature(row) for row in rows})
+    suffix_rows = Counter(suffix_bucket(row["ts_code"]) for row in rows)
+    suffix_securities = {bucket: len({row["ts_code"] for row in rows
+                                      if suffix_bucket(row["ts_code"]) == bucket})
+                         for bucket in suffix_rows}
     proposal_rows = stage.get("预案", 0)
     if proposals["proposal_rows"] != proposal_rows:
         raise RuntimeError("预案行未完整进入事件键分组（存在缺ts_code/ann_date），须停报")
@@ -104,6 +118,8 @@ def build_profile(batch_id: int, rows: list[dict]) -> dict:
         "ann_date_min": min((row["ann_date"] for row in rows if row["ann_date"]), default=None),
         "ann_date_max": max((row["ann_date"] for row in rows if row["ann_date"]), default=None),
         "l1_exact_duplicate_rows": exact_duplicate_rows,
+        "source_suffix_rows": dict(sorted(suffix_rows.items())),
+        "source_suffix_securities": dict(sorted(suffix_securities.items())),
         "scope_rows": len(scope), "scope_securities": len({row["ts_code"] for row in scope}),
         "scope_event_keys": len(groups), "scope_null_rows": null_counts(scope),
         "stage_rows": dict(sorted(stage.items())),

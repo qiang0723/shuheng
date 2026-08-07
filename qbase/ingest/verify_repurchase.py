@@ -118,6 +118,7 @@ def test_profile_and_ddl() -> None:
     ddl = Path("qbase/sql/027_buyback_announce_reader.sql").read_text(encoding="utf-8")
     check("snap钉批", "study_snap_batch('repurchase')" in ddl, True)
     check("holdout双焊", ddl.count("ann_date<DATE '2024-07-01'"), 2)
+    check("A股后缀双白名单", ddl.count("ts_code ~ '\\.(SH|SZ)$'") , 2)
     check("append-only三路", "BEFORE UPDATE OR DELETE ON public.repurchase_snap" in ddl
           and "BEFORE TRUNCATE ON public.repurchase_snap" in ddl, True)
     check("引擎仅视图授权", "GRANT SELECT ON public.repurchase_snap TO taosha_engine" in ddl, False)

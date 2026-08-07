@@ -36,7 +36,7 @@ def load_candidates(dsn: str) -> list[dict]:
           WITH src AS (
             SELECT * FROM repurchase_snap
             WHERE batch_id=(SELECT max(batch_id) FROM fact_batch WHERE source=%s)
-              AND ann_date<DATE '2024-07-01' AND ts_code !~ '\\.BJ$'
+              AND ann_date<DATE '2024-07-01' AND ts_code ~ '\\.(SH|SZ)$'
           ), grouped AS (
             SELECT ts_code,ann_date,count(*) AS row_n,
                    count(*) FILTER (WHERE proc='预案') AS proposal_n,

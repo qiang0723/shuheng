@@ -47,7 +47,7 @@ FROM public.repurchase_snap r
 WHERE r.batch_id=(SELECT max(batch_id) FROM public.fact_batch
                   WHERE source='tushare:repurchase')
   AND r.ann_date<DATE '2024-07-01'
-  AND r.ts_code !~ '\.BJ$';
+  AND r.ts_code ~ '\.(SH|SZ)$';
 
 CREATE OR REPLACE VIEW public.explore_reader_repurchase_snap AS
 SELECT r.ts_code,r.ann_date,r.end_date,r.proc,r.exp_date,r.vol,r.amount,
@@ -55,7 +55,7 @@ SELECT r.ts_code,r.ann_date,r.end_date,r.proc,r.exp_date,r.vol,r.amount,
 FROM public.repurchase_snap r
 WHERE r.batch_id=public.study_snap_batch('repurchase')
   AND r.ann_date<DATE '2024-07-01'
-  AND r.ts_code !~ '\.BJ$';
+  AND r.ts_code ~ '\.(SH|SZ)$';
 
 COMMENT ON VIEW public.explore_reader_repurchase IS
   '源=tushare:repurchase最新批；holdout焊死；最小忠实列面，事件与用途判断属taosha L2。';
