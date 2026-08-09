@@ -1,7 +1,7 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { startProdServer } from "../vinext/dist/server/prod-server.js";
+import { startProdServer } from "./vinext/dist/server/prod-server.js";
 
 const root = path.dirname(fileURLToPath(import.meta.url));
 const port = Number(process.env.PORT ?? "3000");
