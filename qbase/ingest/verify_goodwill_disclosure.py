@@ -8,7 +8,7 @@ import io
 import json
 import os
 from collections import Counter, defaultdict
-from datetime import date, timedelta
+from datetime import date
 from decimal import Decimal
 from pathlib import Path
 from zoneinfo import ZoneInfo
@@ -60,8 +60,13 @@ def sample_by_year(rows: list[dict], per_year: int) -> list[dict]:
     return [item for year in sorted(groups) for item in evenly_spaced(groups[year], per_year)]
 
 
+def document_search_start(end_date: date) -> date:
+    """F1四载体可在报告期末前披露；从报告年度起检索，不以后验end_date截断。"""
+    return date(end_date.year, 1, 1)
+
+
 def fetch_documents(candidate: dict, evidence: Path) -> list[dict]:
-    start = candidate["end_date"] + timedelta(days=1)
+    start = document_search_start(candidate["end_date"])
     end = candidate["last_locator_date"]
     records = cninfo.fetch_announcements(candidate["ts_code"][:6], start, end, category="")
     target = evidence / "announcement_metadata" / f"{candidate['ts_code']}_{candidate['end_date']}.json"

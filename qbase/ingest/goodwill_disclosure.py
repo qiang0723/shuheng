@@ -4,7 +4,7 @@ from __future__ import annotations
 import re
 from decimal import Decimal, InvalidOperation
 
-REVISION_WORDS = ("更正", "修订", "补充", "更新")
+REVISION_WORDS = ("更正", "修正", "修订", "补充", "更新")
 LOCATOR_WORDS = ("业绩预告", "业绩快报", "年度报告", "商誉", "减值")
 NON_DOCUMENT_WORDS = ("摘要", "问询", "回复", "说明会", "风险提示", "审计意见")
 COMBINATION_WORDS = ("无形资产", "固定资产", "长期股权投资", "资产组", "其他资产", "资产减值")

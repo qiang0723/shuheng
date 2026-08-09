@@ -19,6 +19,7 @@ from qbase.ingest.goodwill_disclosure import (
 )
 from qbase.ingest.profile_goodwill_impair import build_profile
 from qbase.ingest.seed_balancesheet import fetch_period, load_responses, validate_page
+from qbase.ingest.verify_goodwill_disclosure import document_search_start
 
 checks = 0
 
@@ -101,6 +102,9 @@ def test_disclosure() -> None:
     check("问询排除", is_candidate_title("关于商誉减值问询回复"), False)
     check("载体分类", carrier_from_title("2023年度业绩快报"), "express")
     check("修订标记", has_revision_marker("业绩预告修订公告", ""), True)
+    check("修正标记", has_revision_marker("业绩预告修正公告", ""), True)
+    check("F1检索不以后验期末截断", document_search_start(date(2023, 12, 31)),
+          date(2023, 1, 1))
 
 
 def test_profile_and_ddl() -> None:
