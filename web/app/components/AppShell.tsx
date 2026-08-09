@@ -13,14 +13,14 @@ export function AppShell({ children }: { children: ReactNode }) {
         <NavLinks />
         <div className="sidebar-note">
           <span>数据快照</span>
-          <strong>2026-07-31</strong>
+          <strong>2026-08-09</strong>
           <small>北京时间·只读静态版</small>
         </div>
       </aside>
       <div className="main-column">
         <header className="topbar">
           <div><span className="live-dot" />当前证据基线已锁定</div>
-          <div className="topbar-meta">26行台账·十条校准·全部时间按UTC+8</div>
+          <div className="topbar-meta">26行台账·十二条校准·全部时间按UTC+8</div>
         </header>
         <div className="page-frame">{children}</div>
       </div>

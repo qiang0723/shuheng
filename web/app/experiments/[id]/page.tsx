@@ -40,6 +40,8 @@ export default async function ExperimentDetailPage({ params }: { params: Promise
       {metric ? <section className="panel"><div className="section-heading"><div><span className="eyebrow">正式结果</span><h2>关键统计与样本</h2></div><span className={metric.directionHit ? "hit yes" : "hit no"}>{metric.directionHit ? "密封方向命中" : "密封方向未中"}</span></div><MetricGrid metric={metric} /></section> : <section className="panel empty-panel"><span className="empty-mark">—</span><h2>暂无详细统计快照</h2><p>本静态版只展示仓内fixture明确存在的字段，不使用猜测值填充。</p></section>}
 
       {experiment.id === 568 && <section className="boundary-callout"><strong>执行边界</strong><p>该结果包含一字跌停锁死价格观察，不得读作可成交收益或可执行策略。</p></section>}
+      {experiment.id === 19 && <section className="boundary-callout"><strong>样本边界</strong><p>2024年剔除集中于稳健窗与数据右界的交互，不构成年度效应或事件质量差异；辅助统计均不进入正式判决。</p></section>}
+      {experiment.id === 14 && <section className="boundary-callout"><strong>估计量边界</strong><p>主结果使用复权总回报，不能读作“名义价格幻觉”已经得到证实；辅助三法即使名义显著也不进入正式判决。</p></section>}
       {experiment.id === 7 && <section className="boundary-callout"><strong>样本边界</strong><p>这是合成冒烟测试，不属于正式真实研究，也不计入当前唯一真实显著结果。</p></section>}
       <ProvenancePanel experiment={experiment} />
       <FieldGuide />

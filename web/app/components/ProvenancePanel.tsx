@@ -1,10 +1,10 @@
 import type { Experiment } from "../../lib/types";
 import { familyLabel } from "../../lib/format";
 
-const snapshotTime = "2026-07-31 10:57:18（UTC+8）";
-const ledgerSource = "taosha/docs/stage-review-10-experiments-2026-07-31/ledger_snapshot.csv";
-const resultSource = "taosha/docs/stage-review-10-experiments-2026-07-31/calibration_results.csv";
-const validationSource = "taosha/docs/stage-review-10-experiments-2026-07-31/validation.md";
+const snapshotTime = "2026-08-09 22:14:05.537694（UTC+8）";
+const ledgerSource = "docs/web-snapshot-2026-08-09/ledger_snapshot.csv";
+const resultSource = "docs/web-snapshot-2026-08-09/calibration_results.csv";
+const validationSource = "docs/web-snapshot-2026-08-09/validation.md";
 
 export function ProvenancePanel({ experiment }: { experiment: Experiment }) {
   return (

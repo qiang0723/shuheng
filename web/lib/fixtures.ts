@@ -11,6 +11,8 @@ const metrics: Record<number, CalibrationMetrics> = {
   568: { order: 8, predictedDirection: "negative", confidence: 0.6, directionHit: true, events: 765, valid: 565, mainN: 554, caar: -0.15929536336562053, adjBmp: -5.522936355365047, rhoBar: 0.042969464364672125, kishEffectiveN: 22.38973539618494, kpEffectiveN: 21.427660458944132, rejectRatio: 0.26143790849673204, industryUnknownRatio: 0.3168141592920354 },
   16: { order: 9, predictedDirection: "positive", confidence: 0.5, directionHit: false, events: 7751, valid: 6942, mainN: 6881, caar: -0.0031967252693485917, adjBmp: -0.11178944002480809, rhoBar: 0.12220364037830078, kishEffectiveN: 8.174603811028497, kpEffectiveN: 7.175637466670484, rejectRatio: 0.1043736292091343, industryUnknownRatio: 0.04811293575338519 },
   17: { order: 10, predictedDirection: "positive", confidence: 0.8, directionHit: true, events: 2529, valid: 1841, mainN: 1822, caar: 0.001648578486047189, adjBmp: 0.2783298113335189, rhoBar: 0.009815666688264883, kishEffectiveN: 96.58552739379029, kpEffectiveN: 95.63747604998257, rejectRatio: 0.2720442862791617, industryUnknownRatio: 0.09397066811515481 },
+  19: { order: 11, predictedDirection: "positive", confidence: 0.6, directionHit: false, events: 5055, valid: 3810, mainN: 3805, caar: -0.002804575188488496, adjBmp: -0.21553616523859276, rhoBar: 0.02998195801586874, kishEffectiveN: 33.07254974439924, kpEffectiveN: 32.08096994648493, rejectRatio: 0.24629080118694363, industryUnknownRatio: 0.01627296587926509 },
+  14: { order: 12, predictedDirection: "positive", confidence: 0.6, directionHit: false, events: 4035, valid: 3163, mainN: 3095, caar: -0.018488168100005337, adjBmp: -0.9132553766202723, rhoBar: 0.06601787166688029, kishEffectiveN: 15.079964080903466, kpEffectiveN: 14.084416947469217, rejectRatio: 0.2161090458488228, industryUnknownRatio: 0.06038570976920645 },
 };
 
 const rows: Omit<Experiment, "metrics">[] = [
@@ -27,12 +29,12 @@ const rows: Omit<Experiment, "metrics">[] = [
   { id: 11, family: "high_pullback", name: "新高后小幅回撤", status: "done", sourceType: "llm", verdictPower: "prescreen", familyTrial: 1, verdict: "NOT_SIG" },
   { id: 12, family: "st_removal", name: "撤销ST风险警示", status: "done", sourceType: "llm", verdictPower: "prescreen", familyTrial: 1, verdict: "NOT_SIG" },
   { id: 13, family: "limit_down_open", name: "一字跌停开板", status: "done", sourceType: "llm", verdictPower: "prescreen", familyTrial: 1, verdict: "NOT_SIG" },
-  { id: 14, family: "ex_div_gap", name: "除权缺口", status: "registered", sourceType: "llm", verdictPower: "prescreen", familyTrial: 1, verdict: null },
+  { id: 14, family: "ex_div_gap", name: "除权缺口", status: "done", sourceType: "llm", verdictPower: "prescreen", familyTrial: 1, verdict: "NOT_SIG" },
   { id: 15, family: "st_imposition", name: "实施ST（旧登记）", status: "closed", sourceType: "llm", verdictPower: "prescreen", familyTrial: 1, verdict: null },
   { id: 16, family: "yearend_strength", name: "年末强势股", status: "done", sourceType: "llm", verdictPower: "prescreen", familyTrial: 1, verdict: "NOT_SIG" },
   { id: 17, family: "earnings_flash_gap", name: "业绩快报偏离预告", status: "done", sourceType: "llm", verdictPower: "prescreen", familyTrial: 1, verdict: "NOT_SIG" },
   { id: 18, family: "audit_qualified", name: "审计意见事件", status: "registered", sourceType: "llm", verdictPower: "prescreen", familyTrial: 1, verdict: null },
-  { id: 19, family: "dividend_surprise", name: "分红超预期", status: "registered", sourceType: "llm", verdictPower: "prescreen", familyTrial: 1, verdict: null },
+  { id: 19, family: "dividend_surprise", name: "分红超预期", status: "done", sourceType: "llm", verdictPower: "prescreen", familyTrial: 1, verdict: "NOT_SIG" },
   { id: 20, family: "earnings_revision", name: "业绩预告修正", status: "done", sourceType: "llm", verdictPower: "prescreen", familyTrial: 1, verdict: "NOT_SIG" },
   { id: 21, family: "goodwill_impair", name: "商誉减值", status: "registered", sourceType: "llm", verdictPower: "prescreen", familyTrial: 1, verdict: null },
   { id: 22, family: "delist_warning_financial", name: "财务退市风险警示", status: "registered", sourceType: "llm", verdictPower: "prescreen", familyTrial: 1, verdict: null },
@@ -46,7 +48,7 @@ export const experiments: Experiment[] = rows.map((row) => ({ ...row, metrics: m
 export const calibrationExperiments = experiments.filter((row) => row.metrics).sort((a, b) => (a.metrics?.order ?? 0) - (b.metrics?.order ?? 0));
 export const platformSummary = {
   ledgerRows: experiments.length,
-  realStudies: 13,
+  realStudies: 15,
   significantStudies: 1,
   humanFullStudies: 4,
   calibrationCount: calibrationExperiments.length,

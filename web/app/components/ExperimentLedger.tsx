@@ -59,7 +59,7 @@ export function ExperimentLedger({ experiments }: { experiments: Experiment[] })
           </tbody>
         </table>
       </div>
-      <div className="table-footer">当前显示 {visible.length} / {experiments.length} 条·数据快照 2026-07-31 10:57:18（UTC+8）</div>
+      <div className="table-footer">当前显示 {visible.length} / {experiments.length} 条·数据快照 2026-08-09 22:14:05.537694（UTC+8）</div>
     </section>
   );
 }

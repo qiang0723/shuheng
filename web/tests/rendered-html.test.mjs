@@ -36,7 +36,7 @@ test("首页给出当前结论、证据边界与中文字段说明", async () =>
   assert.match(html, /工程流水线已成熟/);
   assert.match(html, /正式真实研究/);
   assert.match(html, /唯一正式真实统计显著结果/);
-  assert.match(html, /五命中、五未命中/);
+  assert.match(html, /五命中、七未命中/);
   assert.match(html, /主窗累计异常收益/);
   assert.match(html, /不把“不显著”改写成“无效”/);
   assert.match(html, /生命周期/);
@@ -50,6 +50,7 @@ test("实验台账区分生命周期、统计判决和证据效力", async () =>
 
   assert.match(html, /实验台账/);
   assert.match(html, /26行台账/);
+  assert.match(html, /十二条校准/);
   assert.match(html, /生命周期/);
   assert.match(html, /统计判决/);
   assert.match(html, /证据效力/);
@@ -68,8 +69,21 @@ test("实验详情保留正式结果和不可交易边界", async () => {
   assert.match(html, /一字跌停锁死价格观察/);
   assert.match(html, /不得读作可成交收益或可执行策略/);
   assert.match(html, /来源与快照/);
-  assert.match(html, /2026-07-31 10:57:18（UTC\+8）/);
+  assert.match(html, /2026-08-09 22:14:05\.537694（UTC\+8）/);
   assert.match(html, /ledger_snapshot\.csv/);
   assert.match(html, /calibration_results\.csv/);
   assert.match(html, /财务退市风险警示/);
+});
+
+test("新增闭卷实验展示当前状态、指标与边界", async () => {
+  const dividend = await htmlFor("/experiments/19");
+  assert.match(dividend, /分红超预期/);
+  assert.match(dividend, /已闭卷/);
+  assert.match(dividend, /密封方向未中/);
+  assert.match(dividend, /2024年剔除集中于稳健窗与数据右界/);
+
+  const exDiv = await htmlFor("/experiments/14");
+  assert.match(exDiv, /除权缺口/);
+  assert.match(exDiv, /已闭卷/);
+  assert.match(exDiv, /复权总回报/);
 });
