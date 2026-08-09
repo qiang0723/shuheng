@@ -204,6 +204,20 @@ def _regime(day: dt.date) -> str:
     return "exchange_rule_period"
 
 
+def _factor_ratio_audit(events: list[dict], factors: dict, previous: dict) -> dict:
+    ratios = [factors[(event["ts_code"], event["ex_date"])] /
+              factors[(event["ts_code"], previous[event["ex_date"]])]
+              for event in events]
+    return {
+        "not_for_verdict": True,
+        "events": len(ratios),
+        "ratio_min": str(min(ratios)) if ratios else None,
+        "ratio_mean": str(sum(ratios, Decimal(0)) / len(ratios)) if ratios else None,
+        "ratio_max": str(max(ratios)) if ratios else None,
+        "note": "除权日前一SSE开市日至除权日adj_factor比；仅机械审计，不进CAR或判决。",
+    }
+
+
 def finalize_events(prepared: dict, factor_rows: list[dict], open_dates: list[dt.date]) -> dict:
     """应用A1因子门；本单元不读取bar或收益。"""
     _, previous = _calendar_context(open_dates)
@@ -233,6 +247,7 @@ def finalize_events(prepared: dict, factor_rows: list[dict], open_dates: list[dt
         raise ValueError(f"exp14最终漏斗恒等式不成立:{identities}")
     return {"events": final, "counters": counters, "identities": identities,
             "events_yearly": dict(yearly), "regulatory_composition": dict(regimes),
+            "factor_mechanism_audit": _factor_ratio_audit(final, factors, previous),
             "selection_sha256": _selection_sha(final)}
 
 

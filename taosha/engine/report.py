@@ -12,12 +12,12 @@ from __future__ import annotations
 from . import (
     report_earnings_flash_gap,
     report_dividend_surprise,
+    report_ex_div_gap,
     report_sox_spillover,
     report_st_imposition,
     report_volume_drought,
     report_yearend_strength,
 )
-
 # item 9:固定偏差方向声明段(保守偏差方向;剔除类处置一律朝"低估效应"方向)
 BIAS_DECLARATION = (
     "【偏差方向声明(固定段,item 9)】\n"
@@ -116,6 +116,8 @@ def render(result: dict) -> str:
         L.extend(report_earnings_flash_gap.header_lines(a))
     elif "dividend_surprise_selection" in a:
         L.extend(report_dividend_surprise.header_lines(a))
+    elif "ex_div_gap_selection" in a:
+        L.extend(report_ex_div_gap.header_lines(a))
     else:
         if result.get("drawdown_diagnostic") is not None:
             L.append("═══ 淘沙 · 事件研究体检报告(#2b 回撤反抽·b1池 事件版)═══")
@@ -125,7 +127,6 @@ def render(result: dict) -> str:
     L.append(f"冻结口径审计: frozen_config={a['frozen_config_digest'][:16]}… "
              f"frozen_ashare={a['frozen_ashare_digest'][:16]}…")
     L.append("")
-
     # ② N_eff + 剔除率同报(item 11)
     rej = result["rejections"]
     L.append(f"【样本与剔除(存活数与剔除率同报,item 11)】")
@@ -147,7 +148,6 @@ def render(result: dict) -> str:
         L.append(f"    {y}: 总{d['total']} 剔{d['rejected']} 率{_fmt(d['reject_ratio'],3)} "
                  f"原因{d['by_reason']}")
     L.append("")
-
     # exp20 事件生成漏斗(冻结 PAP v2 reporting_commitments①②③④;无此键 → 段落不出=零回归)
     ers = a.get("earnings_revision_selection")
     if ers:
@@ -250,11 +250,9 @@ def render(result: dict) -> str:
             L.append(f"  参考对账(只读对账参考非硬断言,差异按血缘归因): "
                      f"{recon.get('summary', '(见 result_json)')}")
         L.append("")
-
     vds = a.get("volume_drought_selection")
     if vds:
         L.extend(report_volume_drought.selection_lines(vds))
-
     sps = a.get("sox_spillover_selection")
     if sps:
         L.extend(report_sox_spillover.selection_lines(sps))
@@ -270,7 +268,9 @@ def render(result: dict) -> str:
     dss = a.get("dividend_surprise_selection")
     if dss:
         L.extend(report_dividend_surprise.selection_lines(dss))
-
+    edg = a.get("ex_div_gap_selection")
+    if edg:
+        L.extend(report_ex_div_gap.selection_lines(edg))
     # provenance 注记(人令 2026-07-19 一:沿 bias_statement 同机制,自 result 注记字段直接
     # 消费渲染冻结原文;默认无键 → 零新行零回归)
     pn = result.get("provenance_note")
