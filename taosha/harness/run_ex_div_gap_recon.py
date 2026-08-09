@@ -219,6 +219,7 @@ def _run_formal(args, row, pap: dict, kwargs: dict) -> None:
 
     selected = _run_mode(args.snapshot_id, "snapshot")
     selection = selected["selection"]
+    assert_reference(selection)
     events = event_rows(selection, f"study_snapshot:{args.snapshot_id}")
     reader = ViewReader(snapshot_id=args.snapshot_id, sample={event.ts_code for event in events})
     result = runner.run_study(reader, pap, events=events,

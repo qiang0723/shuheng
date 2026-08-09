@@ -94,6 +94,10 @@ check("F14 reader零价格收益字段", "adj_close" in reader or "raw_close" in
 recon = Path("taosha/harness/run_ex_div_gap_recon.py").read_text(encoding="utf-8")
 check("F15 recon分支进入正式函数前不加载runner",
       "runner" in recon.split("def _run_formal", 1)[0], False)
+formal = recon.split("def _run_formal", 1)[1].split("def main", 1)[0]
+check("F16 正式三值硬闸早于收益读取",
+      0 <= formal.find("assert_reference(selection)") < formal.find("ViewReader(")
+      < formal.find("runner.run_study("), True)
 
 ROOT = Path(__file__).resolve().parents[2]
 pap_path = ROOT / "taosha/docs/ex-div-gap-pap-final-2026-08-09.json"
