@@ -44,4 +44,4 @@ services:
 
 networks:
   web_private:
-    internal: true
+    driver: bridge
