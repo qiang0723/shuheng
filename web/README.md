@@ -1,6 +1,6 @@
 # 枢衡研究判断平台·静态 Web MVP
 
-本目录提供只读、纯中文的研究展示界面。当前版本只消费仓内静态 fixture，不连接数据库，不提供写入或研究运行能力；部署为私有静态站点。
+本目录提供只读、纯中文的研究展示界面。当前版本只消费仓内静态 fixture，不连接数据库，不提供写入或研究运行能力；正式部署形态为本机私有 Docker 服务。
 
 ## 页面
 
@@ -19,6 +19,18 @@ pnpm run build
 pnpm test
 pnpm run lint
 ```
+
+## Docker 部署
+
+从仓根执行：
+
+```bash
+SHUHENG_WEB_VCS_REF="$(git rev-parse HEAD)" docker compose build web
+docker compose up -d web
+docker compose ps web
+```
+
+默认只监听 `http://127.0.0.1:3000`，不开放局域网或公网。容器以非 root 用户运行，根文件系统只读；停止服务使用 `docker compose stop web`。
 
 ## 数据与边界
 

@@ -17,3 +17,31 @@ services:
     environment:
       PYTHONPATH: /workspace
     command: ["python", "-m", "ops.verify_runtime", "--strict"]
+
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+      args:
+        VCS_REF: ${SHUHENG_WEB_VCS_REF:-unknown}
+    image: shuheng-research-web:2026-08-09
+    init: true
+    restart: unless-stopped
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 256
+    mem_limit: 512m
+    cpus: 1.0
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    ports:
+      - "127.0.0.1:${SHUHENG_WEB_PORT:-3000}:3000"
+    networks:
+      - web_private
+
+networks:
+  web_private:
+    internal: true
