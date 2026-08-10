@@ -96,3 +96,37 @@ John 随后逐字批准推送 commits `b58e115`、`299e3a0`，并继续阿里云
   未重抓旧 10 票、未覆盖失败页。
 
 15 分钟 UTC+8 心跳监控已恢复；监控只读，任一阶段非零即报告并暂停，不自动重启。
+
+## 七、v2 续跑第二次 fail-closed
+
+`s22-ann-index-v2` 在 `000046.SZ/2021` 第 7/8 页发现 3 个公告 ID 跨页重复，元数据再次
+exit=`1`，监督链记录 `metadata_v2_exit=1`，后三阶段仍未启动。停止后实物为：
+
+```text
+done=10
+legacy_failed_pages=3
+annual_v2_pages=121
+errors=2（原总数漂移 + 本次跨页重复）
+```
+
+三条重复公告的 ID、时戳和标题在两页逐字相同，不能解释为不同文档复用 ID。旧成功件与旧
+失败平铺页均未改动。
+
+随后对 `000046/2021` 做三遍完整年度只读扫描，结果为：
+
+```text
+run1: rows=430 / unique=420 / duplicates=10 / totals=[426,430]
+      set_sha=a5166cc3597c28fd35ab3fb475edab2bf8a9ed8d348f2366690cd4e6fe64baad
+run2: rows=430 / unique=420 / duplicates=10 / totals=[426,430]
+      set_sha=fbd5677b4fdf28af3371008c743a85e50904493d57164c0b930b9d96eaa2080e
+run3: rows=426 / unique=423 / duplicates=3 / totals=[426,430]
+      set_sha=bad6ef333a1dbaf80b5464f77e5427f7a45ba21d216e9453b071520e4f46b28a
+```
+
+三遍均有重复且集合 SHA 互不相同，故“年度整段重跑至两遍相同”当前没有收敛证据，直接跨页
+去重更会掩盖边界漏项，不得采用。
+
+下一项**未授权提案**仅有一条：从年度开始确定性递归二分日期区间，直到每个叶片在第一次
+请求即 `hasMore=false`；每个单页叶片再独立读取两次，只有规范化行逐字相等才接受。任一单日
+仍 `hasMore=true`、两读不等、跨叶片 ID 重复或日期越界即 fail-closed。新尝试须另用版本化
+布局，永久保留 flat v1 与 annual_v2 两轮失败实物。未经 John 另令不得实施或重启。
