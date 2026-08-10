@@ -45,3 +45,13 @@ git diff --check = PASS
 远端保持 v4 exit=`1`、`done=10 / v4_reads=494 / errors=4 / downstream=0`，监控保持暂停。
 继续须 John 另令。E1 仍为 `OPEN_FAIL_CLOSED`。
 
+## 五、推送与续跑授权
+
+交付明确列出的唯一下一步为：“推送三笔提交，阿里云精确 fast-forward、远端复验后以全新 v5
+容器从 `10/646` 续跑。”John 随后回复：
+
+> 继续
+
+本回复据唯一指向登记为上述推送、远端精确读回、复验、v5 新容器与监督恢复授权；不扩解为
+数据库写入、利润 PIT、终版 PAP、密封、冻结、StudySnapshot、manifest、收益读取、研究运行或
+persist。旧 v1/v2/v3/v4 证据与四个失败容器必须保留。
