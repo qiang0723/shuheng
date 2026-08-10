@@ -1,0 +1,7 @@
+{
+  "cross_experiment_imports": [
+    "taosha.compute.st_imposition_rules -> taosha.compute.st_removal_rules",
+    "taosha.harness.run_st_imposition_study -> taosha.harness.run_st_removal_study"
+  ],
+  "schema_version": 1
+}

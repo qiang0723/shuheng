@@ -20,6 +20,8 @@ docs/     设计方案 / 施工清单 / 哨兵加固 / 体系速览
 - **compute 纯函数、零副作用**;单一职责;**单文件 ≤ 500 行**,超了就拆;公共逻辑下沉不复制。
 - **规模闸门**:新文件 ≤300 行、新函数 ≤60 行;存量超限项按
   `ops/runtime/code_size_baseline.json` 只减不增。基线上调须人明确批准,不得随代码施工顺手放宽。
+- **依赖棘轮**:内部 import 图零循环、`qbase` 不反向依赖 `taosha`、底层不依赖 harness；
+  实验专属 rules/driver 横向依赖按 `architecture_baseline.json` 精确冻结，只减不增。
 - **跨云三铁则**:写权限只在阿里云 / 代码单向下行数据不上行 / 服务只读结果副本。
 - **秘钥只住 `.env`**,不进代码不进 git(见 `.env.example`)。
 
@@ -34,10 +36,12 @@ docker compose run --rm tooling
 docker compose run --rm tooling python -m taosha.harness.verify_high_pullback_rules
 python -m ops.verify_code_size --self-test
 python -m ops.verify_code_size
+python -m ops.verify_architecture --self-test
+python -m ops.verify_architecture
 ```
 
-Docker 镜像构建会自动执行规模闸门。存量超限文件或函数被拆小后,必须同步下调或删除基线;
-闸门拒绝新增超限项、存量继续增长及已失效的宽松基线。
+Docker 镜像构建会自动执行规模与依赖两道闸门。存量超限文件、函数或跨实验依赖被拆小、
+下沉后，必须同步下调或删除基线；闸门拒绝新增债务、存量继续增长及已失效的宽松基线。
 
 需要数据库的集成套件不在本地Compose注入生产凭据,只在阿里云授权环境执行。
 

@@ -28,7 +28,8 @@ COPY --chown=shuheng:shuheng . /opt/quant
 
 # Fail image construction before deployment if new code exceeds the size
 # budget or any grandfathered hotspot grows beyond its reviewed baseline.
-RUN python -m ops.verify_code_size
+RUN python -m ops.verify_code_size \
+    && python -m ops.verify_architecture
 
 USER shuheng
 
