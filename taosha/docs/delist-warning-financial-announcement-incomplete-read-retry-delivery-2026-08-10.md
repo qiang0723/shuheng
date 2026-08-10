@@ -65,3 +65,30 @@ d42f976 docs: authorize exp22 incomplete read retry
 v6 容器与监督链续跑。任一不符即停，不删除旧证据、不自动重启。
 
 E1 继续为 `OPEN_FAIL_CLOSED`；零数据库写入及零研究状态变化。
+
+## 五、GitHub 推送、远端复验与 v6 续跑
+
+1. GitHub `origin/main` 已推进至
+   `67a21660a872cbf26cc819c05d3af560ad0ce84d`；阿里云 `/opt/quant` 在先验干净后精确
+   fast-forward 至同一提交并保持干净。
+2. 远端钉版镜像 `shuheng-quant:579a354` 内重跑：二分 `32/32`、定位 `6/6`、索引
+   `42/42`、路由 `6/6`，规模与架构通过。首次 `py_compile` 因只读 rootfs 无法写仓内
+   `__pycache__` 而退出；未放宽只读保护，改用 `PYTHONPYCACHEPREFIX=/tmp/pycache` 指向
+   tmpfs 后通过。
+3. 新代码按 `1991-01-01..2024-06-30` 独立验证 marker：
+   `routes=646 / valid_done=17 / first_pending=000155.SZ / layout=bisect_v6`；另读回
+   `v5_reads=3469 / v6_reads=0 / errors=5`。全部命中才启动。
+4. 新容器 `s22-ann-index-v6` 于 `2026-08-10 21:13:06+08` 启动，容器 ID 为
+   `600b5dacca1f3a333f18e2114b8e9b68edd3ca29ac133b512f86130af44d363b`；钉版镜像、
+   只读 rootfs/代码、证据目录唯一可写、`cap_drop=ALL`、零数据库凭据。
+5. 监督 PID=`790687`；脚本
+   `/root/s22announcement/pipeline_supervisor_v6.sh` SHA256=
+   `f144d8c7a544442643a68e525b8d3a955509fc269c2d95226d8bfe10f33886e7`。只在 metadata
+   exit=`0` 后依次启动 documents、UNPROVEN contract queue 与 12 票独立读回。
+6. `21:13:19+08` 首读：v6 容器 `running`，合法 marker=`17/646`，v6 新读取件=`9`，
+   v5=`3469`、errors=`5` 均未变化，下游零启动。
+7. 十五分钟 UTC+8 heartbeat 已切换至 v6 并恢复 `ACTIVE`；仅在实质进度、阶段切换、失败
+   或全完成时回报，任一非零即报告并暂停，禁止自动重启。
+
+本节完成后，exp22 处于“v6 续跑中”；不作废 v1–v5 失败证据、17 个合法 marker 或原工程
+停止线。
