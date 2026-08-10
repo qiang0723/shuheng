@@ -1,0 +1,198 @@
+{
+  "accessed_at": "2026-08-10T12:59:23+08:00",
+  "artifact_status": "PROBE_ONLY_NOT_FOR_FREEZE",
+  "freeze_eligible": false,
+  "scope": "exp22 delist_warning_financial official announcement entrances and stratified public-document probes; no full archive collection",
+  "schema_version": 1,
+  "sources": [
+    {
+      "authority": "上海证券交易所",
+      "evidence_scope": [
+        "上交所上市公司公告官方入口",
+        "支持按证券与日期检索，未来可作为完整公告链入口之一"
+      ],
+      "id": "PORTAL_SSE_ANNOUNCEMENTS",
+      "publication_date": null,
+      "source_type": "official_announcement_portal",
+      "title": "上市公司公告",
+      "url": "https://www.sse.com.cn/disclosure/listedinfo/announcement/"
+    },
+    {
+      "authority": "深圳证券交易所",
+      "evidence_scope": [
+        "深交所上市公司公告官方入口",
+        "未来可作为深市公告链入口之一"
+      ],
+      "id": "PORTAL_SZSE_ANNOUNCEMENTS",
+      "publication_date": null,
+      "source_type": "official_announcement_portal",
+      "title": "上市公司公告",
+      "url": "https://www.szse.cn/disclosure/listed/notice/index.html"
+    },
+    {
+      "authority": "巨潮资讯网（深圳证券交易所法定信息披露平台）",
+      "evidence_scope": [
+        "深交所法定信息披露平台身份",
+        "同时提供沪深主板、科创板与创业板公告检索入口",
+        "未来全量施工仍须另令验证接口、分页与完整性，不得由本页面可见性推断覆盖率"
+      ],
+      "id": "PORTAL_CNINFO_NOTICE",
+      "publication_date": null,
+      "source_type": "official_statutory_disclosure_portal",
+      "title": "公告查询",
+      "url": "https://www.cninfo.com.cn/new/commonUrl?url=disclosure/list/notice"
+    },
+    {
+      "authority": "上市公司公告原件，经巨潮资讯提供",
+      "evidence_scope": [
+        "明确实施退市风险警示",
+        "2011与2012年度连续亏损",
+        "规则条款、停牌与实施日期、证券代码及简称变化"
+      ],
+      "id": "DOC_SSE_600265_20130502",
+      "publication_date": "2013-05-02",
+      "source_type": "listed_company_original_announcement",
+      "title": "云南景谷林业股份有限公司关于股票实施退市风险警示的公告",
+      "url": "https://static.cninfo.com.cn/finalpage/2013-05-02/62447733.PDF"
+    },
+    {
+      "authority": "上市公司公告原件，经巨潮资讯提供",
+      "evidence_scope": [
+        "明确实施退市风险警示",
+        "2013与2014年度连续亏损",
+        "规则条款、实施日期、证券代码及简称变化"
+      ],
+      "id": "DOC_SSE_600408_20150430",
+      "publication_date": "2015-04-30",
+      "source_type": "listed_company_original_announcement",
+      "title": "山西安泰集团股份有限公司关于股票实施退市风险警示的公告",
+      "url": "https://static.cninfo.com.cn/finalpage/2015-04-30/1200948583.PDF"
+    },
+    {
+      "authority": "上市公司公告原件，经巨潮资讯提供",
+      "evidence_scope": [
+        "明确实施退市风险警示",
+        "2020年度期末归属于上市公司股东的净资产为负",
+        "规则条款、停牌与实施日期、证券代码及简称变化"
+      ],
+      "id": "DOC_SSE_600518_20210428",
+      "publication_date": "2021-04-28",
+      "source_type": "listed_company_original_announcement",
+      "title": "康美药业股份有限公司关于股票实施退市风险警示暨临时停牌的公告",
+      "url": "https://static.cninfo.com.cn/finalpage/2021-04-28/1209841773.PDF"
+    },
+    {
+      "authority": "上市公司公告原件，经巨潮资讯提供",
+      "evidence_scope": [
+        "明确实施退市风险警示",
+        "2018与2019年度连续亏损",
+        "规则条款、实施日期、证券代码及简称变化"
+      ],
+      "id": "DOC_SZSE_002418_20200429",
+      "publication_date": "2020-04-29",
+      "source_type": "listed_company_original_announcement",
+      "title": "康盛股份关于公司股票交易被实施退市风险警示暨停牌的公告",
+      "url": "https://static.cninfo.com.cn/finalpage/2020-04-29/1207664414.PDF"
+    },
+    {
+      "authority": "上市公司公告原件，经巨潮资讯提供",
+      "evidence_scope": [
+        "明确实施退市风险警示",
+        "2021年度经审计期末净资产为负",
+        "创业板规则条款、实施日期、证券代码及简称变化"
+      ],
+      "id": "DOC_SZSE_300108_20220629",
+      "publication_date": "2022-06-29",
+      "source_type": "listed_company_original_announcement",
+      "title": "吉药控股集团股份有限公司关于公司股票被实施退市风险警示暨股票停牌的公告",
+      "url": "https://static.cninfo.com.cn/finalpage/2022-06-29/1213856951.PDF"
+    },
+    {
+      "authority": "上市公司公告原件，经巨潮资讯提供",
+      "evidence_scope": [
+        "风险警示原因是净利润与营业收入组合",
+        "正文明确净资产并非负值",
+        "证明退市风险警示标题不能代理A1原因"
+      ],
+      "id": "DOC_SSE_688309_20240607",
+      "publication_date": "2024-06-07",
+      "source_type": "listed_company_risk_notice",
+      "title": "烟台睿创微纳技术股份有限公司退市风险警示相关事项的风险提示公告",
+      "url": "https://static.cninfo.com.cn/finalpage/2024-06-07/1220288718.PDF"
+    },
+    {
+      "authority": "上市公司公告原件，经巨潮资讯提供",
+      "evidence_scope": [
+        "研究holdout之后的文档结构证明",
+        "正文可同时承载负净资产原因、规则条款与实施日期",
+        "不得用于2011至2024H1覆盖或候选数量"
+      ],
+      "id": "DOC_SSE_688066_20260430",
+      "publication_date": "2026-04-30",
+      "source_type": "listed_company_original_announcement_out_of_scope",
+      "title": "688066关于公司股票被实施退市风险警示暨停牌的公告",
+      "url": "https://static.cninfo.com.cn/finalpage/2026-04-30/1225265910.PDF"
+    },
+    {
+      "authority": "上市公司公告原件，经巨潮资讯提供",
+      "evidence_scope": [
+        "只说明股票可能被实施退市风险警示",
+        "不是实际实施公告"
+      ],
+      "id": "DOC_SSE_600198_20210128",
+      "publication_date": "2021-01-28",
+      "source_type": "listed_company_possible_warning_notice",
+      "title": "大唐电信科技股份有限公司关于公司股票可能被实施退市风险警示的风险提示公告",
+      "url": "https://static.cninfo.com.cn/finalpage/2021-01-28/1209203239.PDF"
+    },
+    {
+      "authority": "上市公司公告原件，经巨潮资讯提供",
+      "evidence_scope": [
+        "继续实施退市风险警示",
+        "正文揭示原始风险警示由其他原因先行触发",
+        "不能冒充A1方案首次实施锚"
+      ],
+      "id": "DOC_SZSE_002356_20200529",
+      "publication_date": "2020-05-29",
+      "source_type": "listed_company_continuation_announcement",
+      "title": "赫美集团关于公司股票继续被实施退市风险警示的公告",
+      "url": "https://static.cninfo.com.cn/finalpage/2020-05-29/1207873251.PDF"
+    },
+    {
+      "authority": "上市公司公告原件，经巨潮资讯提供",
+      "evidence_scope": [
+        "撤销退市风险警示的后续处置",
+        "可回溯引用原实施事件但不能替代原实施公告"
+      ],
+      "id": "DOC_SZSE_002194_20190814",
+      "publication_date": "2019-08-14",
+      "source_type": "listed_company_withdrawal_announcement",
+      "title": "武汉凡谷关于撤销退市风险警示的公告",
+      "url": "https://static.cninfo.com.cn/finalpage/2019-08-14/1206519903.PDF"
+    },
+    {
+      "authority": "上海证券交易所债券信息披露",
+      "evidence_scope": [
+        "债券报告转述上市公司退市风险警示事实",
+        "不是上市公司首次实施公告原件，不能作E1锚"
+      ],
+      "id": "DOC_SSE_BOND_600086_20200702",
+      "publication_date": "2020-07-02",
+      "source_type": "official_secondary_disclosure",
+      "title": "东方金钰相关债券受托管理事务临时报告",
+      "url": "https://static.sse.com.cn/disclosure/bond/announcement/company/c/2020-07-02/3910832993883200741447841.pdf"
+    },
+    {
+      "authority": "上市公司公告原件，经巨潮资讯提供",
+      "evidence_scope": [
+        "其他风险警示公告正文指向同日另发的退市风险警示实施公告",
+        "当前文件不是E1原件"
+      ],
+      "id": "DOC_SZSE_300089_20220430",
+      "publication_date": "2022-04-30",
+      "source_type": "listed_company_other_risk_warning_announcement",
+      "title": "文化长城关于公司股票被实施其他风险警示暨停牌的公告",
+      "url": "https://static.cninfo.com.cn/finalpage/2022-04-30/1213266876.PDF"
+    }
+  ]
+}

@@ -1,0 +1,265 @@
+{
+  "artifact_status": "PROBE_ONLY_NOT_FOR_FREEZE",
+  "as_of": "2026-08-10T12:59:23+08:00",
+  "freeze_eligible": false,
+  "g2_start": null,
+  "schema_version": 1,
+  "scope": {
+    "research_start_inclusive": "2011-01-01",
+    "research_end_exclusive": "2024-07-01",
+    "selection_method": "purposeful stratification by exchange, historical board, rule era and failure document role; not a probability sample",
+    "coverage_claim_allowed": false
+  },
+  "summary": {
+    "in_scope_probes": 11,
+    "out_of_scope_schema_probes": 1,
+    "strict_six_check_pass": 0,
+    "documents_with_all_five_non_firstness_checks": 6,
+    "initial_form_documents_blocked_only_by_archive_firstness": 5,
+    "primary_status_counts": {
+      "FIRSTNESS_UNPROVEN": 5,
+      "FAIL_A1_REASON": 1,
+      "FAIL_NOT_IMPLEMENTATION": 1,
+      "FAIL_NOT_FIRST_CONTINUATION": 1,
+      "FAIL_WITHDRAWAL_FOLLOWUP": 1,
+      "FAIL_NOT_ORIGINAL_EVENT_DOCUMENT": 1,
+      "FAIL_RELATED_OTHER_WARNING": 1,
+      "OUT_OF_SCOPE_SCHEMA_PROOF": 1
+    }
+  },
+  "probes": [
+    {
+      "probe_id": "P01_SSE_MAIN_2013",
+      "source_id": "DOC_SSE_600265_20130502",
+      "exchange": "SSE",
+      "historical_board": "MAIN",
+      "ts_code": "600265.SH",
+      "announcement_date": "2013-05-02",
+      "in_research_scope": true,
+      "checks": {
+        "official_original": true,
+        "explicit_implementation": true,
+        "explicit_a1_reason": true,
+        "unique_rule_binding": true,
+        "unique_date_and_security_identity": true,
+        "first_implementation_for_scheme": false
+      },
+      "primary_status": "FIRSTNESS_UNPROVEN",
+      "reason": "单份原件给出实施、两年连续亏损、规则、日期与证券身份，但本次未采集该证券公告全集，不能证明同方案不存在更早实施或重复原件。"
+    },
+    {
+      "probe_id": "P02_SSE_MAIN_2015",
+      "source_id": "DOC_SSE_600408_20150430",
+      "exchange": "SSE",
+      "historical_board": "MAIN",
+      "ts_code": "600408.SH",
+      "announcement_date": "2015-04-30",
+      "in_research_scope": true,
+      "checks": {
+        "official_original": true,
+        "explicit_implementation": true,
+        "explicit_a1_reason": true,
+        "unique_rule_binding": true,
+        "unique_date_and_security_identity": true,
+        "first_implementation_for_scheme": false
+      },
+      "primary_status": "FIRSTNESS_UNPROVEN",
+      "reason": "正文五项字段齐全；缺逐证券完整公告链，首次性保持fail-closed。"
+    },
+    {
+      "probe_id": "P03_SSE_MAIN_2021",
+      "source_id": "DOC_SSE_600518_20210428",
+      "exchange": "SSE",
+      "historical_board": "MAIN",
+      "ts_code": "600518.SH",
+      "announcement_date": "2021-04-28",
+      "in_research_scope": true,
+      "checks": {
+        "official_original": true,
+        "explicit_implementation": true,
+        "explicit_a1_reason": true,
+        "unique_rule_binding": true,
+        "unique_date_and_security_identity": true,
+        "first_implementation_for_scheme": false
+      },
+      "primary_status": "FIRSTNESS_UNPROVEN",
+      "reason": "负归母净资产、规则条款与实施日均明确；仍须完整公告链证明该方案首次性。"
+    },
+    {
+      "probe_id": "P04_SZSE_SME_2020",
+      "source_id": "DOC_SZSE_002418_20200429",
+      "exchange": "SZSE",
+      "historical_board": "SME",
+      "ts_code": "002418.SZ",
+      "announcement_date": "2020-04-29",
+      "in_research_scope": true,
+      "checks": {
+        "official_original": true,
+        "explicit_implementation": true,
+        "explicit_a1_reason": true,
+        "unique_rule_binding": true,
+        "unique_date_and_security_identity": true,
+        "first_implementation_for_scheme": false
+      },
+      "primary_status": "FIRSTNESS_UNPROVEN",
+      "reason": "正文五项字段齐全；本次非全量核查不能排除更早同方案公告。"
+    },
+    {
+      "probe_id": "P05_SZSE_CHINEXT_2022",
+      "source_id": "DOC_SZSE_300108_20220629",
+      "exchange": "SZSE",
+      "historical_board": "CHINEXT",
+      "ts_code": "300108.SZ",
+      "announcement_date": "2022-06-29",
+      "in_research_scope": true,
+      "checks": {
+        "official_original": true,
+        "explicit_implementation": true,
+        "explicit_a1_reason": true,
+        "unique_rule_binding": true,
+        "unique_date_and_security_identity": true,
+        "first_implementation_for_scheme": false
+      },
+      "primary_status": "FIRSTNESS_UNPROVEN",
+      "reason": "创业板文档可明确负净资产、规则、日期与身份；首次性仍依赖未授权的完整公告链。"
+    },
+    {
+      "probe_id": "P06_SSE_STAR_2024_WRONG_REASON",
+      "source_id": "DOC_SSE_688309_20240607",
+      "exchange": "SSE",
+      "historical_board": "STAR",
+      "ts_code": "688309.SH",
+      "announcement_date": "2024-06-07",
+      "in_research_scope": true,
+      "checks": {
+        "official_original": true,
+        "explicit_implementation": false,
+        "explicit_a1_reason": false,
+        "unique_rule_binding": true,
+        "unique_date_and_security_identity": true,
+        "first_implementation_for_scheme": false
+      },
+      "primary_status": "FAIL_A1_REASON",
+      "reason": "正文所述财务类风险为净利润与营业收入组合，且明确净资产不为负；退市风险警示标题不能代理A1两类原因。"
+    },
+    {
+      "probe_id": "P07_SSE_MAIN_2021_POSSIBLE",
+      "source_id": "DOC_SSE_600198_20210128",
+      "exchange": "SSE",
+      "historical_board": "MAIN",
+      "ts_code": "600198.SH",
+      "announcement_date": "2021-01-28",
+      "in_research_scope": true,
+      "checks": {
+        "official_original": true,
+        "explicit_implementation": false,
+        "explicit_a1_reason": true,
+        "unique_rule_binding": true,
+        "unique_date_and_security_identity": true,
+        "first_implementation_for_scheme": false
+      },
+      "primary_status": "FAIL_NOT_IMPLEMENTATION",
+      "reason": "文件只披露可能被实施，不能作为实际实施锚。"
+    },
+    {
+      "probe_id": "P08_SZSE_SME_2020_CONTINUED",
+      "source_id": "DOC_SZSE_002356_20200529",
+      "exchange": "SZSE",
+      "historical_board": "SME",
+      "ts_code": "002356.SZ",
+      "announcement_date": "2020-05-29",
+      "in_research_scope": true,
+      "checks": {
+        "official_original": true,
+        "explicit_implementation": true,
+        "explicit_a1_reason": true,
+        "unique_rule_binding": true,
+        "unique_date_and_security_identity": true,
+        "first_implementation_for_scheme": false
+      },
+      "primary_status": "FAIL_NOT_FIRST_CONTINUATION",
+      "reason": "文件明确为继续实施，且正文揭示原风险警示由其他原因先行触发；不能生成A1首次实施事件。"
+    },
+    {
+      "probe_id": "P09_SZSE_SME_2019_WITHDRAWAL",
+      "source_id": "DOC_SZSE_002194_20190814",
+      "exchange": "SZSE",
+      "historical_board": "SME",
+      "ts_code": "002194.SZ",
+      "announcement_date": "2019-08-14",
+      "in_research_scope": true,
+      "checks": {
+        "official_original": true,
+        "explicit_implementation": false,
+        "explicit_a1_reason": true,
+        "unique_rule_binding": true,
+        "unique_date_and_security_identity": true,
+        "first_implementation_for_scheme": false
+      },
+      "primary_status": "FAIL_WITHDRAWAL_FOLLOWUP",
+      "reason": "撤销公告可转述原事件，但属于后续处置，严禁替代原实施公告。"
+    },
+    {
+      "probe_id": "P10_SSE_MAIN_2020_SECONDARY",
+      "source_id": "DOC_SSE_BOND_600086_20200702",
+      "exchange": "SSE",
+      "historical_board": "MAIN",
+      "ts_code": "600086.SH",
+      "announcement_date": "2020-07-02",
+      "in_research_scope": true,
+      "checks": {
+        "official_original": false,
+        "explicit_implementation": true,
+        "explicit_a1_reason": true,
+        "unique_rule_binding": false,
+        "unique_date_and_security_identity": true,
+        "first_implementation_for_scheme": false
+      },
+      "primary_status": "FAIL_NOT_ORIGINAL_EVENT_DOCUMENT",
+      "reason": "交易所债券报告属于官方二手转述，不是上市公司首次实施公告原件。"
+    },
+    {
+      "probe_id": "P11_SZSE_CHINEXT_2022_OTHER_WARNING",
+      "source_id": "DOC_SZSE_300089_20220430",
+      "exchange": "SZSE",
+      "historical_board": "CHINEXT",
+      "ts_code": "300089.SZ",
+      "announcement_date": "2022-04-30",
+      "in_research_scope": true,
+      "checks": {
+        "official_original": true,
+        "explicit_implementation": false,
+        "explicit_a1_reason": false,
+        "unique_rule_binding": false,
+        "unique_date_and_security_identity": true,
+        "first_implementation_for_scheme": false
+      },
+      "primary_status": "FAIL_RELATED_OTHER_WARNING",
+      "reason": "当前原件是其他风险警示；虽指向同日另发的退市风险警示实施公告，仍不得以当前文件代替目标原件。"
+    },
+    {
+      "probe_id": "P12_SSE_STAR_2026_SCHEMA_ONLY",
+      "source_id": "DOC_SSE_688066_20260430",
+      "exchange": "SSE",
+      "historical_board": "STAR",
+      "ts_code": "688066.SH",
+      "announcement_date": "2026-04-30",
+      "in_research_scope": false,
+      "checks": {
+        "official_original": true,
+        "explicit_implementation": true,
+        "explicit_a1_reason": true,
+        "unique_rule_binding": true,
+        "unique_date_and_security_identity": true,
+        "first_implementation_for_scheme": false
+      },
+      "primary_status": "OUT_OF_SCOPE_SCHEMA_PROOF",
+      "reason": "仅证明当前科创板原件可以承载五项字段；日期晚于holdout，禁止计入研究窗覆盖、候选或严格通过分母。"
+    }
+  ],
+  "binary_conclusion": {
+    "worth_separately_authorized_full_index_build": true,
+    "current_e1_hard_gate_closed": false,
+    "reason": "官方入口稳定且五个跨交易所/板块原件可同时提供实施、A1原因、规则、日期与证券身份；但本次非全量探针不能证明逐方案首次性，严格六项合取0/11。完整逐证券公告链是不可省略的下一层证据工程。"
+  }
+}

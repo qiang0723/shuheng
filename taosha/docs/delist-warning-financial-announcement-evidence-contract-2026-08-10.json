@@ -1,0 +1,102 @@
+{
+  "artifact_status": "DRAFT_EVIDENCE_CONTRACT_NOT_FOR_FREEZE",
+  "as_of": "2026-08-10T12:59:23+08:00",
+  "freeze_eligible": false,
+  "g2_start": null,
+  "schema_version": 1,
+  "contract": {
+    "event_key": [
+      "ts_code",
+      "scheme_id",
+      "first_implementation_announcement_date"
+    ],
+    "required_document_fields": [
+      "source_id",
+      "source_url",
+      "source_content_sha256",
+      "announcement_id",
+      "announcement_date",
+      "ts_code",
+      "company_name",
+      "document_title",
+      "document_role",
+      "implementation_effective_date",
+      "a1_reason_code",
+      "a1_financial_years",
+      "rule_source_id",
+      "rule_clause",
+      "scheme_id",
+      "predecessor_announcement_ids",
+      "successor_announcement_ids",
+      "firstness_proof"
+    ],
+    "allowed_document_roles": [
+      "FIRST_IMPLEMENTATION",
+      "POSSIBLE_WARNING",
+      "CONTINUATION",
+      "REVISION",
+      "WITHDRAWAL",
+      "SUSPENSION_OR_TERMINATION",
+      "OTHER_RISK_WARNING",
+      "SECONDARY_REFERENCE"
+    ],
+    "allowed_a1_reason_codes": [
+      "CONSECUTIVE_LOSS",
+      "NEGATIVE_PARENT_EQUITY"
+    ],
+    "required_pass_checks": [
+      "official_original",
+      "explicit_implementation",
+      "explicit_a1_reason",
+      "unique_rule_binding",
+      "unique_date_and_security_identity",
+      "first_implementation_for_scheme"
+    ],
+    "firstness_proof_minimum": [
+      "同一证券研究期内官方公告全集已按公告ID与公告日完整枚举",
+      "当前原件明确属于实施而非可能、继续、修订、撤销或其他风险警示",
+      "正文交叉引用与前后公告关系已解析为方案链",
+      "同一方案不存在更早实施公告；若存在多份同日原件须逐件保留并整组判定",
+      "方案身份不能唯一证明时整组FAIL_CLOSED"
+    ],
+    "fail_codes": [
+      "FAIL_NOT_OFFICIAL_ORIGINAL",
+      "FAIL_NOT_IMPLEMENTATION",
+      "FAIL_A1_REASON",
+      "FAIL_RULE_BINDING",
+      "FAIL_DATE_OR_SECURITY_IDENTITY",
+      "FAIL_FIRSTNESS_UNPROVEN",
+      "FAIL_CONTINUATION_OR_REVISION",
+      "FAIL_WITHDRAWAL_OR_LATER_STAGE",
+      "FAIL_OTHER_RISK_WARNING",
+      "FAIL_SCHEME_IDENTITY_CONFLICT",
+      "FAIL_ARCHIVE_COMPLETENESS_UNPROVEN",
+      "OUT_OF_RESEARCH_SCOPE"
+    ],
+    "forbidden_proxies": [
+      "证券简称中的*ST或ST",
+      "namechange行",
+      "财报同日",
+      "审计意见",
+      "标题关键词",
+      "后验风险警示状态",
+      "搜索引擎摘要",
+      "继续实施、撤销或其他风险警示文件对原事件的转述"
+    ],
+    "full_collection_acceptance": [
+      "交易所或法定披露平台的查询参数、分页、排序与截止边界已留痕",
+      "逐证券请求全集、响应全集与去重后公告ID集合守恒",
+      "PDF或HTML原件逐件保存内容SHA256且链接可回溯",
+      "交易所、历史板块、公告年度逐层报告检索分母、原件可得数、六项合取通过数与失败原因",
+      "任何查询截断、原件缺失、方案链冲突或首次性不可证均FAIL_CLOSED",
+      "全量覆盖完成前不得生成exp22事件、selection SHA、终版PAP或G2起点菜单"
+    ]
+  },
+  "status": {
+    "official_entry_feasible": true,
+    "single_document_sufficient_for_firstness": false,
+    "full_archive_chain_required": true,
+    "current_e1_gate": "OPEN_FAIL_CLOSED",
+    "recommended_next_unit": "SEPARATELY_AUTHORIZED_FULL_OFFICIAL_ANNOUNCEMENT_INDEX"
+  }
+}
