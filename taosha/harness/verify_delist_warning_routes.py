@@ -11,10 +11,10 @@ def main() -> int:
     rows = [
         {"ts_code": "000001.SZ", "alias": "平安银行",
          "start_date": dt.date(2020, 1, 1),
-         "ann_date": dt.date(2019, 12, 31), "snapshot_batch": "7"},
+         "ann_date": dt.date(2019, 12, 31), "snapshot_batch": "batch7"},
         {"ts_code": "000001.SZ", "alias": "*ST平安",
          "start_date": dt.date(2021, 1, 2),
-         "ann_date": dt.date(2021, 1, 1), "snapshot_batch": "7"},
+         "ann_date": dt.date(2021, 1, 1), "snapshot_batch": "batch7"},
     ]
     selection = exporter._selection(rows)
     checks = {

@@ -17,7 +17,7 @@ from taosha.compute.st_imposition_rules import (
 )
 
 REFERENCE = {
-    "snapshot_batch": "7",
+    "snapshot_batch": "batch7",
     "final_events": 765,
     "final_securities": 646,
     "starred_events": 560,
