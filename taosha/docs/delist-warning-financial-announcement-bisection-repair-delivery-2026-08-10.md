@@ -63,3 +63,26 @@ git diff --check: PASS
    UNPROVEN queue → 12 票独立读回。
 
 E1 继续为 `OPEN_FAIL_CLOSED`。本交付不构成公告语义闭合、候选集、G2 起点或冻结资格。
+
+## 五、获批推送与阿里云 v3 续跑
+
+John 随后明确授权“推送和重启阿里云”。执行结果：
+
+- GitHub `origin/main` 已由 `0ff263c` fast-forward 至 `39b5543`；阿里云 `/opt/quant` 在工作树
+  干净前提下由 `299e3a0` 精确 fast-forward 至
+  `39b5543f3114546863ea33d61b68481f7fe8c31a`；
+- 远端容器内复跑 `17/17 + 39/39 + 路由 6/6`、规模/架构闸门与 py_compile 全绿；
+- 启动前精确基线：`routes=646 / valid_done=10 / first_pending=000046.SZ /
+  legacy_failed_pages=3 / annual_v2_pages=121 / bisect_v3_pages=0 / errors=2`；
+- 旧 flat v1 页树 SHA=`3f54174e…d3e2`，旧 annual_v2 页树 SHA=`c8948c91…4317`；旧两个失败
+  容器继续保持 `Exited (1)`，旧 metadata、监督日志与 errors 文件均未删除或覆盖；
+- 新受限容器 `s22-ann-index-v3` 于 `2026-08-10 15:59:59+08` 启动，镜像
+  `shuheng-quant:579a354`，代码只读、rootfs 只读、证据目录唯一可写、不注入数据库凭据；
+- 新监督 PID=`774458`，脚本 SHA256=
+  `01102cfba0854349c59aea11fe2342c0b7df64920f8ce295379afddfb2e811dc`；只有 metadata exit 0
+  才能依次进入 documents → contract UNPROVEN queue → 12 票 readback；
+- `2026-08-10 16:01:36+08` 读回：容器仍 running，`done=10 / bisect_v3_reads=67 /
+  errors=2`，旧两类页树 SHA 不变，后三阶段零启动。
+
+15 分钟 UTC+8 心跳监控已从 v2 更新并恢复为 v3；监控只读，任一非零退出只报告并暂停，
+不得自动重启。
