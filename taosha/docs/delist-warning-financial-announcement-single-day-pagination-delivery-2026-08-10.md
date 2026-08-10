@@ -41,3 +41,25 @@ John 已授权验收后推送、阿里云精确 fast-forward、远端复验并�
 全新 v4 容器与监督链。启动前须再次核对 v1/v2/v3 页树、三个旧失败容器、`errors=3` 与
 10 个合法 marker 均未变化；v4 只能写新目录。任一远端专项或基线不符即停，不启动跑批。
 
+## 五、推送、远端复验与续跑
+
+John 的同一授权已覆盖验收后推送与从 `10/646` 续跑。执行结果：
+
+- GitHub `origin/main` 由 `5d39e36` fast-forward 至 `9162ede`；阿里云 `/opt/quant` 工作树
+  先验干净，由 `39b5543` 精确 fast-forward 至
+  `9162edeba9cbb887569588e6631279eb02e03b06`；
+- 远端只读代码挂载容器内复跑 `28/28 + 39/39 + 路由6/6`、规模/架构闸门与 py_compile，
+  全部通过；
+- 启动前重新确认 `routes=646 / valid_done=10 / first_pending=000046.SZ /
+  flat_v1=3 / annual_v2=121 / bisect_v3=320 / bisect_v4=0 / errors=3`；三个旧失败
+  容器均保持 `Exited (1)`，旧 metadata 与监督日志 SHA 未变；
+- 全新受限容器 `s22-ann-index-v4` 于 `2026-08-10 17:41:57+08` 启动：镜像
+  `shuheng-quant:579a354`、用户 `shuheng`、只读 rootfs/代码、证据目录唯一可写、零数据库凭据；
+- 新监督 PID=`777511`，脚本 SHA256=
+  `6623faee60a2eacc3cafab4ff439163b28d2eca9d689ae4f50b151ae752a356d`；只有 metadata
+  exit 0 才依次进入 documents → contract UNPROVEN queue → 12 票 readback；
+- `17:43:10+08` 首次实质读回：容器与监督均运行，`done=10 / bisect_v4_reads=55 /
+  errors=3 / downstream=0`；v1/v2/v3 页数与按各自目录重算的页树校验值均未变化。
+
+15 分钟 UTC+8 心跳监控已由 v3 更新为 v4 并恢复 `ACTIVE`。监控仅只读；任一阶段非零只报告
+并暂停，禁止自动重启。E1 继续为 `OPEN_FAIL_CLOSED`。
