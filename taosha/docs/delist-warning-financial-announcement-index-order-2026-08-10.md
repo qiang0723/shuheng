@@ -14,7 +14,7 @@
 
 本工程承接以下不可变锚：
 
-- 探针报告 SHA256=`a2f9781f11025a6007f83e36980be2959dca3f7e81193dccd11eaf0a3d99ead1`；
+- 探针报告初版 SHA256=`a2f9781f11025a6007f83e36980be2959dca3f7e81193dccd11eaf0a3d99ead1` 已因公告 ID `1220288718` 错链作废；补正报告 SHA256=`155a85cff3e2f33110e85d0a93e79b129f1f418e35d376242de4c35b67c80413`，补正说明=`taosha/docs/delist-warning-financial-announcement-evidence-correction-2026-08-10.md`；该事实补正不扩大本令范围；
 - 证据合同 SHA256=`7bb6e70db3b5de9c2a979c2f5b67d54edd97a7ec312ccc687d7eca18ae4b0a84`；
 - 当前 E1=`OPEN_FAIL_CLOSED`、`freeze_eligible=false`、`g2_start=null`；
 - A1 严格只含连续亏损/归母净资产为负，E1 只接受官方首次实施公告，F1 任一冲突整组拒绝。

@@ -51,7 +51,7 @@
 | [600518.SH / 2021](https://static.cninfo.com.cn/finalpage/2021-04-28/1209841773.PDF) | SSE 主板 | `FIRSTNESS_UNPROVEN` | 负归母净资产明确；首次性未证 |
 | [002418.SZ / 2020](https://static.cninfo.com.cn/finalpage/2020-04-29/1207664414.PDF) | SZSE 原中小板 | `FIRSTNESS_UNPROVEN` | 连续亏损明确；首次性未证 |
 | [300108.SZ / 2022](https://static.cninfo.com.cn/finalpage/2022-06-29/1213856951.PDF) | SZSE 创业板 | `FIRSTNESS_UNPROVEN` | 负净资产明确；首次性未证 |
-| [688309.SH / 2024](https://static.cninfo.com.cn/finalpage/2024-06-07/1220288718.PDF) | SSE 科创板 | `FAIL_A1_REASON` | 原因为净利润与收入组合，正文明确净资产不为负 |
+| [688282.SH / 2024](https://static.cninfo.com.cn/finalpage/2024-04-30/1219925905.PDF) | SSE 科创板 | `FAIL_A1_REASON` | 实际实施公告；原因为净利润与营业收入组合，并非A1两类原因 |
 | [600198.SH / 2021](https://static.cninfo.com.cn/finalpage/2021-01-28/1209203239.PDF) | SSE 主板 | `FAIL_NOT_IMPLEMENTATION` | 仅为“可能被实施” |
 | [002356.SZ / 2020](https://static.cninfo.com.cn/finalpage/2020-05-29/1207873251.PDF) | SZSE 原中小板 | `FAIL_NOT_FIRST_CONTINUATION` | 明确为继续实施，且原触发原因不同 |
 | [002194.SZ / 2019](https://static.cninfo.com.cn/finalpage/2019-08-14/1206519903.PDF) | SZSE 原中小板 | `FAIL_WITHDRAWAL_FOLLOWUP` | 撤销公告只可回溯，不可替代原实施公告 |
@@ -60,6 +60,10 @@
 | [688066.SH / 2026](https://static.cninfo.com.cn/finalpage/2026-04-30/1225265910.PDF) | SSE 科创板 | `OUT_OF_SCOPE_SCHEMA_PROOF` | 只证当前原件结构；晚于 holdout，不进研究窗 |
 
 其中 6 件满足除首次性之外的五项检查；5 件是初始实施形态、只因缺完整公告链而阻塞，另 1 件明确属于“继续实施”。这说明首次性不是可以从标题或单份 PDF 默认推导的小字段，而是需要方案链的独立证据门。
+
+### 错链补正
+
+本报告初版曾把公告 ID `1220288718` 记为 `688309.SH` 的退市风险警示材料。2026-08-10 通过巨潮官方逐证券、逐日 API 读回后确认，该 ID 实际属于 `688309` 代码名下的恒誉环保年报监管函回复，不是退市风险警示原件；原样本及其全部语义声明自补正起作废。现以官方公告 ID `1219925905`（`688282.SH`，2024-04-30）替换：原件明确实际实施，但触发原因是净利润与营业收入组合，故同样落 `FAIL_A1_REASON`。该补正不改变 11 件研究窗探针、严格六项通过 0、E1 仍 `OPEN_FAIL_CLOSED` 的二元结论。
 
 本轮不绘制频率图：探针是为覆盖文档角色与失败形态刻意选择，不是概率样本；图形化会制造代表性错觉。
 
@@ -95,9 +99,9 @@
 
 | 文件 | 内容 | SHA256 |
 |---|---|---|
-| `delist-warning-financial-announcement-evidence-index-2026-08-10.json` | 3 个官方入口 + 12 件原件/相关材料 | `5e153d9e7d36f10a5a6eeaaf3d466f6f0068210da841bcfcdef67d3913b53bd1` |
+| `delist-warning-financial-announcement-evidence-index-2026-08-10.json` | 3 个官方入口 + 12 件原件/相关材料 | `32771733a279cc15824c76dc0e642577bad33f5d66a0f019b58778c8af87108c` |
 | `delist-warning-financial-announcement-evidence-contract-2026-08-10.json` | 最小字段、六项合取、失败码与未来全量验收线 | `7bb6e70db3b5de9c2a979c2f5b67d54edd97a7ec312ccc687d7eca18ae4b0a84` |
-| `delist-warning-financial-announcement-probe-2026-08-10.json` | 11 件研究窗探针 + 1 件窗外结构探针 | `5ba0a3b8d8bd890c703e621122d5bfdfb41ba29971fa601323a57b056c64a942` |
+| `delist-warning-financial-announcement-probe-2026-08-10.json` | 11 件研究窗探针 + 1 件窗外结构探针 | `cc22a789a89f43c9fc0987efa55e910422d28ca0f24bfba6d1c10193c7a69bc1` |
 
 机械检查通过：
 

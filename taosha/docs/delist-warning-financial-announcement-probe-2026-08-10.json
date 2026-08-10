@@ -125,22 +125,22 @@
     },
     {
       "probe_id": "P06_SSE_STAR_2024_WRONG_REASON",
-      "source_id": "DOC_SSE_688309_20240607",
+      "source_id": "DOC_SSE_688282_20240430",
       "exchange": "SSE",
       "historical_board": "STAR",
-      "ts_code": "688309.SH",
-      "announcement_date": "2024-06-07",
+      "ts_code": "688282.SH",
+      "announcement_date": "2024-04-30",
       "in_research_scope": true,
       "checks": {
         "official_original": true,
-        "explicit_implementation": false,
+        "explicit_implementation": true,
         "explicit_a1_reason": false,
         "unique_rule_binding": true,
         "unique_date_and_security_identity": true,
         "first_implementation_for_scheme": false
       },
       "primary_status": "FAIL_A1_REASON",
-      "reason": "正文所述财务类风险为净利润与营业收入组合，且明确净资产不为负；退市风险警示标题不能代理A1两类原因。"
+      "reason": "正文明确实际实施，触发原因是净利润与营业收入组合而非A1两类原因；退市风险警示标题不能代理A1原因。"
     },
     {
       "probe_id": "P07_SSE_MAIN_2021_POSSIBLE",
