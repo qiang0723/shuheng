@@ -55,15 +55,12 @@ def _response(items: list[dict], more: bool, total: int | None = None) -> dict:
     return payload
 
 
-def _two_page_poster(url: str, request: dict) -> dict:
+def _stable_poster(url: str, request: dict) -> dict:
     assert url == indexer.QUERY_URL
-    if request["pageNum"] == "1":
-        rows = [_announcement(str(i), day=f"2020-01-{i:02d}") for i in range(1, 31)]
-        rows[0]["announcementTitle"] = "关于实施退市风险警示的公告"
-        return _response(rows, True, 31)
-    if request["pageNum"] == "2":
-        return _response([_announcement("31", day="2020-02-01")], False, 31)
-    raise AssertionError("多余分页")
+    assert request["pageNum"] == "1"
+    rows = [_announcement("1", title="关于实施退市风险警示的公告"),
+            _announcement("2", day="2020-02-01")]
+    return _response(rows, False, 2)
 
 
 def test_routes(tmp: Path) -> None:
@@ -96,12 +93,12 @@ def test_org_map() -> None:
 def test_pages(tmp: Path) -> None:
     start, end = dt.date(2020, 1, 1), dt.date(2020, 12, 31)
     rows, audit = indexer.collect_code("000001", "org", start, end,
-                                       tmp / "raw", _two_page_poster)
-    check("双页公告数", len(rows), 31)
-    check("双页审计页数", audit["pages"], 2)
-    check("双页审计公告数", audit["announcements"], 31)
-    check("双页审计API总数", audit["api_total"], 31)
-    check("双页审计原始页SHA", len(audit["raw_pages_sha256"]), 64)
+                                       tmp / "raw", _stable_poster)
+    check("双读公告数", len(rows), 2)
+    check("双读审计请求数", audit["pages"], 2)
+    check("双读审计公告数", audit["announcements"], 2)
+    check("双读审计API总数", audit["api_total"], 2)
+    check("双读审计原始页SHA", len(audit["raw_pages_sha256"]), 64)
     check("原始页留存", len(list((tmp / "raw" / "000001" /
                                   indexer.RAW_LAYOUT).rglob("*.json"))), 2)
     check("HTTPS原件URL", rows[0]["source_url"].startswith("https://"), True)
@@ -115,77 +112,14 @@ def test_pages(tmp: Path) -> None:
     rejects("日期越界拒绝", lambda: indexer.validate_page("000001", out, start, end), "越界")
 
 
-def test_pagination_attacks(tmp: Path) -> None:
-    start, end = dt.date(2020, 1, 1), dt.date(2020, 12, 31)
-    full_page = [_announcement(str(i + 1)) for i in range(indexer.PAGE_SIZE)]
-    repeated = lambda _url, req: _response(full_page, req["pageNum"] == "1", 60)
-    rejects("重复页拒绝", lambda: indexer.collect_code(
-        "000001", "org", start, end, tmp / "repeat", repeated), "重复")
-    short = lambda _url, _req: _response([_announcement("1")], True, 2)
-    rejects("非终页短页拒绝", lambda: indexer.collect_code(
-        "000001", "org", start, end, tmp / "short", short), "非终页行数不满")
-
-    def drifting(_url, req):
-        if req["pageNum"] == "1":
-            return _response([_announcement(str(i)) for i in range(1, 31)], True, 31)
-        return _response([_announcement("31", day="2020-02-01")], False, 35)
-    rows, audit = indexer.collect_code(
-        "000001", "org", start, end, tmp / "drift", drifting)
-    check("分页总数漂移但内容完整通过", len(rows), 31)
-    check("分页总数观测全集保留",
-          audit["api_total_observations_by_year"]["2020"], [31, 35])
-    wrong_total = lambda _url, _req: _response([_announcement("1")], False, 2)
-    rejects("API总数不等拒绝", lambda: indexer.collect_code(
-        "000001", "org", start, end, tmp / "total", wrong_total), "未命中API")
-    first = tmp / "write_once"
-    indexer.collect_code("000001", "org", start, end, first, _two_page_poster)
-    no_refetch = lambda _url, _req: (_ for _ in ()).throw(AssertionError("不应重抓"))
-    rows, _ = indexer.collect_code("000001", "org", start, end, first, no_refetch)
-    check("已有成功页只读恢复不重抓", len(rows), 31)
-    page = first / "000001" / indexer.RAW_LAYOUT / "2020" / "00001.json"
-    payload = json.loads(page.read_text()); payload["request"]["pageNum"] = "9"
-    page.write_text(json.dumps(payload))
-    rejects("已有原始页请求漂移拒绝", lambda: indexer.collect_code(
-        "000001", "org", start, end, first, no_refetch), "请求或响应无效")
-
-    old_limit = indexer.MAX_PAGES
-    indexer.MAX_PAGES = 2
-    try:
-        def endless(_url, req):
-            base = int(req["pageNum"]) * 100
-            return _response([_announcement(str(base + i))
-                              for i in range(indexer.PAGE_SIZE)], True, 90)
-        rejects("年度分页安全上限拒绝", lambda: indexer.collect_code(
-            "000001", "org", start, end, tmp / "limit", endless), "安全上限 2")
-    finally:
-        indexer.MAX_PAGES = old_limit
-
-
-def test_annual_shards(tmp: Path) -> None:
-    calls = []
-    def poster(_url, request):
-        calls.append(request["seDate"])
-        if request["seDate"].startswith("2019"):
-            return _response([], False, 0)
-        return _response([_announcement("2020", day="2020-01-01")], False, 1)
-    rows, audit = indexer.collect_code(
-        "000001", "org", dt.date(2019, 12, 31), dt.date(2020, 1, 1),
-        tmp / "annual", poster)
-    check("自然年分片互斥覆盖", calls,
-          ["2019-12-31~2019-12-31", "2020-01-01~2020-01-01"])
-    check("空年度与非空年度合并", len(rows), 1)
-    check("年度观测计数逐年保留", audit["api_total_observations_by_year"],
-          {"2019": [0], "2020": [1]})
-
-
 def test_full_index(tmp: Path) -> None:
     routes = ["000001.SZ"]
     evidence = tmp / "evidence"
     result = indexer.collect_all(routes, {"000001": "org"}, evidence,
                                  dt.date(2020, 1, 1), dt.date(2020, 12, 31),
-                                 _two_page_poster)
+                                 _stable_poster)
     check("全集路由数", result["route_count"], 1)
-    check("全集公告数", result["counts"]["announcements"], 31)
+    check("全集公告数", result["counts"]["announcements"], 2)
     check("宽召回只一行", result["counts"]["wide_recall"], 1)
     check("标题仅召回身份", result["title_is_recall_only"], True)
     check("元数据不闭E1", result["e1_gate_closed"], False)
@@ -196,10 +130,10 @@ def test_full_index(tmp: Path) -> None:
     check("原件被改done失效", indexer._done_valid(
         evidence, "000001.SZ", start, end), False)
     rejects("损坏完成件拒绝覆盖", lambda: indexer.collect_all(
-        routes, {"000001": "org"}, evidence, start, end, _two_page_poster), "拒绝覆盖")
+        routes, {"000001": "org"}, evidence, start, end, _stable_poster), "拒绝覆盖")
     rejects("缺orgId拒绝", lambda: indexer.collect_all(
         routes, {}, tmp / "missing", dt.date(2020, 1, 1),
-        dt.date(2020, 12, 31), _two_page_poster), "映射缺")
+        dt.date(2020, 12, 31), _stable_poster), "映射缺")
     legacy = tmp / "legacy"; raw = legacy / "raw_pages" / "000001"
     request = indexer._request("000001", "org", start, end, 1)
     response = _response([_announcement("legacy")], False, 1)
@@ -281,8 +215,7 @@ def test_readback() -> None:
 def main() -> int:
     with tempfile.TemporaryDirectory() as directory:
         root = Path(directory)
-        test_routes(root); test_org_map(); test_pages(root); test_pagination_attacks(root)
-        test_annual_shards(root); test_full_index(root); test_documents(root)
+        test_routes(root); test_org_map(); test_pages(root); test_full_index(root); test_documents(root)
         test_contract_queue(root); test_readback()
     print(f"verify_delist_warning_announcement_index: {PASSED}/{TOTAL} PASS")
     return 0

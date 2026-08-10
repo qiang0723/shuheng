@@ -12,14 +12,15 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 
 from qbase.ingest import cninfo
+from qbase.ingest import delist_warning_announcement_bisection as bisection
 
 QUERY_URL = "https://www.cninfo.com.cn/new/hisAnnouncement/query"
 ORGID_URL = "https://www.cninfo.com.cn/new/data/szse_stock.json"
 STATIC_BASE = "https://static.cninfo.com.cn/"
 SHANGHAI = ZoneInfo("Asia/Shanghai")
 PAGE_SIZE = 30
-MAX_PAGES = 100
-RAW_LAYOUT = "annual_v2"
+RAW_LAYOUT = "bisect_v3"
+SUPPORTED_LAYOUTS = {None, "annual_v2", RAW_LAYOUT}
 ROLE_RE = re.compile(r"退市风险警示|其他风险警示|撤销风险警示|撤销退市|暂停上市|终止上市")
 
 
@@ -156,49 +157,30 @@ def collect_code(code: str, org_id: str, start: dt.date, end: dt.date,
                  raw_root: Path, poster=cninfo._http_post) -> tuple[list[dict], dict]:
     rows: list[dict] = []
     seen_ids: set[str] = set()
-    totals_by_year: dict[str, list[int]] = {}
-    page_total = 0
+    audits_by_year: dict[str, dict] = {}
+    read_total = 0
     active_root = raw_root / code / RAW_LAYOUT
     for year in range(start.year, end.year + 1):
         shard_start = max(start, dt.date(year, 1, 1))
         shard_end = min(end, dt.date(year, 12, 31))
-        shard_rows: list[dict] = []
-        seen_pages: set[tuple[str, ...]] = set()
-        totals: set[int] = set()
-        for page in range(1, MAX_PAGES + 1):
-            request = _request(code, org_id, shard_start, shard_end, page)
-            path = active_root / str(year) / f"{page:05d}.json"
-            response = _read_or_fetch(path, request, poster)
-            current, has_more, total = validate_page(
-                code, response, shard_start, shard_end)
-            signature = tuple(item["announcement_id"] for item in current)
-            if has_more and len(current) != PAGE_SIZE:
-                raise RuntimeError(f"{code}/{year} 非终页行数不满")
-            if signature and signature in seen_pages:
-                raise RuntimeError(f"{code}/{year} 重复分页内容")
-            if seen_ids.intersection(signature):
-                raise RuntimeError(f"{code} 跨页或跨年度公告ID重复")
-            seen_pages.add(signature); seen_ids.update(signature)
-            shard_rows.extend(current)
-            if total is not None:
-                totals.add(total)
-            if not has_more:
-                break
-        else:
-            raise RuntimeError(f"{code}/{year} 超过年度分页安全上限 {MAX_PAGES}")
-        if totals and len(shard_rows) not in totals:
-            raise RuntimeError(f"{code}/{year} 去重行数未命中API观测总数")
-        totals_by_year[str(year)] = sorted(totals)
-        page_total += page
+        shard_rows, shard_audit = bisection.collect_interval(
+            code, org_id, shard_start, shard_end, active_root / str(year), poster,
+            _request, _read_or_fetch, validate_page, PAGE_SIZE)
+        ids = {item["announcement_id"] for item in shard_rows}
+        if seen_ids.intersection(ids):
+            raise RuntimeError(f"{code} 跨年度公告ID重复")
+        seen_ids.update(ids)
+        audits_by_year[str(year)] = shard_audit
+        read_total += shard_audit["raw_reads"]
         rows.extend(shard_rows)
     rows.sort(key=lambda item: (item["announcement_date_cn"],
                                 item["valid_time_utc"], item["announcement_id"]))
     page_count, raw_pages_sha = _page_tree(active_root, recursive=True)
-    if page_count != page_total:
+    if page_count != read_total:
         raise RuntimeError(f"{code} 原始页目录含陈旧或缺失页")
-    return rows, {"pages": page_total, "announcements": len(rows),
-                  "api_total": len(rows), "api_total_source": "validated_annual_shards",
-                  "api_total_observations_by_year": totals_by_year,
+    return rows, {"pages": read_total, "announcements": len(rows),
+                  "api_total": len(rows), "api_total_source": "bisected_double_read_leaves",
+                  "bisection_audit_by_year": audits_by_year,
                   "raw_layout": RAW_LAYOUT, "raw_pages_sha256": raw_pages_sha}
 
 
@@ -209,12 +191,12 @@ def _done_valid(evidence: Path, code: str, start: dt.date, end: dt.date) -> bool
         return False
     payload = json.loads(marker.read_text(encoding="utf-8"))
     layout = payload.get("raw_layout")
-    if layout not in (None, RAW_LAYOUT):
+    if layout not in SUPPORTED_LAYOUTS:
         return False
     raw_dir = evidence / "raw_pages" / code[:6]
-    if layout == RAW_LAYOUT:
-        raw_dir /= RAW_LAYOUT
-    page_count, page_sha = _page_tree(raw_dir, recursive=layout == RAW_LAYOUT)
+    if layout is not None:
+        raw_dir /= layout
+    page_count, page_sha = _page_tree(raw_dir, recursive=layout is not None)
     return all((
         payload.get("start") == start.isoformat(), payload.get("end") == end.isoformat(),
         payload.get("normalized_sha256") == _sha(normalized.read_bytes()),
