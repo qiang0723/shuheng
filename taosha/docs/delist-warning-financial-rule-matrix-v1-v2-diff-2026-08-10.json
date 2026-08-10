@@ -1,0 +1,46 @@
+{
+  "artifact_status": "DRAFT_NOT_FOR_FREEZE",
+  "as_of": "2026-08-10T12:33:00+08:00",
+  "base_matrix_sha256": "02e095f579d07a9efb8395e6dbb634c422677b8329e6ed16c855e7f95d965513",
+  "freeze_eligible": false,
+  "g2_start": null,
+  "schema_version": 1,
+  "summary": {
+    "base_rows": 17,
+    "conflicts_changed": 2,
+    "rows_with_exact_version_timeline": 17,
+    "rows_with_equity_binding_proven_or_not_applicable": 10,
+    "rows_with_equity_binding_partial_or_unproven": 7,
+    "timeline_intervals": 49
+  },
+  "conflict_changes": [
+    {"conflict_id":"C02_RULE_VERSION_EFFECTIVE_DATE","old":"OPEN","new":"CLOSED_BY_EXACT_VERSION_TIMELINE"},
+    {"conflict_id":"C05_EQUITY_FIELD_BINDING","old":"OPEN","new":"OPEN_WITH_ROW_LEVEL_EVIDENCE"}
+  ],
+  "row_changes": [
+    {"row_id":"SSE_MAIN_R01","old_unique_version_status":"PROVISIONAL_SEMANTIC_REGIME","new_unique_version_status":"PROVEN_EXACT_VERSION_TIMELINE","equity_binding":"NOT_APPLICABLE"},
+    {"row_id":"SSE_MAIN_R02","old_unique_version_status":"UNPROVEN_MINOR_VERSIONS","new_unique_version_status":"PROVEN_EXACT_VERSION_TIMELINE","equity_binding":"PARTIAL"},
+    {"row_id":"SSE_MAIN_R03","old_unique_version_status":"PROVISIONAL_SEMANTIC_REGIME","new_unique_version_status":"PROVEN_EXACT_VERSION_TIMELINE","equity_binding":"UNPROVEN"},
+    {"row_id":"SSE_MAIN_R04","old_unique_version_status":"PROVEN_TRANSITION_RULE","new_unique_version_status":"PROVEN_EXACT_VERSION_AND_2024_TRANSITION","equity_binding":"PARTIAL"},
+    {"row_id":"SSE_STAR_R01","old_unique_version_status":"PROVEN_WITH_ENTITY_GATE","new_unique_version_status":"PROVEN_EXACT_VERSION_WITH_ENTITY_GATE","equity_binding":"PROVEN"},
+    {"row_id":"SSE_STAR_R02","old_unique_version_status":"PROVISIONAL_ENTITY_GATE","new_unique_version_status":"PROVEN_EXACT_VERSION_WITH_ENTITY_GATE","equity_binding":"PROVEN"},
+    {"row_id":"SSE_STAR_R03","old_unique_version_status":"PROVEN_TRANSITION_WITH_ENTITY_GATE","new_unique_version_status":"PROVEN_EXACT_VERSION_AND_2024_TRANSITION_WITH_ENTITY_GATE","equity_binding":"PARTIAL"},
+    {"row_id":"SZSE_MAIN_R01","old_unique_version_status":"PROVISIONAL_SEMANTIC_REGIME","new_unique_version_status":"PROVEN_EXACT_VERSION_TIMELINE","equity_binding":"NOT_APPLICABLE"},
+    {"row_id":"SZSE_MAIN_R02","old_unique_version_status":"UNPROVEN_MINOR_VERSIONS","new_unique_version_status":"PROVEN_EXACT_VERSION_TIMELINE","equity_binding":"PROVEN"},
+    {"row_id":"SZSE_MAIN_R03","old_unique_version_status":"PROVISIONAL_SEMANTIC_REGIME","new_unique_version_status":"PROVEN_EXACT_VERSION_TIMELINE","equity_binding":"PROVEN"},
+    {"row_id":"SZSE_MAIN_R04","old_unique_version_status":"PROVEN_TRANSITION_RULE","new_unique_version_status":"PROVEN_EXACT_VERSION_AND_2024_TRANSITION","equity_binding":"PARTIAL"},
+    {"row_id":"SZSE_SME_R01","old_unique_version_status":"PROVISIONAL_SEMANTIC_REGIME","new_unique_version_status":"PROVEN_EXACT_VERSION_TIMELINE","equity_binding":"UNPROVEN"},
+    {"row_id":"SZSE_SME_R02","old_unique_version_status":"UNPROVEN_MINOR_VERSIONS","new_unique_version_status":"PROVEN_EXACT_VERSION_SEQUENCE_WITH_BOARD_GATE","equity_binding":"PROVEN"},
+    {"row_id":"SZSE_SME_R03","old_unique_version_status":"PROVISIONAL_SEMANTIC_REGIME","new_unique_version_status":"PROVEN_EXACT_VERSION_SEQUENCE_WITH_BOARD_MERGER_GATE","equity_binding":"PROVEN"},
+    {"row_id":"SZSE_CHINEXT_R01","old_unique_version_status":"PROVEN_NOT_APPLICABLE","new_unique_version_status":"PROVEN_EXACT_VERSION_AND_NOT_APPLICABLE","equity_binding":"NOT_APPLICABLE"},
+    {"row_id":"SZSE_CHINEXT_R02","old_unique_version_status":"PROVISIONAL_SEMANTIC_REGIME","new_unique_version_status":"PROVEN_EXACT_VERSION_TIMELINE","equity_binding":"PROVEN"},
+    {"row_id":"SZSE_CHINEXT_R03","old_unique_version_status":"PROVEN_TRANSITION_RULE","new_unique_version_status":"PROVEN_EXACT_VERSION_AND_2024_TRANSITION","equity_binding":"PARTIAL"}
+  ],
+  "unchanged_hard_stops": [
+    "freeze_eligible=false",
+    "g2_start=null",
+    "official implementation announcement required",
+    "unknown or conflict action remains FAIL_CLOSED",
+    "no data collection, database write, PAP finalization, freeze, manifest, return read, run, or persist"
+  ]
+}

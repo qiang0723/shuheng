@@ -1,0 +1,57 @@
+{
+  "artifact_status": "DRAFT_NOT_FOR_FREEZE",
+  "as_of": "2026-08-10T12:33:00+08:00",
+  "base_matrix_path": "taosha/docs/delist-warning-financial-rule-matrix-draft-2026-08-10.json",
+  "base_matrix_sha256": "02e095f579d07a9efb8395e6dbb634c422677b8329e6ed16c855e7f95d965513",
+  "consumer_rule": "Only apply this overlay to the exact base_matrix_sha256; unknown or absent overlay fields inherit from v1 and remain fail-closed.",
+  "evidence_supplement_path": "taosha/docs/delist-warning-financial-rule-version-evidence-supplement-2026-08-10.json",
+  "exact_version_axis_status": "CLOSED_FOR_EVENT_DATE_LOOKUP_ONLY",
+  "freeze_eligible": false,
+  "g2_start": null,
+  "schema_version": 2,
+  "timeline_path": "taosha/docs/delist-warning-financial-rule-version-timeline-2026-08-10.json",
+  "conflict_overrides": [
+    {
+      "conflict_id": "C02_RULE_VERSION_EFFECTIVE_DATE",
+      "old_status": "OPEN",
+      "new_status": "CLOSED_BY_EXACT_VERSION_TIMELINE",
+      "resolution": "49 normalized version intervals cover every exchange/board date in the research window; matching still fails closed unless exactly one interval matches."
+    },
+    {
+      "conflict_id": "C05_EQUITY_FIELD_BINDING",
+      "old_status": "OPEN",
+      "new_status": "OPEN_WITH_ROW_LEVEL_EVIDENCE",
+      "resolution": "Direct rule texts prove C1 for several rows, while early SSE 2012 and SZSE SME 2008 subintervals remain unproven; no global default is changed."
+    }
+  ],
+  "row_overlays": [
+    {"row_id":"SSE_MAIN_R01","unique_version_status":"PROVEN_EXACT_VERSION_TIMELINE","equity_field_binding_status":"NOT_APPLICABLE_NO_NEGATIVE_NET_ASSET_TRIGGER","timeline_ids":["SSE_MAIN_V2008"],"remaining_blockers":["C01_HISTORICAL_BOARD_IDENTITY","C03_REPORTING_YEAR_TRANSITION","C04_RESTATEMENT_CHAIN","official_implementation_announcement"]},
+    {"row_id":"SSE_MAIN_R02","unique_version_status":"PROVEN_EXACT_VERSION_TIMELINE","equity_field_binding_status":"PARTIAL_UNPROVEN_2012_07_07_TO_2013_12_28_PROVEN_FROM_2013_12_28","timeline_ids":["SSE_MAIN_V2012","SSE_MAIN_V2013","SSE_MAIN_V2014","SSE_MAIN_V2018_APR","SSE_MAIN_V2018_JUN","SSE_MAIN_V2018_NOV","SSE_MAIN_V2019_APR"],"remaining_blockers":["C03_REPORTING_YEAR_TRANSITION","C04_RESTATEMENT_CHAIN","C05_EQUITY_FIELD_BINDING_EARLY_SUBINTERVAL","official_implementation_announcement","audited_profit_pit"]},
+    {"row_id":"SSE_MAIN_R03","unique_version_status":"PROVEN_EXACT_VERSION_TIMELINE","equity_field_binding_status":"REQUIRES_EXACT_RULE_TEXT_LITERAL_OR_ANNOUNCEMENT_BINDING","timeline_ids":["SSE_MAIN_V2020","SSE_MAIN_V2022","SSE_MAIN_V2023_FEB","SSE_MAIN_V2023_AUG"],"remaining_blockers":["C03_REPORTING_YEAR_TRANSITION","C05_EQUITY_FIELD_BINDING","C08_EXISTING_WARNING_TRANSITION_2020","official_implementation_announcement"]},
+    {"row_id":"SSE_MAIN_R04","unique_version_status":"PROVEN_EXACT_VERSION_AND_2024_TRANSITION","equity_field_binding_status":"INHERITS_PRE_2024_RULE_REQUIRES_EVENT_BINDING","timeline_ids":["SSE_MAIN_V2024_APR"],"remaining_blockers":["C03_REPORTING_YEAR_TRANSITION","C05_EQUITY_FIELD_BINDING","official_implementation_announcement"]},
+    {"row_id":"SSE_STAR_R01","unique_version_status":"PROVEN_EXACT_VERSION_WITH_ENTITY_GATE","equity_field_binding_status":"PROVEN_BY_OFFICIAL_2019_RULE_TEXT","timeline_ids":["SSE_STAR_V2019_APR"],"remaining_blockers":["C10_STAR_RD_LISTING_STANDARD","official_implementation_announcement"]},
+    {"row_id":"SSE_STAR_R02","unique_version_status":"PROVEN_EXACT_VERSION_WITH_ENTITY_GATE","equity_field_binding_status":"PROVEN_BY_OFFICIAL_RULE_TEXT_CONTINUITY","timeline_ids":["SSE_STAR_V2020","SSE_STAR_V2023_AUG"],"remaining_blockers":["C08_EXISTING_WARNING_TRANSITION_2020","C10_STAR_RD_LISTING_STANDARD","official_implementation_announcement"]},
+    {"row_id":"SSE_STAR_R03","unique_version_status":"PROVEN_EXACT_VERSION_AND_2024_TRANSITION_WITH_ENTITY_GATE","equity_field_binding_status":"INHERITS_PRE_2024_RULE_REQUIRES_ENTITY_AND_EVENT_BINDING","timeline_ids":["SSE_STAR_V2024_APR"],"remaining_blockers":["C03_REPORTING_YEAR_TRANSITION","C10_STAR_RD_LISTING_STANDARD","official_implementation_announcement"]},
+    {"row_id":"SZSE_MAIN_R01","unique_version_status":"PROVEN_EXACT_VERSION_TIMELINE","equity_field_binding_status":"NOT_APPLICABLE_NO_NEGATIVE_NET_ASSET_TRIGGER","timeline_ids":["SZSE_MAIN_V2008"],"remaining_blockers":["C01_HISTORICAL_BOARD_IDENTITY","C03_REPORTING_YEAR_TRANSITION","C04_RESTATEMENT_CHAIN","official_implementation_announcement"]},
+    {"row_id":"SZSE_MAIN_R02","unique_version_status":"PROVEN_EXACT_VERSION_TIMELINE","equity_field_binding_status":"PROVEN_BY_OFFICIAL_2012_RULE_TEXT","timeline_ids":["SZSE_MAIN_V2012","SZSE_MAIN_V2014","SZSE_MAIN_V2018_APR","SZSE_MAIN_V2018_JUN","SZSE_MAIN_V2018_NOV","SZSE_MAIN_V2019_APR"],"remaining_blockers":["C03_REPORTING_YEAR_TRANSITION","C04_RESTATEMENT_CHAIN","official_implementation_announcement","audited_profit_pit"]},
+    {"row_id":"SZSE_MAIN_R03","unique_version_status":"PROVEN_EXACT_VERSION_TIMELINE","equity_field_binding_status":"PROVEN_BY_OFFICIAL_2020_RULE_TEXT","timeline_ids":["SZSE_MAIN_V2020","SZSE_MAIN_V2022","SZSE_MAIN_V2023_FEB","SZSE_MAIN_V2023_AUG"],"remaining_blockers":["C03_REPORTING_YEAR_TRANSITION","C08_EXISTING_WARNING_TRANSITION_2020","official_implementation_announcement"]},
+    {"row_id":"SZSE_MAIN_R04","unique_version_status":"PROVEN_EXACT_VERSION_AND_2024_TRANSITION","equity_field_binding_status":"INHERITS_PRE_2024_RULE_REQUIRES_EVENT_BINDING","timeline_ids":["SZSE_MAIN_V2024_APR"],"remaining_blockers":["C03_REPORTING_YEAR_TRANSITION","official_implementation_announcement"]},
+    {"row_id":"SZSE_SME_R01","unique_version_status":"PROVEN_EXACT_VERSION_TIMELINE","equity_field_binding_status":"UNPROVEN_2008_RULE_LITERAL","timeline_ids":["SZSE_SME_V2008"],"remaining_blockers":["C01_HISTORICAL_BOARD_IDENTITY","C03_REPORTING_YEAR_TRANSITION","C04_RESTATEMENT_CHAIN","C05_EQUITY_FIELD_BINDING","official_implementation_announcement"]},
+    {"row_id":"SZSE_SME_R02","unique_version_status":"PROVEN_EXACT_VERSION_SEQUENCE_WITH_BOARD_GATE","equity_field_binding_status":"PROVEN_BY_OFFICIAL_2012_RULE_TEXT","timeline_ids":["SZSE_SME_V2012","SZSE_SME_V2014","SZSE_SME_V2018_APR","SZSE_SME_V2018_JUN","SZSE_SME_V2018_NOV","SZSE_SME_V2019_APR"],"remaining_blockers":["C01_HISTORICAL_BOARD_IDENTITY","C03_REPORTING_YEAR_TRANSITION","C04_RESTATEMENT_CHAIN","official_implementation_announcement","audited_profit_pit"]},
+    {"row_id":"SZSE_SME_R03","unique_version_status":"PROVEN_EXACT_VERSION_SEQUENCE_WITH_BOARD_MERGER_GATE","equity_field_binding_status":"PROVEN_BY_OFFICIAL_2020_RULE_TEXT","timeline_ids":["SZSE_SME_V2020_TO_MERGER"],"remaining_blockers":["C01_HISTORICAL_BOARD_IDENTITY","C08_EXISTING_WARNING_TRANSITION_2020","official_implementation_announcement"]},
+    {"row_id":"SZSE_CHINEXT_R01","unique_version_status":"PROVEN_EXACT_VERSION_AND_NOT_APPLICABLE","equity_field_binding_status":"NOT_APPLICABLE_PRE2020_NO_EQUIVALENT_WARNING_MECHANISM","timeline_ids":["SZSE_CHINEXT_PRE2012","SZSE_CHINEXT_V2012","SZSE_CHINEXT_V2014","SZSE_CHINEXT_V2018_APR","SZSE_CHINEXT_V2018_JUN","SZSE_CHINEXT_V2018_NOV","SZSE_CHINEXT_V2019_APR"],"remaining_blockers":[]},
+    {"row_id":"SZSE_CHINEXT_R02","unique_version_status":"PROVEN_EXACT_VERSION_TIMELINE","equity_field_binding_status":"PROVEN_BY_OFFICIAL_2018_AND_2020_RULE_TEXTS","timeline_ids":["SZSE_CHINEXT_V2020_JUN","SZSE_CHINEXT_V2020_DEC","SZSE_CHINEXT_V2023_FEB","SZSE_CHINEXT_V2023_AUG"],"remaining_blockers":["C03_REPORTING_YEAR_TRANSITION","C08_EXISTING_WARNING_TRANSITION_2020","official_implementation_announcement"]},
+    {"row_id":"SZSE_CHINEXT_R03","unique_version_status":"PROVEN_EXACT_VERSION_AND_2024_TRANSITION","equity_field_binding_status":"INHERITS_PRE_2024_RULE_REQUIRES_EVENT_BINDING","timeline_ids":["SZSE_CHINEXT_V2024_APR"],"remaining_blockers":["C03_REPORTING_YEAR_TRANSITION","official_implementation_announcement"]}
+  ],
+  "unresolved_freeze_blockers": [
+    "C01 historical board and entity identity",
+    "C03 reporting-year transition at event level",
+    "C04 restatement and first-announcement identity",
+    "C05 row-level equity binding gaps",
+    "C08 existing-warning transition cases",
+    "C10 STAR special listing-standard gate",
+    "official implementation announcement evidence",
+    "audited actual-profit PIT for continuous-loss branch",
+    "G2 exact research start"
+  ]
+}
