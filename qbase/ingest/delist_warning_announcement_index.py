@@ -18,7 +18,8 @@ ORGID_URL = "https://www.cninfo.com.cn/new/data/szse_stock.json"
 STATIC_BASE = "https://static.cninfo.com.cn/"
 SHANGHAI = ZoneInfo("Asia/Shanghai")
 PAGE_SIZE = 30
-MAX_PAGES = 10_000
+MAX_PAGES = 100
+RAW_LAYOUT = "annual_v2"
 ROLE_RE = re.compile(r"退市风险警示|其他风险警示|撤销风险警示|撤销退市|暂停上市|终止上市")
 
 
@@ -50,10 +51,23 @@ def _write_once_json(path: Path, payload) -> str:
     return _sha(data)
 
 
-def _page_tree(raw_dir: Path) -> tuple[int, str]:
-    pages = sorted(raw_dir.glob("*.json"))
-    body = "".join(f"{path.name}:{_sha(path.read_bytes())}\n" for path in pages).encode()
+def _page_tree(raw_dir: Path, recursive: bool = False) -> tuple[int, str]:
+    pages = sorted(raw_dir.rglob("*.json") if recursive else raw_dir.glob("*.json"))
+    body = "".join(
+        f"{path.relative_to(raw_dir)}:{_sha(path.read_bytes())}\n" for path in pages
+    ).encode()
     return len(pages), _sha(body)
+
+
+def _read_or_fetch(path: Path, request: dict, poster) -> dict:
+    if path.exists():
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        if payload.get("request") != request or not isinstance(payload.get("response"), dict):
+            raise RuntimeError(f"已有原始页请求或响应无效: {path}")
+        return payload["response"]
+    response = poster(QUERY_URL, request)
+    _write_once_json(path, {"request": request, "response": response})
+    return response
 
 
 def _append_jsonl(path: Path, payload: dict) -> None:
@@ -142,38 +156,50 @@ def collect_code(code: str, org_id: str, start: dt.date, end: dt.date,
                  raw_root: Path, poster=cninfo._http_post) -> tuple[list[dict], dict]:
     rows: list[dict] = []
     seen_ids: set[str] = set()
-    seen_pages: set[tuple[str, ...]] = set()
-    totals: set[int] = set()
-    for page in range(1, MAX_PAGES + 1):
-        request = _request(code, org_id, start, end, page)
-        response = poster(QUERY_URL, request)
-        _write_once_json(raw_root / code / f"{page:05d}.json",
-                         {"request": request, "response": response})
-        current, has_more, total = validate_page(code, response, start, end)
-        signature = tuple(item["announcement_id"] for item in current)
-        if signature and signature in seen_pages:
-            raise RuntimeError(f"{code} 重复分页内容")
-        if seen_ids.intersection(signature):
-            raise RuntimeError(f"{code} 跨页公告ID重复")
-        seen_pages.add(signature); seen_ids.update(signature); rows.extend(current)
-        if total is not None:
-            totals.add(total)
-        if len(totals) > 1:
-            raise RuntimeError(f"{code} 分页总数漂移")
-        if not has_more:
-            break
-    else:
-        raise RuntimeError(f"{code} 超过最大分页数 {MAX_PAGES}")
-    if totals and len(rows) != next(iter(totals)):
-        raise RuntimeError(f"{code} 去重行数与API总数不等")
+    totals_by_year: dict[str, list[int]] = {}
+    page_total = 0
+    active_root = raw_root / code / RAW_LAYOUT
+    for year in range(start.year, end.year + 1):
+        shard_start = max(start, dt.date(year, 1, 1))
+        shard_end = min(end, dt.date(year, 12, 31))
+        shard_rows: list[dict] = []
+        seen_pages: set[tuple[str, ...]] = set()
+        totals: set[int] = set()
+        for page in range(1, MAX_PAGES + 1):
+            request = _request(code, org_id, shard_start, shard_end, page)
+            path = active_root / str(year) / f"{page:05d}.json"
+            response = _read_or_fetch(path, request, poster)
+            current, has_more, total = validate_page(
+                code, response, shard_start, shard_end)
+            signature = tuple(item["announcement_id"] for item in current)
+            if has_more and len(current) != PAGE_SIZE:
+                raise RuntimeError(f"{code}/{year} 非终页行数不满")
+            if signature and signature in seen_pages:
+                raise RuntimeError(f"{code}/{year} 重复分页内容")
+            if seen_ids.intersection(signature):
+                raise RuntimeError(f"{code} 跨页或跨年度公告ID重复")
+            seen_pages.add(signature); seen_ids.update(signature)
+            shard_rows.extend(current)
+            if total is not None:
+                totals.add(total)
+            if not has_more:
+                break
+        else:
+            raise RuntimeError(f"{code}/{year} 超过年度分页安全上限 {MAX_PAGES}")
+        if totals and len(shard_rows) not in totals:
+            raise RuntimeError(f"{code}/{year} 去重行数未命中API观测总数")
+        totals_by_year[str(year)] = sorted(totals)
+        page_total += page
+        rows.extend(shard_rows)
     rows.sort(key=lambda item: (item["announcement_date_cn"],
                                 item["valid_time_utc"], item["announcement_id"]))
-    page_count, raw_pages_sha = _page_tree(raw_root / code)
-    if page_count != page:
+    page_count, raw_pages_sha = _page_tree(active_root, recursive=True)
+    if page_count != page_total:
         raise RuntimeError(f"{code} 原始页目录含陈旧或缺失页")
-    return rows, {"pages": page, "announcements": len(rows),
-                  "api_total": next(iter(totals)) if totals else None,
-                  "raw_pages_sha256": raw_pages_sha}
+    return rows, {"pages": page_total, "announcements": len(rows),
+                  "api_total": len(rows), "api_total_source": "validated_annual_shards",
+                  "api_total_observations_by_year": totals_by_year,
+                  "raw_layout": RAW_LAYOUT, "raw_pages_sha256": raw_pages_sha}
 
 
 def _done_valid(evidence: Path, code: str, start: dt.date, end: dt.date) -> bool:
@@ -182,7 +208,13 @@ def _done_valid(evidence: Path, code: str, start: dt.date, end: dt.date) -> bool
     if not marker.exists() or not normalized.exists():
         return False
     payload = json.loads(marker.read_text(encoding="utf-8"))
-    page_count, page_sha = _page_tree(evidence / "raw_pages" / code[:6])
+    layout = payload.get("raw_layout")
+    if layout not in (None, RAW_LAYOUT):
+        return False
+    raw_dir = evidence / "raw_pages" / code[:6]
+    if layout == RAW_LAYOUT:
+        raw_dir /= RAW_LAYOUT
+    page_count, page_sha = _page_tree(raw_dir, recursive=layout == RAW_LAYOUT)
     return all((
         payload.get("start") == start.isoformat(), payload.get("end") == end.isoformat(),
         payload.get("normalized_sha256") == _sha(normalized.read_bytes()),
