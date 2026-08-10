@@ -19,8 +19,8 @@ ORGID_URL = "https://www.cninfo.com.cn/new/data/szse_stock.json"
 STATIC_BASE = "https://static.cninfo.com.cn/"
 SHANGHAI = ZoneInfo("Asia/Shanghai")
 PAGE_SIZE = 30
-RAW_LAYOUT = "bisect_v3"
-SUPPORTED_LAYOUTS = {None, "annual_v2", RAW_LAYOUT}
+RAW_LAYOUT = "bisect_v4"
+SUPPORTED_LAYOUTS = {None, "annual_v2", "bisect_v3", RAW_LAYOUT}
 ROLE_RE = re.compile(r"退市风险警示|其他风险警示|撤销风险警示|撤销退市|暂停上市|终止上市")
 
 
