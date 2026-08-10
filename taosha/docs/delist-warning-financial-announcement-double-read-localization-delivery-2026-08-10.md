@@ -55,3 +55,30 @@ git diff --check = PASS
 本回复据唯一指向登记为上述推送、远端精确读回、复验、v5 新容器与监督恢复授权；不扩解为
 数据库写入、利润 PIT、终版 PAP、密封、冻结、StudySnapshot、manifest、收益读取、研究运行或
 persist。旧 v1/v2/v3/v4 证据与四个失败容器必须保留。
+
+## 六、GitHub 推送、远端复验与 v5 续跑
+
+1. GitHub `origin/main` 已由 `d63b6f8` 推进至
+   `0bdd5eb66edca0a7e6408a9b695e6f23fa492bd7`；阿里云 `/opt/quant` 在先验干净后精确
+   fast-forward 至同一提交并保持干净。
+2. 远端以钉版镜像 `shuheng-quant:579a354`、代码只读挂载重跑：二分 `30/30`、定位
+   `6/6`、索引 `39/39`、路由 `6/6`，规模、架构与 `py_compile` 全部通过。
+3. 启动前读回恰为 `routes=646 / valid_done=10 / first_pending=000046.SZ / v1=3 /
+   v2=121 / v3=320 / v4=494 / v5=0 / errors=4`；四个旧失败容器及 v1/v2/v3/v4
+   日志、失败页和合法 marker 均未删除。
+4. 全新受限容器 `s22-ann-index-v5` 于 `2026-08-10 18:39:23+08` 启动，容器 ID 为
+   `83c8b719b14aa724c8be36adda2c000be4e518ead7b4d0a3983aac99e6271548`；只读
+   rootfs/代码、证据目录唯一可写、`cap_drop=ALL`，未注入数据库凭据。
+5. 监督 PID=`786475`；脚本
+   `/root/s22announcement/pipeline_supervisor_v5.sh` 的 SHA256 为
+   `3ab5fe3ed6c42dc850b26ef3b3bc387104e773416e101e783a318321f4370572`。监督链只在
+   metadata exit=`0` 后依次进入 document materialization、UNPROVEN contract queue 与
+   12 票独立读回；任一阶段非零即停，不自动重启。
+6. `2026-08-10 18:41:25+08` 首次进度读回：metadata 容器仍为 `running`，合法 marker
+   仍为 `10/646`，`bisect_v5` 新读取件已由启动即刻的 `9` 增至 `93`，`errors=4` 未增，
+   下游三阶段尚未启动。该状态表示当前仍在首待办证券的确定性定位读取中，不冒充 route 完成。
+7. UTC+8 十五分钟只读监控已恢复为 `ACTIVE`。监控仅在实质进度、阶段切换、失败或全完成时
+   回报；SSH 暂时不可达不得误判施工停止，也不得修改远端状态。
+
+本节完成后，交付状态由“等待推送与远端续跑”更新为“v5 已启动并受只读监控”。E1 仍为
+`OPEN_FAIL_CLOSED`；本单元仍未授权任何数据库或研究状态变更。
