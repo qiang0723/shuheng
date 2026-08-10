@@ -20,7 +20,15 @@ def main() -> int:
     checks = {
         "路由纯函数事件": selection["counters"]["final_events"] == 1,
         "路由纯函数带星": selection["counters"]["starred_events"] == 1,
+        "dict_row只读值": exporter._show_read_only(
+            {"transaction_read_only": "on"}) == "on",
     }
+    try:
+        exporter._show_read_only({"transaction_read_only": "read only"})
+    except RuntimeError:
+        checks["只读值非法拒绝"] = True
+    else:
+        checks["只读值非法拒绝"] = False
     try:
         exporter.route_payload(rows, "on")
     except RuntimeError as error:

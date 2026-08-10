@@ -25,6 +25,13 @@ REFERENCE = {
 }
 
 
+def _show_read_only(row: dict) -> str:
+    value = row.get("transaction_read_only")
+    if value not in ("on", "off"):
+        raise RuntimeError("SHOW transaction_read_only返回形态非法")
+    return value
+
+
 def _selection(rows: list[dict]) -> dict:
     per_security: list[dict] = []
     current: str | None = None
@@ -91,7 +98,8 @@ def _read_rows(dsn: str) -> tuple[list[dict], str]:
     )
     with psycopg.connect(dsn, options="-c default_transaction_read_only=on",
                          row_factory=dict_row) as conn:
-        read_only = conn.execute("SHOW transaction_read_only").fetchone()[0]
+        read_only = _show_read_only(
+            dict(conn.execute("SHOW transaction_read_only").fetchone()))
         rows = [dict(row) for row in conn.execute(sql).fetchall()]
     return rows, read_only
 

@@ -73,3 +73,9 @@ git diff --check: PASS
 ## 六、停止线
 
 本地阶段零数据库连接或写入、零全量公告采集、零利润 PIT、零事实表/视图、零终版 PAP、零密封/冻结、零 StudySnapshot/manifest、零收益读取/运行/persist；exp18/21/23 未恢复。
+
+## 七、阿里云启动期补正
+
+推送后首次宿主 Python 启动因缺 `psycopg` 在导入期停止，未建立数据库连接；改用既有钉版镜像提供运行时并只读挂载 HEAD 后，连接从参数级带 `default_transaction_read_only=on` 成功建立，但第一条 `SHOW transaction_read_only` 因 `dict_row` 被位置索引 `[0]` 而 `KeyError` 停止。该轮只执行 `SHOW`，未读取业务表、未写库、未生成路由件。
+
+最小补正把读回改为字段名 `transaction_read_only`，并新增合法 `on` 与非法值拒绝两条 fixture；路由 fixture 由 `4/4` 增至 `6/6`，公告 fixture仍 `42/42`，规模闸门更新为 `238文件/35408行/1041函数/债务不增`，架构闸门仍 `169模块/372边/横向债务2`。补正不改路由规则、参考数、数据库权限或采集逻辑。
