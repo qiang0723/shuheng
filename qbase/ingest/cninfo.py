@@ -13,6 +13,7 @@
 依赖：仅标准库（urllib/json）——低频串行采集无需第三方 HTTP 客户端。
 """
 import datetime as dt
+import http.client
 import json
 import random
 import time
@@ -60,7 +61,8 @@ def _retry(fn, what: str):
             if e.code not in RETRYABLE_HTTP or i == MAX_TRIES:
                 raise
             reason = f"HTTP {e.code}"
-        except (urllib.error.URLError, TimeoutError) as e:  # 含连接/超时
+        except (urllib.error.URLError, TimeoutError, http.client.IncompleteRead) as e:
+            # 含连接/超时及分块响应中途断开；重做整次请求，不消费残缺响应。
             if i == MAX_TRIES:
                 raise
             reason = type(e).__name__

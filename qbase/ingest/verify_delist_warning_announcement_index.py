@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import datetime as dt
+import http.client
 import json
 import tempfile
 from pathlib import Path
@@ -10,6 +11,7 @@ from pathlib import Path
 from qbase.ingest import delist_warning_announcement_index as indexer
 from qbase.ingest import delist_warning_announcement_documents as documents
 from qbase.ingest import delist_warning_announcement_contract as contract_queue
+from qbase.ingest import cninfo
 from qbase.ingest import verify_delist_warning_announcement_readback as readback
 
 PASSED = 0
@@ -88,6 +90,26 @@ def test_org_map() -> None:
         {"code": "000001", "orgId": "b"}]}).encode()
     rejects("orgId重复拒绝", lambda: indexer.load_org_map(duplicate), "重复")
     rejects("orgId空映射拒绝", lambda: indexer.load_org_map(lambda _: b'{"stockList":[]}'), "为空")
+
+
+def test_incomplete_read_retry() -> None:
+    attempts: list[int] = []
+    waits: list[float] = []
+
+    def flaky():
+        attempts.append(1)
+        if len(attempts) < cninfo.MAX_TRIES:
+            raise http.client.IncompleteRead(b"partial", 20)
+        return {"ok": True}
+
+    original_sleep = cninfo.time.sleep
+    try:
+        cninfo.time.sleep = waits.append
+        check("IncompleteRead整请求重试后成功", cninfo._retry(flaky, "fixture"), {"ok": True})
+    finally:
+        cninfo.time.sleep = original_sleep
+    check("IncompleteRead最多三次尝试", len(attempts), cninfo.MAX_TRIES)
+    check("IncompleteRead两次指数退避", len(waits), cninfo.MAX_TRIES - 1)
 
 
 def test_pages(tmp: Path) -> None:
@@ -215,7 +237,8 @@ def test_readback() -> None:
 def main() -> int:
     with tempfile.TemporaryDirectory() as directory:
         root = Path(directory)
-        test_routes(root); test_org_map(); test_pages(root); test_full_index(root); test_documents(root)
+        test_routes(root); test_org_map(); test_incomplete_read_retry()
+        test_pages(root); test_full_index(root); test_documents(root)
         test_contract_queue(root); test_readback()
     print(f"verify_delist_warning_announcement_index: {PASSED}/{TOTAL} PASS")
     return 0

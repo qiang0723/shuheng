@@ -233,10 +233,14 @@ def test_resume_and_layouts(tmp: Path) -> None:
     v4_page = (root / "000001" / "bisect_v4" / "2020" /
                "2020-01-01_2020-01-01" / "pass_a" / "00001.json")
     v4_page.parent.mkdir(parents=True); v4_page.write_bytes(b"bisect-v4-evidence\n")
+    v5_page = (root / "000001" / "bisect_v5" / "2020" /
+               "2020-01-01_2020-01-01" / "pass_a" / "00001.json")
+    v5_page.parent.mkdir(parents=True); v5_page.write_bytes(b"bisect-v5-evidence\n")
     indexer.collect_code("000001", "org", start, end, root, stable)
     check("annual_v2失败证据未覆盖", old_page.read_bytes(), b"annual-v2-evidence\n")
     check("bisect_v3失败证据未覆盖", v3_page.read_bytes(), b"bisect-v3-evidence\n")
     check("bisect_v4失败证据未覆盖", v4_page.read_bytes(), b"bisect-v4-evidence\n")
+    check("bisect_v5失败证据未覆盖", v5_page.read_bytes(), b"bisect-v5-evidence\n")
     no_fetch = lambda _u, _r: (_ for _ in ()).throw(AssertionError("不应重抓"))
     rows, _ = indexer.collect_code("000001", "org", start, end, root, no_fetch)
     check("新布局成功件只读恢复", len(rows), 1)
@@ -246,7 +250,7 @@ def test_resume_and_layouts(tmp: Path) -> None:
     rejects("新布局请求漂移拒绝", lambda: indexer.collect_code(
         "000001", "org", start, end, root, no_fetch), "请求或响应无效")
 
-    for layout in ("annual_v2", "bisect_v3", "bisect_v4"):
+    for layout in ("annual_v2", "bisect_v3", "bisect_v4", "bisect_v5"):
         evidence = tmp / f"{layout}_marker"
         _write_layout_marker(evidence, layout, start, end)
         check(f"{layout}成功marker继续自验", indexer._done_valid(
