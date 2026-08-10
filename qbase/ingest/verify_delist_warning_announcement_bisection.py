@@ -82,6 +82,17 @@ def _paged_poster(passes: list[list[dict]]):
     return poster
 
 
+def _write_layout_marker(evidence: Path, layout: str,
+                         start: dt.date, end: dt.date) -> None:
+    raw_root = evidence / "raw_pages" / "000001" / layout
+    indexer._write_once_json(raw_root / "2020" / "00001.json", {"legacy": layout})
+    digest = indexer._atomic_json(evidence / "normalized" / "000001.SZ.json", [])
+    pages, tree_sha = indexer._page_tree(raw_root, recursive=True)
+    indexer._atomic_json(evidence / "done" / "000001.SZ.json", {
+        "start": start, "end": end, "normalized_sha256": digest,
+        "pages": pages, "raw_pages_sha256": tree_sha, "raw_layout": layout})
+
+
 def test_bisection(tmp: Path) -> None:
     dataset = []
     for day in range(1, 5):
@@ -110,10 +121,11 @@ def test_double_read_attacks(tmp: Path) -> None:
         "000001", "org", start, end, tmp / "drift", drifting), "双读规范化行不一致")
 
     calls = 0
+    state_rows = [_item(str(i), "2020-01-01") for i in range(indexer.PAGE_SIZE)]
     def state_drift(_url, _request):
         nonlocal calls
         calls += 1
-        return _response([_item("1", "2020-01-01")], calls == 2, 1)
+        return _response(state_rows, calls == 2, len(state_rows))
     rejects("叶片分页状态漂移拒绝", lambda: indexer.collect_code(
         "000001", "org", start, end, tmp / "state", state_drift), "分页状态不一致")
     wrong_total = lambda _url, _req: _response([_item("1", "2020-01-01")], False, 2)
@@ -218,9 +230,13 @@ def test_resume_and_layouts(tmp: Path) -> None:
     v3_page = (root / "000001" / "bisect_v3" / "2020" /
                "2020-01-01_2020-01-01" / "probe.json")
     v3_page.parent.mkdir(parents=True); v3_page.write_bytes(b"bisect-v3-evidence\n")
+    v4_page = (root / "000001" / "bisect_v4" / "2020" /
+               "2020-01-01_2020-01-01" / "pass_a" / "00001.json")
+    v4_page.parent.mkdir(parents=True); v4_page.write_bytes(b"bisect-v4-evidence\n")
     indexer.collect_code("000001", "org", start, end, root, stable)
     check("annual_v2失败证据未覆盖", old_page.read_bytes(), b"annual-v2-evidence\n")
     check("bisect_v3失败证据未覆盖", v3_page.read_bytes(), b"bisect-v3-evidence\n")
+    check("bisect_v4失败证据未覆盖", v4_page.read_bytes(), b"bisect-v4-evidence\n")
     no_fetch = lambda _u, _r: (_ for _ in ()).throw(AssertionError("不应重抓"))
     rows, _ = indexer.collect_code("000001", "org", start, end, root, no_fetch)
     check("新布局成功件只读恢复", len(rows), 1)
@@ -230,29 +246,11 @@ def test_resume_and_layouts(tmp: Path) -> None:
     rejects("新布局请求漂移拒绝", lambda: indexer.collect_code(
         "000001", "org", start, end, root, no_fetch), "请求或响应无效")
 
-    evidence = tmp / "v2_marker"
-    v2_raw = evidence / "raw_pages" / "000001" / "annual_v2" / "2020"
-    indexer._write_once_json(v2_raw / "00001.json", {"legacy": "annual_v2"})
-    digest = indexer._atomic_json(evidence / "normalized" / "000001.SZ.json", [])
-    pages, tree_sha = indexer._page_tree(v2_raw.parent, recursive=True)
-    indexer._atomic_json(evidence / "done" / "000001.SZ.json", {
-        "start": start, "end": end, "normalized_sha256": digest,
-        "pages": pages, "raw_pages_sha256": tree_sha, "raw_layout": "annual_v2"})
-    check("annual_v2成功marker继续自验", indexer._done_valid(
-        evidence, "000001.SZ", start, end), True)
-
-    v3_evidence = tmp / "v3_marker"
-    v3_raw = (v3_evidence / "raw_pages" / "000001" / "bisect_v3" /
-              "2020" / "2020-01-01_2020-01-01")
-    indexer._write_once_json(v3_raw / "probe.json", {"legacy": "bisect_v3"})
-    digest = indexer._atomic_json(v3_evidence / "normalized" / "000001.SZ.json", [])
-    pages, tree_sha = indexer._page_tree(
-        v3_evidence / "raw_pages" / "000001" / "bisect_v3", recursive=True)
-    indexer._atomic_json(v3_evidence / "done" / "000001.SZ.json", {
-        "start": start, "end": end, "normalized_sha256": digest,
-        "pages": pages, "raw_pages_sha256": tree_sha, "raw_layout": "bisect_v3"})
-    check("bisect_v3成功marker继续自验", indexer._done_valid(
-        v3_evidence, "000001.SZ", start, end), True)
+    for layout in ("annual_v2", "bisect_v3", "bisect_v4"):
+        evidence = tmp / f"{layout}_marker"
+        _write_layout_marker(evidence, layout, start, end)
+        check(f"{layout}成功marker继续自验", indexer._done_valid(
+            evidence, "000001.SZ", start, end), True)
 
 
 def main() -> int:

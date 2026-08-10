@@ -21,6 +21,10 @@ class LeafAudit:
 MAX_DAY_PAGES = 100
 
 
+class _LeafMismatch(RuntimeError):
+    """仅标记可用日期二分继续定位的双读漂移。"""
+
+
 def _row_key(row: dict) -> tuple[str, str, str]:
     return (row["announcement_date_cn"], row["valid_time_utc"],
             row["announcement_id"])
@@ -44,14 +48,16 @@ def _split(start: dt.date, end: dt.date) -> tuple[tuple[dt.date, dt.date],
 
 def _leaf(code: str, start: dt.date, end: dt.date, request: dict,
           probe_rows: list[dict], probe_total: int | None, root: Path,
-          poster, fetch, validate) -> tuple[list[dict], LeafAudit, int]:
+          poster, fetch, validate, page_size: int) -> tuple[list[dict], LeafAudit, int]:
     response = fetch(_path(root, start, end, "pass_b"), request, poster)
     confirm_rows, confirm_more, confirm_total = validate(code, response, start, end)
+    if confirm_more and len(confirm_rows) != page_size:
+        raise RuntimeError(f"{code}/{start}..{end}/pass_b 非终页行数不满")
     if confirm_more:
-        raise RuntimeError(f"{code}/{start}..{end} 双读分页状态不一致")
+        raise _LeafMismatch(f"{code}/{start}..{end} 双读分页状态不一致")
     first, second = _canonical(probe_rows), _canonical(confirm_rows)
     if first != second:
-        raise RuntimeError(f"{code}/{start}..{end} 双读规范化行不一致")
+        raise _LeafMismatch(f"{code}/{start}..{end} 双读规范化行不一致")
     totals = tuple(sorted({x for x in (probe_total, confirm_total) if x is not None}))
     if totals and len(first) not in totals:
         raise RuntimeError(f"{code}/{start}..{end} 行数未命中API观测总数")
@@ -104,6 +110,18 @@ def _multi_page_day(code: str, org_id: str, day: dt.date, root: Path,
     return first, audit, pages_a + pages_b
 
 
+def _branches(code: str, org_id: str, start: dt.date, end: dt.date, root: Path,
+              poster, request_fn: Callable, fetch: Callable, validate: Callable,
+              page_size: int, parent_reads: int):
+    left, right = _split(start, end)
+    left_rows, left_audit, left_reads = _walk(
+        code, org_id, *left, root, poster, request_fn, fetch, validate, page_size)
+    right_rows, right_audit, right_reads = _walk(
+        code, org_id, *right, root, poster, request_fn, fetch, validate, page_size)
+    return (left_rows + right_rows, left_audit + right_audit,
+            parent_reads + left_reads + right_reads)
+
+
 def _walk(code: str, org_id: str, start: dt.date, end: dt.date, root: Path,
           poster, request_fn: Callable, fetch: Callable,
           validate: Callable, page_size: int) -> tuple[list[dict], list[LeafAudit], int]:
@@ -111,8 +129,16 @@ def _walk(code: str, org_id: str, start: dt.date, end: dt.date, root: Path,
     response = fetch(_path(root, start, end, "pass_a"), request, poster)
     rows, has_more, total = validate(code, response, start, end)
     if not has_more:
-        accepted, audit, confirms = _leaf(
-            code, start, end, request, rows, total, root, poster, fetch, validate)
+        try:
+            accepted, audit, confirms = _leaf(
+                code, start, end, request, rows, total, root, poster, fetch,
+                validate, page_size)
+        except _LeafMismatch:
+            if start == end:
+                raise
+            return _branches(
+                code, org_id, start, end, root, poster, request_fn, fetch,
+                validate, page_size, 2)
         return accepted, [audit], 1 + confirms
     if len(rows) != page_size:
         raise RuntimeError(f"{code}/{start}..{end} 非终页行数不满")
@@ -121,12 +147,9 @@ def _walk(code: str, org_id: str, start: dt.date, end: dt.date, root: Path,
             code, org_id, start, root, response, poster, request_fn, fetch,
             validate, page_size)
         return accepted, [audit], reads
-    left, right = _split(start, end)
-    left_rows, left_audit, left_reads = _walk(
-        code, org_id, *left, root, poster, request_fn, fetch, validate, page_size)
-    right_rows, right_audit, right_reads = _walk(
-        code, org_id, *right, root, poster, request_fn, fetch, validate, page_size)
-    return left_rows + right_rows, left_audit + right_audit, 1 + left_reads + right_reads
+    return _branches(
+        code, org_id, start, end, root, poster, request_fn, fetch, validate,
+        page_size, 1)
 
 
 def collect_interval(code: str, org_id: str, start: dt.date, end: dt.date,
