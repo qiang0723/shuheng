@@ -73,3 +73,26 @@ fast-forward 精确读回、复跑专项与治理闸门，并从既有 10 个成
 
 E1 仍为 `OPEN_FAIL_CLOSED`；零利润 PIT、终版 PAP、密封、冻结、StudySnapshot、manifest、
 收益读取、研究运行或 persist。
+
+## 六、获批推送与阿里云续跑
+
+John 随后逐字批准推送 commits `b58e115`、`299e3a0`，并继续阿里云精确读回、验证及从
+既有 `10/646` 检查点续跑，明令不得删除旧失败证据。
+
+- GitHub `origin/main` 已从 `f9c9a3c` fast-forward 至 `299e3a0`；
+- 阿里云 `/opt/quant` 工作树先验干净，从同一旧 HEAD 精确 fast-forward 至
+  `299e3a0ae80aadc82924d1508864a31ef01cd03b`；
+- 远端专项 `50/50`、路由 `6/6`、规模/架构闸门全绿；首次 `py_compile` 因只读源码目录无法
+  写缓存而退出，改把缓存指向 `/tmp` 后通过，源码未改；
+- 续跑前只读核验：routes=`646`、有效旧 marker=`10`、首待办=`000046.SZ`、旧失败平铺页=`3`、
+  新布局页=`0`、错误历史=`1`；
+- 新容器 `s22-ann-index-v2` 于 `2026-08-10 15:30:24+08` 启动，使用既有钉版镜像
+  `shuheng-quant:579a354`、用户 `shuheng`、只读 rootfs/代码挂载、证据目录唯一可写、无数据库
+  凭据；旧失败容器 `s22-ann-index` 保留；
+- 新 fail-closed 监督 PID=`772083`，脚本 SHA256=
+  `9d46f0689f40904df0eb5bf55bba4de6363628cf7c86c50897ecb8d366bc1c24`；只在前一步 exit 0 时
+  依次启动原件物化、合同队列、12 票读回；
+- 启动后读回 `done=10 / legacy_failed_pages=3 / annual_v2_pages=16`，证明从首待办的新布局续跑，
+  未重抓旧 10 票、未覆盖失败页。
+
+15 分钟 UTC+8 心跳监控已恢复；监控只读，任一阶段非零即报告并暂停，不自动重启。
