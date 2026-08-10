@@ -1,0 +1,470 @@
+{
+  "artifact_status": "DRAFT_NOT_FOR_FREEZE",
+  "as_of": "2026-08-10T12:06:48+08:00",
+  "conflict_menu": [
+    {
+      "conflict_id": "C01_HISTORICAL_BOARD_IDENTITY",
+      "description": "深市中小企业板于2021-04-06并入主板；事件必须按事件日历史板块匹配，不得用当前板块回填。",
+      "fail_closed_when": "事件日板块身份不能由官方历史资料唯一证明",
+      "resolution_owner": "evidence_unit",
+      "status": "OPEN"
+    },
+    {
+      "conflict_id": "C02_RULE_VERSION_EFFECTIVE_DATE",
+      "description": "语义制度段已经确定，但2013—2019部分不改变A1两项语义的中间修订版本仍需逐版官方正文与精确施行日，才能满足B1逐事件唯一版本。",
+      "fail_closed_when": "事件日期落在尚未完成逐版索引的区间",
+      "resolution_owner": "evidence_unit",
+      "status": "OPEN"
+    },
+    {
+      "conflict_id": "C03_REPORTING_YEAR_TRANSITION",
+      "description": "规则发布日期、事件公告日、财务指标所属年度与新标准首次适用年度不能混为一项。",
+      "fail_closed_when": "无法同时唯一确定四个时点及过渡条款",
+      "resolution_owner": "event_selector",
+      "status": "OPEN"
+    },
+    {
+      "conflict_id": "C04_RESTATEMENT_CHAIN",
+      "description": "旧规则允许追溯重述触发；须识别原始年报、修订年报与官方实施公告的方案身份，禁止重复生成事件。",
+      "fail_closed_when": "追溯重述版本链或首次实施公告不能唯一连接",
+      "resolution_owner": "announcement_and_financial_pit_units",
+      "status": "OPEN"
+    },
+    {
+      "conflict_id": "C05_EQUITY_FIELD_BINDING",
+      "description": "规则正文使用净资产或期末净资产表述，不能单凭规则矩阵证明必须对应C1的total_hldr_eqy_exc_min_int。",
+      "fail_closed_when": "官方实施公告或官方解释不能将事件口径唯一绑定到归母权益",
+      "resolution_owner": "announcement_evidence_unit",
+      "status": "OPEN"
+    },
+    {
+      "conflict_id": "C06_CHINEXT_PRE2020_MECHANISM",
+      "description": "创业板2020改革前不实施与主板同构的ST和*ST制度；暂停上市风险提示不得冒充E1实施退市风险警示公告。",
+      "fail_closed_when": "候选事件早于创业板2020机制且仅存在旧制风险提示或暂停上市材料",
+      "resolution_owner": "event_selector",
+      "status": "CLOSED_AS_NOT_APPLICABLE"
+    },
+    {
+      "conflict_id": "C07_POST2020_CONTINUOUS_LOSS",
+      "description": "2020改革后单一连续亏损不再是直接财务类退市风险警示指标；净利润和营业收入组合指标不属于A1连续亏损原因。",
+      "fail_closed_when": "公告只引用利润收入组合指标而无A1净资产为负原因",
+      "resolution_owner": "event_selector",
+      "status": "CLOSED_AS_EXCLUDED"
+    },
+    {
+      "conflict_id": "C08_EXISTING_WARNING_TRANSITION_2020",
+      "description": "2020改革对已暂停上市、已风险警示以及2018—2020连续亏损公司设置存量过渡；不能按新规则发布日期统一改判。",
+      "fail_closed_when": "存量状态与过渡条款不能唯一证明",
+      "resolution_owner": "announcement_evidence_unit",
+      "status": "OPEN"
+    },
+    {
+      "conflict_id": "C09_2024_FIRST_APPLICATION_YEAR",
+      "description": "2024年4月新规虽即时施行，但新财务类标准从2024年年报首次适用；研究holdout前2023年报事件仍按原规则。",
+      "fail_closed_when": "按2024-04-30发布日期直接套用新财务阈值",
+      "resolution_owner": "event_selector",
+      "status": "CLOSED_BY_TRANSITION_RULE"
+    },
+    {
+      "conflict_id": "C10_STAR_RD_LISTING_STANDARD",
+      "description": "科创板特定研发型上市标准存在第四个完整会计年度后才适用财务类规则的特别门。",
+      "fail_closed_when": "不能证明公司上市标准及完整会计年度计数",
+      "resolution_owner": "listing_identity_evidence_unit",
+      "status": "OPEN"
+    },
+    {
+      "conflict_id": "C11_SOURCE_CONFLICT",
+      "description": "官方正文、修订通知、问答或公司公告对适用规则不一致时，不按来源层级择优拼接。",
+      "fail_closed_when": "冲突不能由更具体的官方过渡条款或实施决定消解",
+      "resolution_owner": "john",
+      "status": "OPEN"
+    }
+  ],
+  "event_date_scope": {
+    "end_exclusive": "2024-07-01",
+    "start_inclusive": "2011-01-01"
+  },
+  "freeze_eligible": false,
+  "g2_start": null,
+  "global_consumer_rules": {
+    "a1_allowed_reasons": [
+      "CONTINUOUS_LOSS",
+      "NEGATIVE_NET_ASSETS"
+    ],
+    "combined_profit_revenue_is_continuous_loss": false,
+    "current_board_may_replace_historical_board": false,
+    "event_must_match_exactly_one_rule_row": true,
+    "official_implementation_announcement_required": true,
+    "rule_publication_date_alone_decides_applicability": false,
+    "unknown_or_conflict_action": "FAIL_CLOSED"
+  },
+  "row_defaults": {
+    "equity_field_binding_status": "UNPROVEN",
+    "event_level_unique_match_status": "REQUIRES_EVENT_AND_ANNOUNCEMENT_EVIDENCE",
+    "freeze_eligible": false
+  },
+  "matrix_rows": [
+    {
+      "a1_continuous_loss_direct_trigger": true,
+      "a1_negative_net_assets_direct_trigger": false,
+      "board": "MAIN",
+      "event_date_end_exclusive": "2012-07-07",
+      "event_date_start_inclusive": "2011-01-01",
+      "exchange": "SSE",
+      "financial_application_note": "2008版旧制；连续亏损为既有指标，净资产为负尚非主板财务类退市风险警示指标。",
+      "historical_rule_label": "SSE_MAIN_2008",
+      "mechanism": "DELISTING_RISK_WARNING_AVAILABLE",
+      "row_id": "SSE_MAIN_R01",
+      "source_ids": [
+        "SSE_2008_NOTICE",
+        "SSE_2012_NOTICE",
+        "SSE_2012_TRANSITION_QA"
+      ],
+      "transition_ids": [],
+      "unique_version_status": "PROVISIONAL_SEMANTIC_REGIME"
+    },
+    {
+      "a1_continuous_loss_direct_trigger": true,
+      "a1_negative_net_assets_direct_trigger": true,
+      "board": "MAIN",
+      "event_date_end_exclusive": "2020-12-31",
+      "event_date_start_inclusive": "2012-07-07",
+      "exchange": "SSE",
+      "financial_application_note": "净资产为负新增指标从2012年年报首次适用；连续亏损既有期限连续计算。区间内中间规则修订须由逐版索引最终确定事件日版本。",
+      "historical_rule_label": "SSE_MAIN_2012_TO_PRE2020",
+      "mechanism": "DELISTING_RISK_WARNING_AVAILABLE",
+      "row_id": "SSE_MAIN_R02",
+      "source_ids": [
+        "SSE_2012_NOTICE",
+        "SSE_2012_TRANSITION_QA",
+        "SSE_2013_RULE_PDF"
+      ],
+      "transition_ids": [
+        "C02_RULE_VERSION_EFFECTIVE_DATE",
+        "C03_REPORTING_YEAR_TRANSITION",
+        "C04_RESTATEMENT_CHAIN"
+      ],
+      "unique_version_status": "UNPROVEN_MINOR_VERSIONS"
+    },
+    {
+      "a1_continuous_loss_direct_trigger": false,
+      "a1_negative_net_assets_direct_trigger": true,
+      "board": "MAIN",
+      "event_date_end_exclusive": "2024-04-30",
+      "event_date_start_inclusive": "2020-12-31",
+      "exchange": "SSE",
+      "financial_application_note": "新财务类规则从2020年度开始；单一连续亏损被利润收入组合指标替代，组合指标不属于A1。",
+      "historical_rule_label": "SSE_MAIN_2020_REFORM",
+      "mechanism": "DELISTING_RISK_WARNING_AVAILABLE",
+      "row_id": "SSE_MAIN_R03",
+      "source_ids": [
+        "SSE_2020_MAIN_NOTICE",
+        "SSE_2020_REFORM_QA"
+      ],
+      "transition_ids": [
+        "C07_POST2020_CONTINUOUS_LOSS",
+        "C08_EXISTING_WARNING_TRANSITION_2020"
+      ],
+      "unique_version_status": "PROVISIONAL_SEMANTIC_REGIME"
+    },
+    {
+      "a1_continuous_loss_direct_trigger": false,
+      "a1_negative_net_assets_direct_trigger": true,
+      "board": "MAIN",
+      "event_date_end_exclusive": "2024-07-01",
+      "event_date_start_inclusive": "2024-04-30",
+      "exchange": "SSE",
+      "financial_application_note": "研究holdout前涉及2023年年报的实施、撤销和终止上市仍按2023年8月版原规则；2024新财务类标准尚未首次适用。",
+      "historical_rule_label": "SSE_MAIN_2024_TRANSITION_FOR_2023_REPORT",
+      "mechanism": "DELISTING_RISK_WARNING_AVAILABLE",
+      "row_id": "SSE_MAIN_R04",
+      "source_ids": [
+        "SSE_2024_MAIN_NOTICE"
+      ],
+      "transition_ids": [
+        "C03_REPORTING_YEAR_TRANSITION",
+        "C09_2024_FIRST_APPLICATION_YEAR"
+      ],
+      "unique_version_status": "PROVEN_TRANSITION_RULE"
+    },
+    {
+      "a1_continuous_loss_direct_trigger": false,
+      "a1_negative_net_assets_direct_trigger": true,
+      "board": "STAR",
+      "event_date_end_exclusive": "2020-12-31",
+      "event_date_start_inclusive": "2019-07-22",
+      "exchange": "SSE",
+      "financial_application_note": "科创板开市后适用；连续亏损不是直接指标，利润收入组合不纳入A1；特定研发型上市标准公司另有第四个完整会计年度门。",
+      "historical_rule_label": "SSE_STAR_2019",
+      "mechanism": "DELISTING_RISK_WARNING_AVAILABLE",
+      "row_id": "SSE_STAR_R01",
+      "source_ids": [
+        "SSE_STAR_2019_RULE_PDF"
+      ],
+      "transition_ids": [
+        "C10_STAR_RD_LISTING_STANDARD"
+      ],
+      "unique_version_status": "PROVEN_WITH_ENTITY_GATE"
+    },
+    {
+      "a1_continuous_loss_direct_trigger": false,
+      "a1_negative_net_assets_direct_trigger": true,
+      "board": "STAR",
+      "event_date_end_exclusive": "2024-04-30",
+      "event_date_start_inclusive": "2020-12-31",
+      "exchange": "SSE",
+      "financial_application_note": "连续亏损不构成A1直接指标，净资产为负分支保留；特定上市标准门仍须逐公司证明。",
+      "historical_rule_label": "SSE_STAR_2020_REFORM",
+      "mechanism": "DELISTING_RISK_WARNING_AVAILABLE",
+      "row_id": "SSE_STAR_R02",
+      "source_ids": [
+        "SSE_STAR_2019_RULE_PDF",
+        "SSE_STAR_2020_NOTICE"
+      ],
+      "transition_ids": [
+        "C07_POST2020_CONTINUOUS_LOSS",
+        "C10_STAR_RD_LISTING_STANDARD"
+      ],
+      "unique_version_status": "PROVISIONAL_ENTITY_GATE"
+    },
+    {
+      "a1_continuous_loss_direct_trigger": false,
+      "a1_negative_net_assets_direct_trigger": true,
+      "board": "STAR",
+      "event_date_end_exclusive": "2024-07-01",
+      "event_date_start_inclusive": "2024-04-30",
+      "exchange": "SSE",
+      "financial_application_note": "2024新财务类标准从2024年年报首次适用；holdout前2023年年报事件按原规则。",
+      "historical_rule_label": "SSE_STAR_2024_TRANSITION_FOR_2023_REPORT",
+      "mechanism": "DELISTING_RISK_WARNING_AVAILABLE",
+      "row_id": "SSE_STAR_R03",
+      "source_ids": [
+        "SSE_STAR_2024_NOTICE"
+      ],
+      "transition_ids": [
+        "C09_2024_FIRST_APPLICATION_YEAR",
+        "C10_STAR_RD_LISTING_STANDARD"
+      ],
+      "unique_version_status": "PROVEN_TRANSITION_WITH_ENTITY_GATE"
+    },
+    {
+      "a1_continuous_loss_direct_trigger": true,
+      "a1_negative_net_assets_direct_trigger": false,
+      "board": "MAIN",
+      "event_date_end_exclusive": "2012-07-07",
+      "event_date_start_inclusive": "2011-01-01",
+      "exchange": "SZSE",
+      "financial_application_note": "深市主板旧制已有连续亏损指标，但净资产为负尚非主板财务类退市指标。",
+      "historical_rule_label": "SZSE_MAIN_2008",
+      "mechanism": "DELISTING_RISK_WARNING_AVAILABLE",
+      "row_id": "SZSE_MAIN_R01",
+      "source_ids": [
+        "SZSE_2012_MAIN_NOTICE",
+        "SZSE_2012_COMPARISON_PDF"
+      ],
+      "transition_ids": [],
+      "unique_version_status": "PROVISIONAL_SEMANTIC_REGIME"
+    },
+    {
+      "a1_continuous_loss_direct_trigger": true,
+      "a1_negative_net_assets_direct_trigger": true,
+      "board": "MAIN",
+      "event_date_end_exclusive": "2020-12-31",
+      "event_date_start_inclusive": "2012-07-07",
+      "exchange": "SZSE",
+      "financial_application_note": "净资产为负新指标按2012年年报划断；连续亏损既有期限连续计算；中间修订版本仍需逐版官方索引。",
+      "historical_rule_label": "SZSE_MAIN_2012_TO_PRE2020",
+      "mechanism": "DELISTING_RISK_WARNING_AVAILABLE",
+      "row_id": "SZSE_MAIN_R02",
+      "source_ids": [
+        "SZSE_2012_MAIN_NOTICE",
+        "SZSE_2012_MAIN_RULE_PDF",
+        "SZSE_2018_RULE_NOTICE"
+      ],
+      "transition_ids": [
+        "C02_RULE_VERSION_EFFECTIVE_DATE",
+        "C03_REPORTING_YEAR_TRANSITION",
+        "C04_RESTATEMENT_CHAIN"
+      ],
+      "unique_version_status": "UNPROVEN_MINOR_VERSIONS"
+    },
+    {
+      "a1_continuous_loss_direct_trigger": false,
+      "a1_negative_net_assets_direct_trigger": true,
+      "board": "MAIN",
+      "event_date_end_exclusive": "2024-04-30",
+      "event_date_start_inclusive": "2020-12-31",
+      "exchange": "SZSE",
+      "financial_application_note": "单一连续亏损由利润收入组合指标替代，组合指标不属于A1；中小板合并后历史身份须按事件日处理。",
+      "historical_rule_label": "SZSE_MAIN_2020_REFORM",
+      "mechanism": "DELISTING_RISK_WARNING_AVAILABLE",
+      "row_id": "SZSE_MAIN_R03",
+      "source_ids": [
+        "SZSE_2020_MAIN_NOTICE",
+        "SZSE_2020_REFORM_QA",
+        "SZSE_2021_BOARD_MERGER",
+        "SZSE_2023_MAIN_NOTICE"
+      ],
+      "transition_ids": [
+        "C01_HISTORICAL_BOARD_IDENTITY",
+        "C07_POST2020_CONTINUOUS_LOSS",
+        "C08_EXISTING_WARNING_TRANSITION_2020"
+      ],
+      "unique_version_status": "PROVISIONAL_SEMANTIC_REGIME"
+    },
+    {
+      "a1_continuous_loss_direct_trigger": false,
+      "a1_negative_net_assets_direct_trigger": true,
+      "board": "MAIN",
+      "event_date_end_exclusive": "2024-07-01",
+      "event_date_start_inclusive": "2024-04-30",
+      "exchange": "SZSE",
+      "financial_application_note": "2024新财务类标准从2024年年报首次适用；holdout前2023年年报事件按原规则。",
+      "historical_rule_label": "SZSE_MAIN_2024_TRANSITION_FOR_2023_REPORT",
+      "mechanism": "DELISTING_RISK_WARNING_AVAILABLE",
+      "row_id": "SZSE_MAIN_R04",
+      "source_ids": [
+        "SZSE_2024_MAIN_NOTICE"
+      ],
+      "transition_ids": [
+        "C09_2024_FIRST_APPLICATION_YEAR"
+      ],
+      "unique_version_status": "PROVEN_TRANSITION_RULE"
+    },
+    {
+      "a1_continuous_loss_direct_trigger": true,
+      "a1_negative_net_assets_direct_trigger": true,
+      "board": "SME",
+      "event_date_end_exclusive": "2012-07-07",
+      "event_date_start_inclusive": "2011-01-01",
+      "exchange": "SZSE",
+      "financial_application_note": "中小企业板旧制已同时存在连续亏损和净资产为负指标，与同期深市主板不同。",
+      "historical_rule_label": "SZSE_SME_PRE2012_SPECIAL_RULES",
+      "mechanism": "DELISTING_RISK_WARNING_AVAILABLE",
+      "row_id": "SZSE_SME_R01",
+      "source_ids": [
+        "SZSE_2012_COMPARISON_PDF"
+      ],
+      "transition_ids": [],
+      "unique_version_status": "PROVISIONAL_SEMANTIC_REGIME"
+    },
+    {
+      "a1_continuous_loss_direct_trigger": true,
+      "a1_negative_net_assets_direct_trigger": true,
+      "board": "SME",
+      "event_date_end_exclusive": "2020-12-31",
+      "event_date_start_inclusive": "2012-07-07",
+      "exchange": "SZSE",
+      "financial_application_note": "2012版以后与主板共用上市规则中的财务类退市风险警示指标；中间修订版本仍需逐版索引。",
+      "historical_rule_label": "SZSE_SME_2012_TO_PRE2020",
+      "mechanism": "DELISTING_RISK_WARNING_AVAILABLE",
+      "row_id": "SZSE_SME_R02",
+      "source_ids": [
+        "SZSE_2012_MAIN_NOTICE",
+        "SZSE_2012_MAIN_RULE_PDF",
+        "SZSE_2018_RULE_NOTICE"
+      ],
+      "transition_ids": [
+        "C02_RULE_VERSION_EFFECTIVE_DATE",
+        "C04_RESTATEMENT_CHAIN"
+      ],
+      "unique_version_status": "UNPROVEN_MINOR_VERSIONS"
+    },
+    {
+      "a1_continuous_loss_direct_trigger": false,
+      "a1_negative_net_assets_direct_trigger": true,
+      "board": "SME",
+      "event_date_end_exclusive": "2021-04-06",
+      "event_date_start_inclusive": "2020-12-31",
+      "exchange": "SZSE",
+      "financial_application_note": "2020改革后单一连续亏损不再是直接指标；2021-04-06并板前仍保留历史SME身份。",
+      "historical_rule_label": "SZSE_SME_2020_REFORM_TO_MERGER",
+      "mechanism": "DELISTING_RISK_WARNING_AVAILABLE",
+      "row_id": "SZSE_SME_R03",
+      "source_ids": [
+        "SZSE_2020_MAIN_NOTICE",
+        "SZSE_2020_REFORM_QA",
+        "SZSE_2021_BOARD_MERGER"
+      ],
+      "transition_ids": [
+        "C01_HISTORICAL_BOARD_IDENTITY",
+        "C07_POST2020_CONTINUOUS_LOSS",
+        "C08_EXISTING_WARNING_TRANSITION_2020"
+      ],
+      "unique_version_status": "PROVISIONAL_SEMANTIC_REGIME"
+    },
+    {
+      "a1_continuous_loss_direct_trigger": false,
+      "a1_negative_net_assets_direct_trigger": false,
+      "board": "CHINEXT",
+      "event_date_end_exclusive": "2020-06-12",
+      "event_date_start_inclusive": "2011-01-01",
+      "exchange": "SZSE",
+      "financial_application_note": "旧创业板不实施与主板同构的ST和*ST制度；即使存在暂停上市或风险提示，也不能构成exp22 E1官方实施退市风险警示公告。",
+      "historical_rule_label": "SZSE_CHINEXT_PRE2020_NO_STAR_ST_MECHANISM",
+      "mechanism": "NOT_APPLICABLE",
+      "row_id": "SZSE_CHINEXT_R01",
+      "source_ids": [
+        "SZSE_CHINEXT_2012_NOTICE",
+        "SZSE_CHINEXT_2012_PLAN_PDF",
+        "SZSE_2018_RULE_NOTICE"
+      ],
+      "transition_ids": [
+        "C06_CHINEXT_PRE2020_MECHANISM"
+      ],
+      "unique_version_status": "PROVEN_NOT_APPLICABLE"
+    },
+    {
+      "a1_continuous_loss_direct_trigger": false,
+      "a1_negative_net_assets_direct_trigger": true,
+      "board": "CHINEXT",
+      "event_date_end_exclusive": "2024-04-30",
+      "event_date_start_inclusive": "2020-06-12",
+      "exchange": "SZSE",
+      "financial_application_note": "2020改革开始实施财务类退市风险警示，相关财务指标以2020年为首个适用会计年度；单一连续亏损不是A1直接指标。",
+      "historical_rule_label": "SZSE_CHINEXT_2020_REFORM",
+      "mechanism": "DELISTING_RISK_WARNING_AVAILABLE",
+      "row_id": "SZSE_CHINEXT_R02",
+      "source_ids": [
+        "SZSE_CHINEXT_2020_NOTICE",
+        "SZSE_CHINEXT_2020_EDUCATION",
+        "SZSE_CHINEXT_2020_DEC_NOTICE"
+      ],
+      "transition_ids": [
+        "C03_REPORTING_YEAR_TRANSITION",
+        "C07_POST2020_CONTINUOUS_LOSS",
+        "C08_EXISTING_WARNING_TRANSITION_2020"
+      ],
+      "unique_version_status": "PROVISIONAL_SEMANTIC_REGIME"
+    },
+    {
+      "a1_continuous_loss_direct_trigger": false,
+      "a1_negative_net_assets_direct_trigger": true,
+      "board": "CHINEXT",
+      "event_date_end_exclusive": "2024-07-01",
+      "event_date_start_inclusive": "2024-04-30",
+      "exchange": "SZSE",
+      "financial_application_note": "2024新财务类标准从2024年年报首次适用；holdout前2023年年报事件按原规则。",
+      "historical_rule_label": "SZSE_CHINEXT_2024_TRANSITION_FOR_2023_REPORT",
+      "mechanism": "DELISTING_RISK_WARNING_AVAILABLE",
+      "row_id": "SZSE_CHINEXT_R03",
+      "source_ids": [
+        "SZSE_CHINEXT_2024_NOTICE"
+      ],
+      "transition_ids": [
+        "C09_2024_FIRST_APPLICATION_YEAR"
+      ],
+      "unique_version_status": "PROVEN_TRANSITION_RULE"
+    }
+  ],
+  "matrix_summary": {
+    "all_rows_equity_field_binding": "UNPROVEN",
+    "all_rows_freeze_eligible": false,
+    "conflict_count": 11,
+    "mechanism_not_applicable_rows": 1,
+    "row_count": 17,
+    "unique_version_proven_or_semantic_provisional_rows": 14,
+    "unique_version_unproven_minor_version_rows": 3
+  },
+  "schema_version": 1
+}

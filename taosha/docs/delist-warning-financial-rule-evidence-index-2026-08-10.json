@@ -1,0 +1,314 @@
+{
+  "accessed_at": "2026-08-10T12:06:48+08:00",
+  "artifact_status": "DRAFT_NOT_FOR_FREEZE",
+  "scope": "exp22 delist_warning_financial 2011-01-01 through 2024-06-30 official-rule evidence only",
+  "schema_version": 1,
+  "sources": [
+    {
+      "authority": "上海证券交易所",
+      "evidence_scope": [
+        "2008版规则自2008-10-01施行",
+        "2011年初上交所主板仍处于2008版规则阶段"
+      ],
+      "id": "SSE_2008_NOTICE",
+      "publication_date": "2008-09-04",
+      "source_type": "official_notice",
+      "title": "关于发布《上海证券交易所股票上市规则（2008年修订）》的通知",
+      "url": "https://www.sse.com.cn/aboutus/mediacenter/hotandd/c/c_20150912_3988237.shtml"
+    },
+    {
+      "authority": "上海证券交易所",
+      "evidence_scope": [
+        "2012版规则自2012-07-07施行",
+        "新增净资产为负等退市指标"
+      ],
+      "id": "SSE_2012_NOTICE",
+      "publication_date": "2012-07-07",
+      "source_type": "official_notice",
+      "title": "关于发布《上海证券交易所股票上市规则（2012年修订）》的通知",
+      "url": "https://www.sse.com.cn/aboutus/mediacenter/hotandd/c/c_20150912_3988587.shtml"
+    },
+    {
+      "authority": "上海证券交易所",
+      "evidence_scope": [
+        "净资产为负等新增指标从2012年年报开始适用",
+        "连续亏损等既有指标跨新旧规则连续计算"
+      ],
+      "id": "SSE_2012_TRANSITION_QA",
+      "publication_date": "2012-07-07",
+      "source_type": "official_qa",
+      "title": "上海证券交易所退市制度修订答记者问",
+      "url": "https://www.sse.com.cn/aboutus/mediacenter/hotandd/c/c_20150912_3988578.shtml"
+    },
+    {
+      "authority": "上海证券交易所",
+      "evidence_scope": [
+        "主板连续两年净利润为负触发退市风险警示",
+        "主板最近一年期末净资产为负触发退市风险警示",
+        "追溯重述可以触发",
+        "上市公司须披露实施退市风险警示公告"
+      ],
+      "id": "SSE_2013_RULE_PDF",
+      "publication_date": "2013-12-27",
+      "source_type": "official_rule_text",
+      "title": "上海证券交易所股票上市规则（2013年修订）",
+      "url": "https://www.sse.com.cn/lawandrules/sselawsrules2025/repeal/rules/c/10785193/files/a58091aef75c46c0a43ce2cd11d1379c.pdf"
+    },
+    {
+      "authority": "上海证券交易所",
+      "evidence_scope": [
+        "2020版规则自2020-12-31施行",
+        "新财务类指标从2020年度开始适用",
+        "2018至2020连续亏损但不触及新财务类指标的公司转入其他风险警示而非财务类退市风险警示"
+      ],
+      "id": "SSE_2020_MAIN_NOTICE",
+      "publication_date": "2020-12-31",
+      "source_type": "official_notice",
+      "title": "关于发布《上海证券交易所股票上市规则（2020年12月修订）》的通知",
+      "url": "https://www.sse.com.cn/lawandrules/sselawsrules2025/repeal/rules/c/c_20201231_10785038.shtml"
+    },
+    {
+      "authority": "上海证券交易所",
+      "evidence_scope": [
+        "2020改革以净利润和营业收入组合指标替代单一连续亏损指标",
+        "净资产为负继续作为财务类退市风险警示指标"
+      ],
+      "id": "SSE_2020_REFORM_QA",
+      "publication_date": "2020-12-14",
+      "source_type": "official_qa",
+      "title": "上海证券交易所就退市制度修订答记者问",
+      "url": "https://www.sse.com.cn/aboutus/mediacenter/hotandd/c/c_20201214_5279592.shtml"
+    },
+    {
+      "authority": "上海证券交易所",
+      "evidence_scope": [
+        "2024版规则自2024-04-30施行",
+        "新财务类标准以2024年年报为首个适用年度报告",
+        "2023年年报披露后的实施和撤销仍按原规则"
+      ],
+      "id": "SSE_2024_MAIN_NOTICE",
+      "publication_date": "2024-04-30",
+      "source_type": "official_notice",
+      "title": "关于发布《上海证券交易所股票上市规则（2024年4月修订）》的通知",
+      "url": "https://www.sse.com.cn/lawandrules/sselawsrules2025/repeal/rules/c/c_20240430_10785259.shtml"
+    },
+    {
+      "authority": "上海证券交易所",
+      "evidence_scope": [
+        "科创板初始规则含净利润与营业收入组合指标以及净资产为负指标",
+        "实施退市风险警示须公告",
+        "特定研发型上市标准公司存在第四个完整会计年度后适用的特殊门"
+      ],
+      "id": "SSE_STAR_2019_RULE_PDF",
+      "publication_date": "2019-03-01",
+      "source_type": "official_rule_text",
+      "title": "上海证券交易所科创板股票上市规则（2019年3月）",
+      "url": "https://www.sse.com.cn/lawandrules/sselawsrules/repeal/rules/c/10118921/files/9bd863640cc44cfb8db0a7e756df68dc.pdf"
+    },
+    {
+      "authority": "上海证券交易所",
+      "evidence_scope": [
+        "科创板2020年12月退市制度修订及过渡安排"
+      ],
+      "id": "SSE_STAR_2020_NOTICE",
+      "publication_date": "2020-12-31",
+      "source_type": "official_notice",
+      "title": "关于发布《上海证券交易所科创板股票上市规则（2020年12月修订）》的通知",
+      "url": "https://www.sse.com.cn/lawandrules/sselawsrules2025/repeal/rules/c/c_20201231_10785217.shtml"
+    },
+    {
+      "authority": "上海证券交易所",
+      "evidence_scope": [
+        "科创板2024版新财务类标准以2024年年报为首个适用年度报告",
+        "2023年年报披露后的处置仍按原规则"
+      ],
+      "id": "SSE_STAR_2024_NOTICE",
+      "publication_date": "2024-04-30",
+      "source_type": "official_notice",
+      "title": "关于发布《上海证券交易所科创板股票上市规则（2024年4月修订）》的通知",
+      "url": "https://www.sse.com.cn/lawandrules/sselawsrules/repeal/rules/c/c_20240430_10777832.shtml"
+    },
+    {
+      "authority": "深圳证券交易所",
+      "evidence_scope": [
+        "2012版主板和中小企业板规则自2012-07-07施行",
+        "既有连续亏损指标跨新旧规则连续计算",
+        "净资产为负新旧处置以2012年年报为划断"
+      ],
+      "id": "SZSE_2012_MAIN_NOTICE",
+      "publication_date": "2012-07-07",
+      "source_type": "official_notice",
+      "title": "关于发布《深圳证券交易所股票上市规则（2012年修订）》的通知",
+      "url": "https://www.szse.cn/disclosure/notice/company/t20120718_508731.html"
+    },
+    {
+      "authority": "深圳证券交易所",
+      "evidence_scope": [
+        "2012改革前主板已有连续亏损指标但没有净资产为负退市指标",
+        "2012改革前中小企业板已有连续亏损和净资产为负指标",
+        "2012改革后两板均采用连续亏损和净资产为负指标"
+      ],
+      "id": "SZSE_2012_COMPARISON_PDF",
+      "publication_date": "2012-06-28",
+      "source_type": "official_comparison_table",
+      "title": "关于改进和完善主板、中小企业板上市公司退市制度的方案对照表",
+      "url": "https://docs.static.szse.cn/www/aboutus/trends/news/W020180328462518001957.pdf"
+    },
+    {
+      "authority": "深圳证券交易所",
+      "evidence_scope": [
+        "2012版主板和中小企业板连续两年亏损以及最近一年净资产为负的具体条款",
+        "实施退市风险警示公告义务"
+      ],
+      "id": "SZSE_2012_MAIN_RULE_PDF",
+      "publication_date": "2012-07-07",
+      "source_type": "official_rule_text",
+      "title": "深圳证券交易所股票上市规则（2012年修订）",
+      "url": "https://docs.static.szse.cn/www/disclosure/notice/company/W020180328446393013021.pdf"
+    },
+    {
+      "authority": "深圳证券交易所",
+      "evidence_scope": [
+        "2018年主板和中小企业板适用退市风险警示制度",
+        "当时创业板采用退市风险提示及暂停上市路径而非主板同构的退市风险警示"
+      ],
+      "id": "SZSE_2018_RULE_NOTICE",
+      "publication_date": "2018-11-16",
+      "source_type": "official_notice",
+      "title": "关于发布《深圳证券交易所股票上市规则（2018年11月修订）》等规则的通知",
+      "url": "https://www.szse.cn/disclosure/notice/general/t20181116_557588.html"
+    },
+    {
+      "authority": "深圳证券交易所",
+      "evidence_scope": [
+        "2020版主板和中小企业板规则自2020-12-31施行",
+        "财务类退市新规及存量公司过渡安排"
+      ],
+      "id": "SZSE_2020_MAIN_NOTICE",
+      "publication_date": "2020-12-31",
+      "source_type": "official_notice",
+      "title": "关于发布《深圳证券交易所股票上市规则（2020年修订）》的通知",
+      "url": "https://www.szse.cn/disclosure/notice/general/t20201231_584052.html"
+    },
+    {
+      "authority": "深圳证券交易所",
+      "evidence_scope": [
+        "2020改革以净利润和营业收入组合指标替代单一连续亏损指标",
+        "存量主板和中小企业板风险警示存在过渡安排"
+      ],
+      "id": "SZSE_2020_REFORM_QA",
+      "publication_date": "2020-12-31",
+      "source_type": "official_qa",
+      "title": "深交所就退市制度修订答记者问",
+      "url": "https://www.szse.cn/aboutus/trends/news/t20201231_584060.html"
+    },
+    {
+      "authority": "深圳证券交易所",
+      "evidence_scope": [
+        "主板与中小企业板于2021-04-06合并",
+        "历史板块身份不能用当前板块静默覆盖"
+      ],
+      "id": "SZSE_2021_BOARD_MERGER",
+      "publication_date": "2021-04-06",
+      "source_type": "official_news",
+      "title": "深交所主板与中小板合并正式实施",
+      "url": "https://www.szse.cn/aboutus/trends/news/t20210406_585442.html"
+    },
+    {
+      "authority": "深圳证券交易所",
+      "evidence_scope": [
+        "创业板2012版规则自2012-05-01施行",
+        "旧制度以退市风险提示、暂停上市及终止上市为主要路径"
+      ],
+      "id": "SZSE_CHINEXT_2012_NOTICE",
+      "publication_date": "2012-04-20",
+      "source_type": "official_notice",
+      "title": "关于发布《深圳证券交易所创业板股票上市规则（2012年修订）》的通知",
+      "url": "https://www.szse.cn/disclosure/notice/company/t20120420_508712.html"
+    },
+    {
+      "authority": "深圳证券交易所",
+      "evidence_scope": [
+        "创业板旧制度不实施主板式ST和*ST制度",
+        "改以强化退市风险提示安排"
+      ],
+      "id": "SZSE_CHINEXT_2012_PLAN_PDF",
+      "publication_date": "2012-04-20",
+      "source_type": "official_policy_explanation",
+      "title": "关于完善创业板退市制度的方案",
+      "url": "https://docs.static.szse.cn/www/lawrules/publicadvice/W020180328462435560438.pdf"
+    },
+    {
+      "authority": "深圳证券交易所",
+      "evidence_scope": [
+        "创业板2020版规则自2020-06-12施行",
+        "财务类退市风险警示以2020年为首个适用会计年度",
+        "旧暂停上市公司和2019年年报存在过渡安排"
+      ],
+      "id": "SZSE_CHINEXT_2020_NOTICE",
+      "publication_date": "2020-06-12",
+      "source_type": "official_notice",
+      "title": "关于发布《深圳证券交易所创业板股票上市规则（2020年修订）》的通知",
+      "url": "https://www.szse.cn/disclosure/notice/general/t20200612_578380.html"
+    },
+    {
+      "authority": "深圳证券交易所",
+      "evidence_scope": [
+        "创业板2020改革开始对财务类等退市情形实施退市风险警示",
+        "旧制度与新制度的风险警示机制不同"
+      ],
+      "id": "SZSE_CHINEXT_2020_EDUCATION",
+      "publication_date": "2020-10-22",
+      "source_type": "official_investor_education",
+      "title": "创业板退市制度改革要点",
+      "url": "https://investor.szse.cn/thematic/chinext/article/t20201022_582398.html"
+    },
+    {
+      "authority": "深圳证券交易所",
+      "evidence_scope": [
+        "创业板2020年12月新增财务类指标以2020年为首个适用会计年度"
+      ],
+      "id": "SZSE_CHINEXT_2020_DEC_NOTICE",
+      "publication_date": "2020-12-31",
+      "source_type": "official_notice",
+      "title": "关于发布《深圳证券交易所创业板股票上市规则（2020年12月修订）》的通知",
+      "url": "https://www.szse.cn/disclosure/notice/t20201231_584051.html"
+    },
+    {
+      "authority": "深圳证券交易所",
+      "evidence_scope": [
+        "2024版主板规则自2024-04-30施行",
+        "新财务类标准以2024年年报为首个适用年度报告"
+      ],
+      "id": "SZSE_2024_MAIN_NOTICE",
+      "publication_date": "2024-04-30",
+      "source_type": "official_notice",
+      "title": "关于发布《深圳证券交易所股票上市规则（2024年修订）》的通知",
+      "url": "https://www.szse.cn/lawrules/rule/repeal/rules/t20240430_607069.html"
+    },
+    {
+      "authority": "深圳证券交易所",
+      "evidence_scope": [
+        "2024版创业板规则自2024-04-30施行",
+        "新财务类标准以2024年年报为首个适用年度报告"
+      ],
+      "id": "SZSE_CHINEXT_2024_NOTICE",
+      "publication_date": "2024-04-30",
+      "source_type": "official_notice",
+      "title": "关于发布《深圳证券交易所创业板股票上市规则（2024年修订）》的通知",
+      "url": "https://www.szse.cn/lawrules/rule/repeal/rules/t20240430_607070.html"
+    },
+    {
+      "authority": "深圳证券交易所",
+      "evidence_scope": [
+        "2023年8月主板规则自2023-09-04施行",
+        "2024年4月前规则版本边界"
+      ],
+      "id": "SZSE_2023_MAIN_NOTICE",
+      "publication_date": "2023-08-04",
+      "source_type": "official_notice",
+      "title": "关于发布《深圳证券交易所股票上市规则（2023年8月修订）》的通知",
+      "url": "https://www.szse.cn/lawrules/rule/repeal/rules/t20230804_602477.html"
+    }
+  ]
+}
