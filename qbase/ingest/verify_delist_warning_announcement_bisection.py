@@ -171,6 +171,15 @@ def test_single_day_pagination(tmp: Path) -> None:
     rejects("单日多页非终页短读拒绝", lambda: indexer.collect_code(
         "000001", "org", start, end, tmp / "day_short", short), "非终页行数不满")
 
+    def drifting_page_total(_url, request):
+        page = int(request["pageNum"])
+        rows = full if page == 1 else [_item("30", "2020-01-01"),
+                                      _item("31", "2020-01-01")]
+        return _response(rows, page == 1, 35 if page == 1 else 32)
+    rejects("单日同遍跨页总数漂移拒绝", lambda: indexer.collect_code(
+        "000001", "org", start, end, tmp / "page_total_drift",
+        drifting_page_total), "API总数跨页漂移")
+
     def no_total(_url, request):
         page = int(request["pageNum"])
         rows = full if page == 1 else [_item("30", "2020-01-01")]
@@ -239,12 +248,16 @@ def test_resume_and_layouts(tmp: Path) -> None:
     v6_page = (root / "000001" / "bisect_v6" / "2020" /
                "2020-01-01_2020-01-01" / "pass_a" / "00001.json")
     v6_page.parent.mkdir(parents=True); v6_page.write_bytes(b"bisect-v6-evidence\n")
+    v7_page = (root / "000001" / "bisect_v7" / "2020" /
+               "2020-01-01_2020-01-01" / "pass_a" / "00001.json")
+    v7_page.parent.mkdir(parents=True); v7_page.write_bytes(b"bisect-v7-evidence\n")
     indexer.collect_code("000001", "org", start, end, root, stable)
     check("annual_v2失败证据未覆盖", old_page.read_bytes(), b"annual-v2-evidence\n")
     check("bisect_v3失败证据未覆盖", v3_page.read_bytes(), b"bisect-v3-evidence\n")
     check("bisect_v4失败证据未覆盖", v4_page.read_bytes(), b"bisect-v4-evidence\n")
     check("bisect_v5失败证据未覆盖", v5_page.read_bytes(), b"bisect-v5-evidence\n")
     check("bisect_v6失败证据未覆盖", v6_page.read_bytes(), b"bisect-v6-evidence\n")
+    check("bisect_v7失败证据未覆盖", v7_page.read_bytes(), b"bisect-v7-evidence\n")
     no_fetch = lambda _u, _r: (_ for _ in ()).throw(AssertionError("不应重抓"))
     rows, _ = indexer.collect_code("000001", "org", start, end, root, no_fetch)
     check("新布局成功件只读恢复", len(rows), 1)
@@ -254,7 +267,8 @@ def test_resume_and_layouts(tmp: Path) -> None:
     rejects("新布局请求漂移拒绝", lambda: indexer.collect_code(
         "000001", "org", start, end, root, no_fetch), "请求或响应无效")
 
-    for layout in ("annual_v2", "bisect_v3", "bisect_v4", "bisect_v5", "bisect_v6"):
+    for layout in ("annual_v2", "bisect_v3", "bisect_v4", "bisect_v5", "bisect_v6",
+                   "bisect_v7"):
         evidence = tmp / f"{layout}_marker"
         _write_layout_marker(evidence, layout, start, end)
         check(f"{layout}成功marker继续自验", indexer._done_valid(

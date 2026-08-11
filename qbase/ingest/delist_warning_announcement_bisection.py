@@ -87,6 +87,9 @@ def _scan_day(code: str, org_id: str, day: dt.date, root: Path, label: str,
         ids.update(current_ids); rows.extend(current)
         if total is not None:
             totals.append(total)
+            if len(set(totals)) != 1:
+                raise RuntimeError(
+                    f"{code}/{day}/{label} API总数跨页漂移")
         if not has_more:
             if not totals or len(rows) not in totals:
                 raise RuntimeError(f"{code}/{day}/{label} 行数未命中API观测总数")
