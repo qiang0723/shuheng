@@ -77,3 +77,7 @@ export const researchReadiness = {
 export function getExperiment(id: number) {
   return experiments.find((row) => row.id === id);
 }
+
+export function getResearchGate(id: number) {
+  return researchReadiness.gates.find((gate) => gate.id === id);
+}

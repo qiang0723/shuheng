@@ -47,6 +47,7 @@ test("首页给出当前结论、证据边界与中文字段说明", async () =>
   assert.match(html, /历史事件研究，不是实时选股系统/);
   assert.match(html, /跨期暂停/);
   assert.match(html, /两类时点独立/);
+  for (const id of [18, 21, 22, 23]) assert.match(html, new RegExp(`href="/experiments/${id}"`));
   assert.doesNotMatch(html, /Building your site|Starter Project|codex-preview/i);
 });
 
@@ -91,4 +92,16 @@ test("新增闭卷实验展示当前状态、指标与边界", async () => {
   assert.match(exDiv, /除权缺口/);
   assert.match(exDiv, /已闭卷/);
   assert.match(exDiv, /复权总回报/);
+});
+
+test("证据硬门实验详情区分研发停点与研究结果快照", async () => {
+  const html = await htmlFor("/experiments/22");
+
+  assert.match(html, /财务退市风险警示/);
+  assert.match(html, /当前研究停点/);
+  assert.match(html, /跨期暂停/);
+  assert.match(html, /官方公告分页集合发生漂移/);
+  assert.match(html, /STATE 一百五十一笔，2026-08-11（UTC\+8）/);
+  assert.match(html, /2026-08-09 22:14:05\.537694（UTC\+8）/);
+  assert.match(html, /本段只解释研发停点，不构成统计结果、代理证据或恢复授权/);
 });

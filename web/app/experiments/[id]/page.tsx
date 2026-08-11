@@ -5,7 +5,7 @@ import { FieldGuide } from "../../components/FieldGuide";
 import { MetricGrid } from "../../components/MetricGrid";
 import { ProvenancePanel } from "../../components/ProvenancePanel";
 import { PowerBadge, StatusBadge, VerdictBadge } from "../../components/StatusBadge";
-import { getExperiment } from "../../../lib/fixtures";
+import { getExperiment, getResearchGate, researchReadiness } from "../../../lib/fixtures";
 import { familyLabel, percent, powerLabels, sourceLabels } from "../../../lib/format";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
@@ -19,6 +19,7 @@ export default async function ExperimentDetailPage({ params }: { params: Promise
   const experiment = getExperiment(Number(id));
   if (!experiment) notFound();
   const metric = experiment.metrics;
+  const researchGate = getResearchGate(experiment.id);
 
   return (
     <main className="page-stack">
@@ -36,6 +37,21 @@ export default async function ExperimentDetailPage({ params }: { params: Promise
         </article>
         <aside className="panel identity-card"><span className="eyebrow">身份与角色</span><dl><div><dt>假设来源</dt><dd>{sourceLabels[experiment.sourceType]}</dd></div><div><dt>证据效力</dt><dd>{powerLabels[experiment.verdictPower]}</dd></div><div><dt>家族轮次</dt><dd>第{experiment.familyTrial}轮</dd></div>{metric && <div><dt>密封方向</dt><dd>{metric.predictedDirection === "positive" ? "正" : "负"}·把握度{percent(metric.confidence, 0)}</dd></div>}</dl></aside>
       </section>
+
+      {researchGate && (
+        <section className="panel current-gate-panel" aria-labelledby="current-gate-title">
+          <div className="section-heading">
+            <div><span className="eyebrow">当前研究停点</span><h2 id="current-gate-title">该实验尚不能继续形成正式结果</h2></div>
+            <span className="readiness-status">{researchGate.status}</span>
+          </div>
+          <p>{researchGate.reason}</p>
+          <div className="gate-identity">
+            <span>研发状态：{researchReadiness.statusSnapshot}</span>
+            <span>研究结果快照：{researchReadiness.resultSnapshot}</span>
+          </div>
+          <small>两类时点独立；本段只解释研发停点，不构成统计结果、代理证据或恢复授权。</small>
+        </section>
+      )}
 
       {metric ? <section className="panel"><div className="section-heading"><div><span className="eyebrow">正式结果</span><h2>关键统计与样本</h2></div><span className={metric.directionHit ? "hit yes" : "hit no"}>{metric.directionHit ? "密封方向命中" : "密封方向未中"}</span></div><MetricGrid metric={metric} /></section> : <section className="panel empty-panel"><span className="empty-mark">—</span><h2>暂无详细统计快照</h2><p>本静态版只展示仓内fixture明确存在的字段，不使用猜测值填充。</p></section>}
 

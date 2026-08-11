@@ -24,11 +24,14 @@
 .readiness-answer li + li { margin-top: 8px; }
 .gate-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .gate-card { min-width: 0; padding: 16px; border: 1px solid var(--line-soft); border-radius: 12px; background: var(--surface); }
-.gate-card > div { display: grid; gap: 4px; }
+.gate-card > a { display: block; height: 100%; color: inherit; }
+.gate-card:hover { border-color: #315646; background: rgb(118 211 173 / 5%); }
+.gate-card a > div { display: grid; gap: 4px; }
 .gate-card span { color: var(--faint); font: 10px "SFMono-Regular", monospace; }
 .gate-card strong { font-size: 13px; }
 .gate-card em { display: inline-flex; width: fit-content; margin-top: 12px; padding: 4px 7px; border-radius: 7px; color: #d8bd87; background: var(--amber-soft); font-size: 10px; font-style: normal; }
 .gate-card p { margin: 10px 0 0; color: var(--muted); font-size: 11px; line-height: 1.65; }
+.gate-card small { display: block; margin-top: 12px; color: var(--mint); font-size: 10px; }
 .readiness-source { margin: 18px 0 -5px; padding-top: 14px; border-top: 1px solid var(--line-soft); color: var(--faint); font-size: 10px; line-height: 1.6; }
 
 .calibration-list { display: grid; }
@@ -86,6 +89,11 @@
 .boundary-callout { display: flex; align-items: flex-start; gap: 22px; padding: 18px 22px; border: 1px solid #684e22; border-radius: 13px; background: var(--amber-soft); }
 .boundary-callout strong { color: var(--amber); white-space: nowrap; }
 .boundary-callout p { margin: 0; color: #d6c49d; font-size: 12px; line-height: 1.7; }
+.current-gate-panel { border-color: #5b4625; background: linear-gradient(145deg, #1a1a15, #0b171e); }
+.current-gate-panel p { margin: 0; color: #c8d2d3; font-size: 14px; line-height: 1.8; }
+.current-gate-panel > small { display: block; margin-top: 14px; color: var(--faint); font-size: 10px; line-height: 1.6; }
+.gate-identity { display: flex; flex-wrap: wrap; gap: 8px 16px; margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line-soft); }
+.gate-identity span { color: var(--muted); font-size: 11px; }
 .snapshot-label { color: var(--faint); font-size: 11px; }
 .provenance-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; margin: 0; overflow: hidden; border: 1px solid var(--line-soft); border-radius: 12px; background: var(--line-soft); }
 .provenance-list > div { min-width: 0; padding: 15px 17px; background: var(--surface); }

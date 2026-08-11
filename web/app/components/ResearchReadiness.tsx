@@ -25,9 +25,12 @@ export function ResearchReadiness() {
         <div className="gate-grid" aria-label="当前研究停点">
           {researchReadiness.gates.map((gate) => (
             <article key={gate.id} className="gate-card">
-              <div><span>实验 {gate.id}</span><strong>{gate.name}</strong></div>
-              <em>{gate.status}</em>
-              <p>{gate.reason}</p>
+              <Link href={`/experiments/${gate.id}`} aria-label={`查看实验 ${gate.id} ${gate.name} 的当前停点`}>
+                <div><span>实验 {gate.id}</span><strong>{gate.name}</strong></div>
+                <em>{gate.status}</em>
+                <p>{gate.reason}</p>
+                <small>查看停点与证据身份 →</small>
+              </Link>
             </article>
           ))}
         </div>
