@@ -13,6 +13,8 @@ from zoneinfo import ZoneInfo
 
 from qbase.ingest import cninfo
 from qbase.ingest import delist_warning_announcement_bisection as bisection
+from qbase.ingest.delist_warning_announcement_total_floors import (
+    assert_historical_day_total_floors)
 
 QUERY_URL = "https://www.cninfo.com.cn/new/hisAnnouncement/query"
 ORGID_URL = "https://www.cninfo.com.cn/new/data/szse_stock.json"
@@ -169,6 +171,10 @@ def collect_code(code: str, org_id: str, start: dt.date, end: dt.date,
         shard_rows, shard_audit = bisection.collect_interval(
             code, org_id, shard_start, shard_end, active_root / str(year), poster,
             _request, _read_or_fetch, validate_page, PAGE_SIZE)
+        floor_audit = assert_historical_day_total_floors(
+            code, shard_rows, shard_start, shard_end)
+        if floor_audit:
+            shard_audit["historical_day_total_floors"] = floor_audit
         ids = {item["announcement_id"] for item in shard_rows}
         if seen_ids.intersection(ids):
             raise RuntimeError(f"{code} 跨年度公告ID重复")

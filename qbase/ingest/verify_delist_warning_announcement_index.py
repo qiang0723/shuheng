@@ -172,6 +172,18 @@ def test_pages(tmp: Path) -> None:
     rejects("日期越界拒绝", lambda: indexer.validate_page("000001", out, start, end), "越界")
 
 
+def test_historical_total_floor() -> None:
+    day = dt.date(2021, 4, 30)
+    rows_32 = [{"announcement_date_cn": day.isoformat()} for _ in range(32)]
+    rejects("历史官方总数下界拒绝稳定短读", lambda:
+            indexer.assert_historical_day_total_floors("000607", rows_32, day, day),
+            "低于历史官方观测下界35")
+    rows_35 = [{"announcement_date_cn": day.isoformat()} for _ in range(35)]
+    audit = indexer.assert_historical_day_total_floors("000607", rows_35, day, day)
+    check("历史官方总数下界命中", audit[day.isoformat()], {"minimum": 35, "actual": 35})
+    check("下界不外推其他证券", indexer.assert_historical_day_total_floors("000001", rows_32, day, day), {})
+
+
 def test_full_index(tmp: Path) -> None:
     routes = ["000001.SZ"]
     evidence = tmp / "evidence"
@@ -277,7 +289,8 @@ def main() -> int:
         root = Path(directory)
         test_routes(root); test_org_map(); test_incomplete_read_retry()
         test_shared_cookie_session()
-        test_pages(root); test_full_index(root); test_documents(root)
+        test_pages(root); test_historical_total_floor()
+        test_full_index(root); test_documents(root)
         test_contract_queue(root); test_readback()
     print(f"verify_delist_warning_announcement_index: {PASSED}/{TOTAL} PASS")
     return 0
