@@ -14,6 +14,7 @@
 """
 import datetime as dt
 import http.client
+import http.cookiejar
 import json
 import random
 import time
@@ -40,6 +41,8 @@ BACKOFF = 1.5        # 退避基数（秒）：约 1.5 / 3 / 6 + 抖动
 
 _ORGID_MAP: dict[str, str] = {}
 _last_req = 0.0
+_SESSION_OPENER = urllib.request.build_opener(
+    urllib.request.HTTPCookieProcessor(http.cookiejar.CookieJar()))
 
 
 def _throttle() -> None:
@@ -75,7 +78,7 @@ def _http_get(url: str, timeout: float = 15) -> bytes:
     def attempt() -> bytes:
         _throttle()
         req = urllib.request.Request(url, headers={"User-Agent": UA})
-        with urllib.request.urlopen(req, timeout=timeout) as r:
+        with _SESSION_OPENER.open(req, timeout=timeout) as r:
             return r.read()
     return _retry(attempt, f"GET {url}")
 
@@ -92,7 +95,7 @@ def _http_post(url: str, form: dict, timeout: float = 20) -> dict:
             "X-Requested-With": "XMLHttpRequest",
             "Referer": "http://www.cninfo.com.cn/new/commonUrl?url=disclosure/list/notice",
         })
-        with urllib.request.urlopen(req, timeout=timeout) as r:
+        with _SESSION_OPENER.open(req, timeout=timeout) as r:
             return json.loads(r.read().decode("utf-8"))
     return _retry(attempt, f"POST {url}")
 

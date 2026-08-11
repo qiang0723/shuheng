@@ -6,6 +6,7 @@ import datetime as dt
 import http.client
 import json
 import tempfile
+import urllib.request
 from pathlib import Path
 
 from qbase.ingest import delist_warning_announcement_index as indexer
@@ -110,6 +111,43 @@ def test_incomplete_read_retry() -> None:
         cninfo.time.sleep = original_sleep
     check("IncompleteRead最多三次尝试", len(attempts), cninfo.MAX_TRIES)
     check("IncompleteRead两次指数退避", len(waits), cninfo.MAX_TRIES - 1)
+
+
+def test_shared_cookie_session() -> None:
+    class Response:
+        def __init__(self, body: bytes):
+            self.body = body
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return False
+
+        def read(self) -> bytes:
+            return self.body
+
+    class Opener:
+        def __init__(self):
+            self.requests = []
+
+        def open(self, request, timeout):
+            self.requests.append((request, timeout))
+            return Response(b'{"ok":true}' if request.data else b"org-map")
+
+    check("官方CookieProcessor在场", any(isinstance(handler,
+          urllib.request.HTTPCookieProcessor) for handler in cninfo._SESSION_OPENER.handlers), True)
+    original_opener, original_throttle = cninfo._SESSION_OPENER, cninfo._throttle
+    fake = Opener()
+    try:
+        cninfo._SESSION_OPENER = fake
+        cninfo._throttle = lambda: None
+        check("GET走共享会话", cninfo._http_get("https://example/get"), b"org-map")
+        check("POST走共享会话", cninfo._http_post(
+            "https://example/post", {"pageNum": "1"}), {"ok": True})
+    finally:
+        cninfo._SESSION_OPENER, cninfo._throttle = original_opener, original_throttle
+    check("GET与POST共用同一opener", len(fake.requests), 2)
 
 
 def test_pages(tmp: Path) -> None:
@@ -238,6 +276,7 @@ def main() -> int:
     with tempfile.TemporaryDirectory() as directory:
         root = Path(directory)
         test_routes(root); test_org_map(); test_incomplete_read_retry()
+        test_shared_cookie_session()
         test_pages(root); test_full_index(root); test_documents(root)
         test_contract_queue(root); test_readback()
     print(f"verify_delist_warning_announcement_index: {PASSED}/{TOTAL} PASS")
