@@ -55,6 +55,25 @@ export const platformSummary = {
   directionHits: calibrationExperiments.filter((row) => row.metrics?.directionHit).length,
 };
 
+export const researchReadiness = {
+  status: "尚不能",
+  headline: "当前不输出个股候选",
+  explanation: "这里展示的是历史事件研究，不是实时选股系统。现有结果尚未形成足以驱动个股输出的证据链，也没有经过冻结的实时候选生成器、有效期与风险边界。",
+  requirements: [
+    "唯一真实统计显著结果仍是智能预筛选效力，不能直接升级为荐股依据。",
+    "四条足额判决研究均未达显著，当前没有可依赖的 full 级超额收益证据。",
+    "未来若建设个股层，须另行冻结 PIT 候选规则、观察时点、有效期与退出边界。",
+  ],
+  resultSnapshot: "2026-08-09 22:14:05.537694（UTC+8）",
+  statusSnapshot: "STATE 一百五十一笔，2026-08-11（UTC+8）",
+  gates: [
+    { id: 18, name: "审计意见事件", status: "证据硬门", reason: "首次披露公告语义尚不能可靠证明，未进入终版与冻结。" },
+    { id: 21, name: "商誉减值", status: "证据硬门", reason: "商誉专属减值金额与事件前净资产的联合证据未闭合。" },
+    { id: 23, name: "回购公告", status: "证据硬门", reason: "方案身份与注销式、库存式用途来源仍不足，禁止代理分类。" },
+    { id: 22, name: "财务退市风险警示", status: "跨期暂停", reason: "官方公告分页集合发生漂移；v1—v8 证据保留，不建立 v9。" },
+  ],
+} as const;
+
 export function getExperiment(id: number) {
   return experiments.find((row) => row.id === id);
 }

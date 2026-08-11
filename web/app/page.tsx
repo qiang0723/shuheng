@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { CalibrationStrip } from "./components/CalibrationStrip";
 import { FieldGuide } from "./components/FieldGuide";
+import { ResearchReadiness } from "./components/ResearchReadiness";
 import { StatCard } from "./components/StatCard";
 import { calibrationExperiments, platformSummary } from "../lib/fixtures";
 
@@ -37,6 +38,8 @@ export default function Home() {
         <StatCard label="人提出·足额判决" value={platformSummary.humanFullStudies} unit="条" note="统计显著0条" />
         <StatCard label="方向校准" value={`${platformSummary.directionHits} / ${platformSummary.calibrationCount}`} note="五命中·七未命中" tone="neutral" />
       </section>
+
+      <ResearchReadiness />
 
       <section className="content-grid">
         <article className="panel panel-large">

@@ -42,6 +42,11 @@ test("首页给出当前结论、证据边界与中文字段说明", async () =>
   assert.match(html, /生命周期/);
   assert.match(html, /统计判决/);
   assert.match(html, /证据效力/);
+  assert.match(html, /现在能给出股票吗/);
+  assert.match(html, /当前不输出个股候选/);
+  assert.match(html, /历史事件研究，不是实时选股系统/);
+  assert.match(html, /跨期暂停/);
+  assert.match(html, /两类时点独立/);
   assert.doesNotMatch(html, /Building your site|Starter Project|codex-preview/i);
 });
 

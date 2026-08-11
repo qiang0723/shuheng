@@ -12,7 +12,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </Link>
         <NavLinks />
         <div className="sidebar-note">
-          <span>数据快照</span>
+          <span>研究结果快照</span>
           <strong>2026-08-09</strong>
           <small>北京时间·只读静态版</small>
         </div>
