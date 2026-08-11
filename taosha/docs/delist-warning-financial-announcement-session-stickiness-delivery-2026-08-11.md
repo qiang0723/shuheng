@@ -49,12 +49,25 @@ py_compile / git diff --check: PASS
 阶段退出；随后用仓内真实入口 `taosha.harness.verify_delist_warning_routes` 复跑 6/6。
 该命令错误没有修改代码、远端或证据。
 
-## 五、停止线与下一步
+## 五、GitHub、远端复验与 v7 续跑
 
-当前未推送、未修改阿里云代码、未创建 v7 容器、未恢复监督或监控。下一步只能是：
-推送两笔本地提交，阿里云精确 fast-forward，钉版镜像内复跑全部闸门；只在基线精确
-等于 `routes646 / valid_done51 / first_pending 000607.SZ / errors6 / downstream0` 且旧
-证据仍在时，才可用全新 `bisect_v7` 容器从 51/646 续跑。
+1. 三笔本地提交已推送，GitHub `origin/main=2f1afcb08336956ec04e4a3af4bb1318d1824ea3`；
+   阿里云 `/opt/quant` 先验干净并精确 fast-forward 至同一提交。
+2. 钉版镜像 `shuheng-quant:579a354` / ID=`sha256:e7b9b270…ebfc3` 的只读无网络
+   容器内复跑：`34/34 + 6/6 + 46/46 + 6/6`、规模、架构与 py_compile 全绿。
+3. 启动前精确基线：`routes646 / valid_done51 / first_pending 000607.SZ / errors6 /
+   downstream0 / v7_reads0`；旧页计数=`v3 320 / v4 494 / v5 3469 / v6 13982`，
+   v6 四份失败页 SHA 与诊断时逐字相同。
+4. 新容器 `s22-ann-index-v7` 于 `2026-08-11 10:13:36+08` 启动，容器 ID=
+   `5b411b47e008d08e226a77f199e420ec253103f7bc1bc0c2797b86521a5fee6b`；只读
+   rootfs/代码、证据目录唯一可写、`cap_drop=ALL`、no-new-privileges、零数据库凭据。
+5. 监督 PID=`806866`；脚本 SHA256=`832411f289967256786c799df5e3ab955a5e7b74892efedd0ebea30a8d16fb06`，
+   只在 metadata exit 0 后依次启动 documents、UNPROVEN contract queue 与 12 票读回。
+6. `10:13:54+08` 首读=`running/done51/v7_reads13/errors6/downstream0`；
+   `10:15:13+08` 二读=`running/done51/v7_reads61/errors6/downstream0`，监督在场。
+   日志出现一次 `IncompleteRead` 并进入既有三次整请求重试，未产生新错误或退出。
+7. 15 分钟 UTC+8 heartbeat 已切换 v7 并恢复 ACTIVE；仅实质进度、阶段切换、失败或
+   全部完成时回报。任一阶段非零即暂停，禁止自动重启。
 
 E1 继续 `OPEN_FAIL_CLOSED`；零数据库写入、零利润 PIT、零终版 PAP、零密封、零冻结、
 零 StudySnapshot、零研究 manifest、零收益读取、零正式研究运行、零 persist。
