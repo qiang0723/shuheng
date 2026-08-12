@@ -1,0 +1,5 @@
+exp_id,family,gate_state,metric_kind,numerator,denominator,display_value,blocking_fact,authority_source
+18,audit_qualified,FAIL,sample_audit,12,22,12/22,ann_date首次披露语义不能由官方原件审计证明,taosha/docs/audit-qualified-dataclose-report-2026-07-31.md
+21,goodwill_impair,FAIL,joint_sample_audit,1,23,1/23,商誉专属减值金额与事件前PIT净资产联合证据不能闭合,taosha/docs/goodwill-impair-dataclose-report-2026-08-09.md
+23,buyback_announce,FAIL,joint_sample_audit,15,28,15/28,首次披露与方案身份及可靠用途分类不能联合闭合,taosha/docs/buyback-announce-dataclose-report-2026-08-07.md
+22,delist_warning_financial,PAUSED,route_progress,51,646,51/646合法路由marker,官方公告分页集合漂移导致证据合同OPEN_FAIL_CLOSED且v1-v8保全后跨期暂停,taosha/docs/delist-warning-financial-cross-period-pause-ruling-2026-08-11.md

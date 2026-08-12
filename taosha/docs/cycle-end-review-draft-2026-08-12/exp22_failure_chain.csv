@@ -1,0 +1,9 @@
+version,read_count_or_pages,checkpoint_valid_markers,outcome,scope_note,authority_source
+v1,3,10,FAIL,flat布局失败页3且证据保留,taosha/docs/delist-warning-financial-announcement-index-implementation-2026-08-10.md
+v2,121,10,FAIL,annual_v2分页121页后仍不满足稳定全集合同,taosha/docs/delist-warning-financial-announcement-pagination-repair-delivery-2026-08-10.md
+v3,320,10,FAIL,bisect_v3读取320件后失败闭合,taosha/docs/delist-warning-financial-announcement-bisection-repair-delivery-2026-08-10.md
+v4,494,10,FAIL,bisect_v4单日多页读取494件后失败闭合,taosha/docs/delist-warning-financial-announcement-single-day-pagination-delivery-2026-08-10.md
+v5,3469,17,FAIL,bisect_v5双读后IncompleteRead且禁止重试到一致,taosha/docs/delist-warning-financial-announcement-incomplete-read-retry-delivery-2026-08-10.md
+v6,13982,51,FAIL,bisect_v6跨会话分页视图漂移,taosha/docs/delist-warning-financial-announcement-session-stickiness-delivery-2026-08-11.md
+v7,359,51,FAIL,bisect_v7同遍跨页公告ID重复与页总量漂移,taosha/docs/delist-warning-financial-announcement-page-view-drift-hardening-2026-08-11.md
+v8,359,51,FAIL,bisect_v8保留官方历史总量下界35但仍跨页重复;metadata退出1,taosha/docs/delist-warning-financial-announcement-source-disposition-2026-08-11.md

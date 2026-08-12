@@ -1,0 +1,1134 @@
+{
+  "surface": "report",
+  "manifest": {
+    "version": 1,
+    "surface": "report",
+    "title": "枢衡六周期期末复盘底稿 v1",
+    "description": "六周期研究组合、校准与证据瓶颈期末复盘底稿。",
+    "generatedAt": "2026-08-12T08:32:43+08:00",
+    "cards": [
+      {
+        "id": "formal-done",
+        "description": "台账done剔除exp7合成冒烟。",
+        "dataset": "headline_metrics",
+        "sourceId": "cycle-end-review-snapshot",
+        "metrics": [
+          {
+            "label": "正式真实 done",
+            "field": "formal_real_done",
+            "format": "number"
+          }
+        ]
+      },
+      {
+        "id": "calibrated",
+        "description": "有密封方向且已开封入册。",
+        "dataset": "headline_metrics",
+        "sourceId": "cycle-end-review-snapshot",
+        "metrics": [
+          {
+            "label": "方向校准",
+            "field": "calibrated_count",
+            "format": "number"
+          }
+        ]
+      },
+      {
+        "id": "hit-rate",
+        "description": "5/12；Wilson 95%=19.3%–68.0%。",
+        "dataset": "headline_metrics",
+        "sourceId": "cycle-end-review-snapshot",
+        "metrics": [
+          {
+            "label": "方向命中率",
+            "field": "direction_hit_rate",
+            "format": "percent"
+          }
+        ]
+      },
+      {
+        "id": "real-sig",
+        "description": "唯一为exp568，效力仍是llm/prescreen。",
+        "dataset": "headline_metrics",
+        "sourceId": "cycle-end-review-snapshot",
+        "metrics": [
+          {
+            "label": "真实 SIG",
+            "field": "real_sig_count",
+            "format": "number"
+          }
+        ]
+      },
+      {
+        "id": "full-sig",
+        "description": "4条真实full研究全部NOT_SIG。",
+        "dataset": "headline_metrics",
+        "sourceId": "cycle-end-review-snapshot",
+        "metrics": [
+          {
+            "label": "full SIG率",
+            "field": "full_sig_rate",
+            "format": "percent"
+          }
+        ]
+      },
+      {
+        "id": "hard-stops",
+        "description": "exp18/21/23失败，exp22跨期暂停。",
+        "dataset": "headline_metrics",
+        "sourceId": "cycle-end-review-snapshot",
+        "metrics": [
+          {
+            "label": "证据停点",
+            "field": "hard_stops",
+            "format": "number"
+          }
+        ]
+      }
+    ],
+    "charts": [
+      {
+        "id": "adj-bmp-by-experiment",
+        "title": "十二条校准实验的主窗 ADJ-BMP",
+        "subtitle": "零线与名义±1.96供视觉参考；exp568 trial 2实际临界值为±2.241。",
+        "intent": "comparison",
+        "question": "哪条实验越过自身预注册判决门槛？",
+        "rationale": "只比较主判决统计量是否越过预注册阈值，不跨实验排名CAAR。",
+        "comparisonContext": {
+          "grain": "每个校准实验一行",
+          "unit": "ADJ-BMP",
+          "denominator": "各实验主窗完整样本",
+          "semanticFamily": "预注册主判决统计量"
+        },
+        "type": "horizontalBar",
+        "dataset": "calibration_table",
+        "sourceId": "cycle-end-review-snapshot",
+        "encodings": {
+          "x": {
+            "field": "experiment",
+            "type": "nominal",
+            "aggregate": "none",
+            "label": "实验"
+          },
+          "y": {
+            "field": "adj_bmp",
+            "type": "quantitative",
+            "aggregate": "none",
+            "label": "ADJ-BMP"
+          },
+          "tooltip": [
+            {
+              "field": "outcome",
+              "type": "text",
+              "label": "方向"
+            },
+            {
+              "field": "verdict",
+              "type": "text",
+              "label": "判决"
+            },
+            {
+              "field": "caar",
+              "type": "quantitative",
+              "format": "percent",
+              "label": "CAAR"
+            },
+            {
+              "field": "main_n",
+              "type": "quantitative",
+              "format": "number",
+              "label": "主窗N"
+            }
+          ]
+        },
+        "layout": "full",
+        "palette": {
+          "kind": "diverging",
+          "midpoint": 0
+        },
+        "referenceLines": [
+          {
+            "axis": "y",
+            "value": 0,
+            "label": "0",
+            "color": "neutral",
+            "lineStyle": "solid"
+          },
+          {
+            "axis": "y",
+            "value": 1.96,
+            "label": "+1.96",
+            "color": "neutral",
+            "lineStyle": "dashed"
+          },
+          {
+            "axis": "y",
+            "value": -1.96,
+            "label": "−1.96",
+            "color": "neutral",
+            "lineStyle": "dashed"
+          }
+        ],
+        "settings": {
+          "showValues": true,
+          "sort": "none",
+          "categoryLabelPolicy": "wrap"
+        },
+        "surface": {
+          "surface": "card",
+          "showControls": false,
+          "viewMode": "both"
+        }
+      }
+    ],
+    "tables": [
+      {
+        "id": "calibration-detail",
+        "title": "十二条方向校准明细",
+        "subtitle": "方向命中由CAAR符号独立重导。",
+        "dataset": "calibration_table",
+        "defaultSort": {
+          "field": "calibration_order",
+          "direction": "asc"
+        },
+        "density": "dense",
+        "sourceId": "cycle-end-review-snapshot",
+        "layout": "full",
+        "columns": [
+          {
+            "field": "calibration_order",
+            "label": "序号",
+            "type": "number"
+          },
+          {
+            "field": "experiment",
+            "label": "实验",
+            "type": "text"
+          },
+          {
+            "field": "outcome",
+            "label": "方向",
+            "type": "text"
+          },
+          {
+            "field": "confidence",
+            "label": "把握度",
+            "format": "percent"
+          },
+          {
+            "field": "verdict",
+            "label": "判决",
+            "type": "text"
+          },
+          {
+            "field": "verdict_power",
+            "label": "效力",
+            "type": "text"
+          },
+          {
+            "field": "caar",
+            "label": "主窗CAAR",
+            "format": "percent"
+          },
+          {
+            "field": "adj_bmp",
+            "label": "ADJ-BMP",
+            "format": "number"
+          },
+          {
+            "field": "main_n",
+            "label": "主窗N",
+            "format": "number"
+          }
+        ]
+      },
+      {
+        "id": "evidence-gates",
+        "title": "四条公告证据停点",
+        "subtitle": "exp22是路由进度，严禁与三条抽核比率横比。",
+        "dataset": "evidence_gates",
+        "density": "dense",
+        "sourceId": "cycle-end-review-snapshot",
+        "layout": "full",
+        "columns": [
+          {
+            "field": "experiment",
+            "label": "实验",
+            "type": "text"
+          },
+          {
+            "field": "state_label",
+            "label": "状态",
+            "type": "text"
+          },
+          {
+            "field": "display_value",
+            "label": "证据读数",
+            "type": "text"
+          },
+          {
+            "field": "blocking_fact",
+            "label": "阻塞事实",
+            "type": "text"
+          }
+        ]
+      }
+    ],
+    "sources": [
+      {
+        "id": "cycle-end-review-snapshot",
+        "label": "阿里云台账与闭卷校准只读快照，连同权威数据闭合与暂停档",
+        "path": "taosha/docs/cycle-end-review-draft-2026-08-12/calibration_results.csv",
+        "query": {
+          "engine": "PostgreSQL + repository evidence",
+          "language": "SQL",
+          "executed_at": "2026-08-09 22:14:05.537694+08",
+          "sql": "\\set ON_ERROR_STOP on\n\\pset tuples_only on\n\\pset format unaligned\n\\pset fieldsep '|'\n\nSHOW transaction_read_only;\n\nSELECT 'SNAPSHOT_TIME', to_char(clock_timestamp() AT TIME ZONE 'Asia/Shanghai', 'YYYY-MM-DD HH24:MI:SS.US');\n\nSELECT\n    'LEDGER',\n    exp_id,\n    family,\n    status,\n    source_type,\n    verdict_power,\n    family_trial,\n    COALESCE(result_json->>'verdict', ''),\n    COALESCE(to_char(done_at AT TIME ZONE 'Asia/Shanghai', 'YYYY-MM-DD HH24:MI:SS.US'), '')\nFROM experiment\nORDER BY exp_id;\n\nSELECT\n    'METRIC',\n    exp_id,\n    result_json->>'verdict',\n    result_json->>'n_events_total',\n    result_json->>'n_valid',\n    result_json#>>'{car,main_window,n}',\n    result_json#>>'{car,main_window,caar}',\n    result_json#>>'{car,main_window,adj_bmp_car}',\n    result_json#>>'{n_eff_rho,rho_bar}',\n    result_json#>>'{n_eff_rho,kish}',\n    result_json#>>'{n_eff_rho,kp}',\n    result_json#>>'{rejections,reject_ratio}',\n    result_json#>>'{industry_coverage,unknown_pct}'\nFROM experiment\nWHERE exp_id IN (8, 10, 11, 12, 13, 14, 16, 17, 19, 20, 24, 568)\nORDER BY done_at;\n\nSELECT 'STATUS', status, count(*)\nFROM experiment\nGROUP BY status\nORDER BY status;\n",
+          "description": "只读抽取正式结果与台账；停点来自权威数据闭合和暂停档。结果与研发状态分列。",
+          "tables_used": [
+            "taosha.experiment"
+          ],
+          "filters": [
+            "default_transaction_read_only=on",
+            "result snapshot=2026-08-09 22:14:05.537694+08",
+            "status snapshot=2026-08-12 08:32:43+08 read-only ledger + STATE entry 155"
+          ],
+          "metric_definitions": [
+            "正式真实done=done且family不等于synthetic_smoke",
+            "方向命中=密封方向与主窗CAAR符号一致",
+            "四条证据停点各按自身证据合同解释，不横向比较通过率"
+          ]
+        }
+      }
+    ],
+    "blocks": [
+      {
+        "id": "title",
+        "type": "markdown",
+        "body": "# 枢衡六周期期末复盘底稿 v1\n\n**DRAFT / NOT-FINAL · 2026-08-12 · UTC+8**"
+      },
+      {
+        "id": "executive-summary",
+        "type": "markdown",
+        "sourceId": "cycle-end-review-snapshot",
+        "body": "## Executive Summary\n\n- **复盘已经开工，8月25日只做定版。** 当前底稿先完成重算、外审和修订；最终签字前再做一次只读增量核对。\n- **研究流水线成熟，alpha证据仍弱。** 15条正式真实done中仅exp568为SIG且仍是`llm/prescreen`；4条真实`full`研究全部NOT_SIG。\n- **方向校准尚无稳定优势。** 十二条为5命中/7未命中，命中率41.7%，Wilson 95%区间19.3%–68.0%。\n- **主要瓶颈已转向官方公告证据链。** exp18/21/23在不同联合硬门停止，exp22在v1–v8官方分页集合漂移后跨期暂停；不能靠代理或放宽首次披露规则救样本。\n"
+      },
+      {
+        "id": "headline",
+        "type": "metric-strip",
+        "cardIds": [
+          "formal-done",
+          "calibrated",
+          "hit-rate",
+          "real-sig",
+          "full-sig",
+          "hard-stops"
+        ]
+      },
+      {
+        "id": "count-reconciliation",
+        "type": "markdown",
+        "sourceId": "cycle-end-review-snapshot",
+        "body": "## 先把计数口径钉死\n\n旧 STATE 的“判决闭卷14条”是 exp14 完成后未同步递增的滚动叙述，不是第二个研究总体。已外审台账快照可重导为：`done=16`；剔除 exp7 合成冒烟后是**15条正式真实done**；其中12条进入方向校准，exp3/4/5三条早期full研究不在当前校准序列。本稿从此分列三种口径，不再混称。\n"
+      },
+      {
+        "id": "portfolio",
+        "type": "markdown",
+        "sourceId": "cycle-end-review-snapshot",
+        "body": "## 组合证据：唯一SIG仍不能升级为荐股\n\nexp568 是唯一真实 `SIG`，但效力是 `llm/prescreen`，且闭卷边界禁止把统计显著升级为可交易结论。其 family trial 2 双侧临界值是 **±2.241**；下图的 ±1.96 只作多数 trial 1 的名义视觉参考。方向命中与统计显著必须分开，`NOT_SIG` 也不能反向改写成“证明没有效应”。\n"
+      },
+      {
+        "id": "chart",
+        "type": "chart",
+        "chartId": "adj-bmp-by-experiment",
+        "layout": "full"
+      },
+      {
+        "id": "calibration",
+        "type": "table",
+        "tableId": "calibration-detail",
+        "layout": "full"
+      },
+      {
+        "id": "bottleneck",
+        "type": "markdown",
+        "sourceId": "cycle-end-review-snapshot",
+        "body": "## 公司公告类四连停点：fail-closed在不利证据前成立\n\nexp18、exp21、exp23的抽核标准不同，不能仅按比率排优先级；exp22更不是抽核通过率，而是官方分页证据链的合法路由进度。共同结论是：统计内核没有先成为瓶颈，首次披露、金额分离、方案身份、用途分类和官方集合稳定性先撞墙。v1–v8失败件继续保全，不建立v9，除非另有人令改判来源工程。\n"
+      },
+      {
+        "id": "gates",
+        "type": "table",
+        "tableId": "evidence-gates",
+        "layout": "full"
+      },
+      {
+        "id": "recommendations",
+        "type": "markdown",
+        "body": "## 到8月25日前怎么做\n\n1. 现在完成底稿、可执行notebook、便携HTML和外审，不新增正式研究运行。\n2. 8月19–21日消化外审；8月22–24日只修证据、定义和呈现，不事后改实验判决。\n3. 8月25日重新做连接级只读增量核对，确认台账、校准和停点没有漂移后签字。\n4. 下一周期排产只在签字时裁：优先比较公告证据工程与human/full复验的信息增量，不按施工最省事排序。\n"
+      },
+      {
+        "id": "questions",
+        "type": "markdown",
+        "body": "## Further Questions\n\n- 下一周期是否减少相似`llm/prescreen`扩张，转投官方证据合同或human/full复验？\n- 四条公告停点中，哪些值得恢复，哪些继续封存？\n- 是否把“台账done / 正式真实done / 方向校准”写成永久三层计数规范？\n"
+      },
+      {
+        "id": "caveats",
+        "type": "markdown",
+        "sourceId": "cycle-end-review-snapshot",
+        "body": "## Caveats and Assumptions\n\n- 结果快照时点：`2026-08-09 22:14:05.537694+08`；研发状态时点：`2026-08-12 08:32:43+08 read-only ledger + STATE entry 155`。两者独立，未冒充同一最新时点。\n- exp22的51/646是route progress，不是抽核pass rate，严禁与12/22、1/23、15/28横比。\n- 本稿不输出个股候选，不恢复任何冻结、运行或persist授权。\n- 本稿是DRAFT / NOT-FINAL；2026-08-25最终签字前必须刷新只读快照。\n"
+      }
+    ]
+  },
+  "snapshot": {
+    "version": 1,
+    "generatedAt": "2026-08-12T08:32:43+08:00",
+    "status": "partial",
+    "datasets": {
+      "headline_metrics": [
+        {
+          "formal_real_done": 15,
+          "calibrated_count": 12,
+          "direction_hit_rate": 0.4166666666666667,
+          "real_sig_count": 1,
+          "full_sig_rate": 0.0,
+          "hard_stops": 4
+        }
+      ],
+      "calibration_table": [
+        {
+          "calibration_order": 1,
+          "exp_id": 8,
+          "family": "limit_open",
+          "label": "一字涨停开板",
+          "source_type": "llm",
+          "verdict_power": "prescreen",
+          "family_trial": 1,
+          "predicted_direction": "negative",
+          "confidence": 0.6,
+          "direction_hit": "true",
+          "verdict": "NOT_SIG",
+          "n_events": 6005,
+          "n_valid": 3742,
+          "main_n": 3618,
+          "caar": -0.014817818164073395,
+          "adj_bmp": -0.4725876556124154,
+          "rho_bar": 0.06910608539908683,
+          "kish_n_eff": 14.418601371806012,
+          "kp_n_eff": 13.422188274070596,
+          "reject_ratio": 0.3768526228143214,
+          "industry_unknown_pct": 0.1557990379476216,
+          "prediction_source": "taosha/docs/limit-open-postrun-narrowfix-acceptance-2026-07-18.md",
+          "derived_hit": true,
+          "experiment": "exp8 · 一字涨停开板",
+          "outcome": "命中"
+        },
+        {
+          "calibration_order": 2,
+          "exp_id": 20,
+          "family": "earnings_revision",
+          "label": "业绩预告修正",
+          "source_type": "llm",
+          "verdict_power": "prescreen",
+          "family_trial": 1,
+          "predicted_direction": "negative",
+          "confidence": 0.55,
+          "direction_hit": "false",
+          "verdict": "NOT_SIG",
+          "n_events": 4892,
+          "n_valid": 3335,
+          "main_n": 3282,
+          "caar": 0.00698934637496006,
+          "adj_bmp": 0.6072938553928457,
+          "rho_bar": 0.021716113386233696,
+          "kish_n_eff": 45.43502515724997,
+          "kp_n_eff": 44.448352999228746,
+          "reject_ratio": 0.31827473426001635,
+          "industry_unknown_pct": 0.06716641679160419,
+          "prediction_source": "taosha/docs/earnings-revision-s7-delivery-2026-07-19.md",
+          "derived_hit": false,
+          "experiment": "exp20 · 业绩预告修正",
+          "outcome": "未命中"
+        },
+        {
+          "calibration_order": 3,
+          "exp_id": 13,
+          "family": "limit_down_open",
+          "label": "一字跌停开板",
+          "source_type": "llm",
+          "verdict_power": "prescreen",
+          "family_trial": 1,
+          "predicted_direction": "positive",
+          "confidence": 0.7,
+          "direction_hit": "false",
+          "verdict": "NOT_SIG",
+          "n_events": 2794,
+          "n_valid": 2124,
+          "main_n": 2036,
+          "caar": -0.044783531272772986,
+          "adj_bmp": -1.4437154277206525,
+          "rho_bar": 0.07877961411792446,
+          "kish_n_eff": 12.62413729266282,
+          "kp_n_eff": 11.629612628175144,
+          "reject_ratio": 0.23979957050823192,
+          "industry_unknown_pct": 0.268361581920904,
+          "prediction_source": "taosha/docs/limit-down-open-s7-delivery-2026-07-21.md",
+          "derived_hit": false,
+          "experiment": "exp13 · 一字跌停开板",
+          "outcome": "未命中"
+        },
+        {
+          "calibration_order": 4,
+          "exp_id": 12,
+          "family": "st_removal",
+          "label": "撤销ST风险警示",
+          "source_type": "llm",
+          "verdict_power": "prescreen",
+          "family_trial": 1,
+          "predicted_direction": "positive",
+          "confidence": 0.7,
+          "direction_hit": "true",
+          "verdict": "NOT_SIG",
+          "n_events": 641,
+          "n_valid": 473,
+          "main_n": 463,
+          "caar": 0.017953489818958123,
+          "adj_bmp": 0.24556225505262455,
+          "rho_bar": 0.1288951043845724,
+          "kish_n_eff": 7.64895788347071,
+          "kp_n_eff": 6.663044658647555,
+          "reject_ratio": 0.2620904836193448,
+          "industry_unknown_pct": 0.12684989429175475,
+          "prediction_source": "taosha/docs/st-removal-s7-delivery-2026-07-23.md",
+          "derived_hit": true,
+          "experiment": "exp12 · 撤销ST风险警示",
+          "outcome": "命中"
+        },
+        {
+          "calibration_order": 5,
+          "exp_id": 11,
+          "family": "high_pullback",
+          "label": "新高后小幅回撤",
+          "source_type": "llm",
+          "verdict_power": "prescreen",
+          "family_trial": 1,
+          "predicted_direction": "positive",
+          "confidence": 0.6,
+          "direction_hit": "false",
+          "verdict": "NOT_SIG",
+          "n_events": 42784,
+          "n_valid": 39290,
+          "main_n": 38888,
+          "caar": -0.004117936425822161,
+          "adj_bmp": -0.10954785067298213,
+          "rho_bar": 0.09699720370526861,
+          "kish_n_eff": 10.307133327286861,
+          "kp_n_eff": 9.307370216322653,
+          "reject_ratio": 0.08166604338070306,
+          "industry_unknown_pct": 0.04418427080682107,
+          "prediction_source": "taosha/docs/high-pullback-s7-delivery-2026-07-24.md",
+          "derived_hit": false,
+          "experiment": "exp11 · 新高后小幅回撤",
+          "outcome": "未命中"
+        },
+        {
+          "calibration_order": 6,
+          "exp_id": 24,
+          "family": "sox_spillover",
+          "label": "SOX跨市场传导",
+          "source_type": "human",
+          "verdict_power": "full",
+          "family_trial": 1,
+          "predicted_direction": "positive",
+          "confidence": 0.6,
+          "direction_hit": "true",
+          "verdict": "NOT_SIG",
+          "n_events": 19258,
+          "n_valid": 13703,
+          "main_n": 13656,
+          "caar": 0.0033051753367197385,
+          "adj_bmp": 0.5646755577681967,
+          "rho_bar": 0.006340770520612997,
+          "kish_n_eff": 155.9263429006248,
+          "kp_n_eff": 154.9376497421735,
+          "reject_ratio": 0.2884515526015162,
+          "industry_unknown_pct": 0.0020433481719331534,
+          "prediction_source": "taosha/docs/sox-spillover-s7-delivery-2026-07-28.md",
+          "derived_hit": true,
+          "experiment": "exp24 · SOX跨市场传导",
+          "outcome": "命中"
+        },
+        {
+          "calibration_order": 7,
+          "exp_id": 10,
+          "family": "volume_drought_break",
+          "label": "缩量后放量收阳",
+          "source_type": "llm",
+          "verdict_power": "prescreen",
+          "family_trial": 1,
+          "predicted_direction": "positive",
+          "confidence": 0.6,
+          "direction_hit": "false",
+          "verdict": "NOT_SIG",
+          "n_events": 13889,
+          "n_valid": 11432,
+          "main_n": 11312,
+          "caar": -0.006845906033937132,
+          "adj_bmp": -0.30977878394328606,
+          "rho_bar": 0.09654697718430001,
+          "kish_n_eff": 10.349180778326598,
+          "kp_n_eff": 9.349998657845303,
+          "reject_ratio": 0.17690258477932178,
+          "industry_unknown_pct": 0.05432120363890833,
+          "prediction_source": "taosha/docs/volume-drought-break-s7-delivery-2026-07-29.md",
+          "derived_hit": false,
+          "experiment": "exp10 · 缩量后放量收阳",
+          "outcome": "未命中"
+        },
+        {
+          "calibration_order": 8,
+          "exp_id": 568,
+          "family": "delist_warning_financial",
+          "label": "实施ST风险警示",
+          "source_type": "llm",
+          "verdict_power": "prescreen",
+          "family_trial": 2,
+          "predicted_direction": "negative",
+          "confidence": 0.6,
+          "direction_hit": "true",
+          "verdict": "SIG",
+          "n_events": 765,
+          "n_valid": 565,
+          "main_n": 554,
+          "caar": -0.15929536336562053,
+          "adj_bmp": -5.522936355365047,
+          "rho_bar": 0.042969464364672125,
+          "kish_n_eff": 22.38973539618494,
+          "kp_n_eff": 21.427660458944132,
+          "reject_ratio": 0.26143790849673204,
+          "industry_unknown_pct": 0.3168141592920354,
+          "prediction_source": "taosha/docs/st-imposition-s7-delivery-2026-07-29.md",
+          "derived_hit": true,
+          "experiment": "exp568 · 实施ST风险警示",
+          "outcome": "命中"
+        },
+        {
+          "calibration_order": 9,
+          "exp_id": 16,
+          "family": "yearend_strength",
+          "label": "年末强势股",
+          "source_type": "llm",
+          "verdict_power": "prescreen",
+          "family_trial": 1,
+          "predicted_direction": "positive",
+          "confidence": 0.5,
+          "direction_hit": "false",
+          "verdict": "NOT_SIG",
+          "n_events": 7751,
+          "n_valid": 6942,
+          "main_n": 6881,
+          "caar": -0.0031967252693485917,
+          "adj_bmp": -0.11178944002480809,
+          "rho_bar": 0.12220364037830078,
+          "kish_n_eff": 8.174603811028497,
+          "kp_n_eff": 7.175637466670484,
+          "reject_ratio": 0.1043736292091343,
+          "industry_unknown_pct": 0.04811293575338519,
+          "prediction_source": "taosha/docs/yearend-strength-persist-v2-delivery-2026-07-30.md",
+          "derived_hit": false,
+          "experiment": "exp16 · 年末强势股",
+          "outcome": "未命中"
+        },
+        {
+          "calibration_order": 10,
+          "exp_id": 17,
+          "family": "earnings_flash_gap",
+          "label": "业绩快报偏离预告",
+          "source_type": "llm",
+          "verdict_power": "prescreen",
+          "family_trial": 1,
+          "predicted_direction": "positive",
+          "confidence": 0.8,
+          "direction_hit": "true",
+          "verdict": "NOT_SIG",
+          "n_events": 2529,
+          "n_valid": 1841,
+          "main_n": 1822,
+          "caar": 0.001648578486047189,
+          "adj_bmp": 0.2783298113335189,
+          "rho_bar": 0.009815666688264883,
+          "kish_n_eff": 96.58552739379029,
+          "kp_n_eff": 95.63747604998257,
+          "reject_ratio": 0.2720442862791617,
+          "industry_unknown_pct": 0.09397066811515481,
+          "prediction_source": "taosha/docs/earnings-flash-gap-persist-delivery-2026-07-31.md",
+          "derived_hit": true,
+          "experiment": "exp17 · 业绩快报偏离预告",
+          "outcome": "命中"
+        },
+        {
+          "calibration_order": 11,
+          "exp_id": 19,
+          "family": "dividend_surprise",
+          "label": "分红超预期",
+          "source_type": "llm",
+          "verdict_power": "prescreen",
+          "family_trial": 1,
+          "predicted_direction": "positive",
+          "confidence": 0.6,
+          "direction_hit": "false",
+          "verdict": "NOT_SIG",
+          "n_events": 5055,
+          "n_valid": 3810,
+          "main_n": 3805,
+          "caar": -0.002804575188488496,
+          "adj_bmp": -0.21553616523859276,
+          "rho_bar": 0.02998195801586874,
+          "kish_n_eff": 33.07254974439924,
+          "kp_n_eff": 32.08096994648493,
+          "reject_ratio": 0.24629080118694363,
+          "industry_unknown_pct": 0.01627296587926509,
+          "prediction_source": "taosha/docs/dividend-surprise-persist-delivery-2026-08-06.md",
+          "derived_hit": false,
+          "experiment": "exp19 · 分红超预期",
+          "outcome": "未命中"
+        },
+        {
+          "calibration_order": 12,
+          "exp_id": 14,
+          "family": "ex_div_gap",
+          "label": "除权缺口",
+          "source_type": "llm",
+          "verdict_power": "prescreen",
+          "family_trial": 1,
+          "predicted_direction": "positive",
+          "confidence": 0.6,
+          "direction_hit": "false",
+          "verdict": "NOT_SIG",
+          "n_events": 4035,
+          "n_valid": 3163,
+          "main_n": 3095,
+          "caar": -0.018488168100005337,
+          "adj_bmp": -0.9132553766202723,
+          "rho_bar": 0.06601787166688029,
+          "kish_n_eff": 15.079964080903466,
+          "kp_n_eff": 14.084416947469217,
+          "reject_ratio": 0.2161090458488228,
+          "industry_unknown_pct": 0.06038570976920645,
+          "prediction_source": "taosha/docs/ex-div-gap-persist-delivery-2026-08-09.md",
+          "derived_hit": false,
+          "experiment": "exp14 · 除权缺口",
+          "outcome": "未命中"
+        }
+      ],
+      "ledger_snapshot": [
+        {
+          "exp_id": "1",
+          "family": "radar_heat",
+          "status": "frozen",
+          "source_type": "platform",
+          "verdict_power": "full",
+          "family_trial": "1",
+          "verdict": "",
+          "done_at_utc8": ""
+        },
+        {
+          "exp_id": "2",
+          "family": "drawdown_rebuy",
+          "status": "closed",
+          "source_type": "human",
+          "verdict_power": "full",
+          "family_trial": "1",
+          "verdict": "",
+          "done_at_utc8": "2026-07-07 13:58:38.537152"
+        },
+        {
+          "exp_id": "3",
+          "family": "drawdown_rebuy",
+          "status": "done",
+          "source_type": "human",
+          "verdict_power": "full",
+          "family_trial": "2",
+          "verdict": "NOT_SIG",
+          "done_at_utc8": "2026-07-12 11:53:31.242558"
+        },
+        {
+          "exp_id": "4",
+          "family": "holder_sell",
+          "status": "done",
+          "source_type": "literature",
+          "verdict_power": "full",
+          "family_trial": "1",
+          "verdict": "NOT_SIG",
+          "done_at_utc8": "2026-07-17 16:15:33.180739"
+        },
+        {
+          "exp_id": "5",
+          "family": "forecast_drift",
+          "status": "done",
+          "source_type": "literature",
+          "verdict_power": "full",
+          "family_trial": "1",
+          "verdict": "NOT_SIG",
+          "done_at_utc8": "2026-07-08 20:02:50.055214"
+        },
+        {
+          "exp_id": "6",
+          "family": "rv_resonance",
+          "status": "frozen",
+          "source_type": "platform",
+          "verdict_power": "full",
+          "family_trial": "1",
+          "verdict": "",
+          "done_at_utc8": ""
+        },
+        {
+          "exp_id": "7",
+          "family": "synthetic_smoke",
+          "status": "done",
+          "source_type": "llm",
+          "verdict_power": "prescreen",
+          "family_trial": "1",
+          "verdict": "SIG",
+          "done_at_utc8": "2026-07-07 17:38:50.129807"
+        },
+        {
+          "exp_id": "8",
+          "family": "limit_open",
+          "status": "done",
+          "source_type": "llm",
+          "verdict_power": "prescreen",
+          "family_trial": "1",
+          "verdict": "NOT_SIG",
+          "done_at_utc8": "2026-07-18 22:47:22.536829"
+        },
+        {
+          "exp_id": "9",
+          "family": "suspension_return",
+          "status": "registered",
+          "source_type": "llm",
+          "verdict_power": "prescreen",
+          "family_trial": "1",
+          "verdict": "",
+          "done_at_utc8": ""
+        },
+        {
+          "exp_id": "10",
+          "family": "volume_drought_break",
+          "status": "done",
+          "source_type": "llm",
+          "verdict_power": "prescreen",
+          "family_trial": "1",
+          "verdict": "NOT_SIG",
+          "done_at_utc8": "2026-07-29 13:15:03.198872"
+        },
+        {
+          "exp_id": "11",
+          "family": "high_pullback",
+          "status": "done",
+          "source_type": "llm",
+          "verdict_power": "prescreen",
+          "family_trial": "1",
+          "verdict": "NOT_SIG",
+          "done_at_utc8": "2026-07-24 21:58:14.608103"
+        },
+        {
+          "exp_id": "12",
+          "family": "st_removal",
+          "status": "done",
+          "source_type": "llm",
+          "verdict_power": "prescreen",
+          "family_trial": "1",
+          "verdict": "NOT_SIG",
+          "done_at_utc8": "2026-07-23 20:42:44.548957"
+        },
+        {
+          "exp_id": "13",
+          "family": "limit_down_open",
+          "status": "done",
+          "source_type": "llm",
+          "verdict_power": "prescreen",
+          "family_trial": "1",
+          "verdict": "NOT_SIG",
+          "done_at_utc8": "2026-07-21 23:56:37.265408"
+        },
+        {
+          "exp_id": "14",
+          "family": "ex_div_gap",
+          "status": "done",
+          "source_type": "llm",
+          "verdict_power": "prescreen",
+          "family_trial": "1",
+          "verdict": "NOT_SIG",
+          "done_at_utc8": "2026-08-09 20:23:00.819510"
+        },
+        {
+          "exp_id": "15",
+          "family": "st_imposition",
+          "status": "closed",
+          "source_type": "llm",
+          "verdict_power": "prescreen",
+          "family_trial": "1",
+          "verdict": "",
+          "done_at_utc8": "2026-07-29 18:39:12.736056"
+        },
+        {
+          "exp_id": "16",
+          "family": "yearend_strength",
+          "status": "done",
+          "source_type": "llm",
+          "verdict_power": "prescreen",
+          "family_trial": "1",
+          "verdict": "NOT_SIG",
+          "done_at_utc8": "2026-07-30 18:14:21.514511"
+        },
+        {
+          "exp_id": "17",
+          "family": "earnings_flash_gap",
+          "status": "done",
+          "source_type": "llm",
+          "verdict_power": "prescreen",
+          "family_trial": "1",
+          "verdict": "NOT_SIG",
+          "done_at_utc8": "2026-07-31 00:14:22.058089"
+        },
+        {
+          "exp_id": "18",
+          "family": "audit_qualified",
+          "status": "registered",
+          "source_type": "llm",
+          "verdict_power": "prescreen",
+          "family_trial": "1",
+          "verdict": "",
+          "done_at_utc8": ""
+        },
+        {
+          "exp_id": "19",
+          "family": "dividend_surprise",
+          "status": "done",
+          "source_type": "llm",
+          "verdict_power": "prescreen",
+          "family_trial": "1",
+          "verdict": "NOT_SIG",
+          "done_at_utc8": "2026-08-06 21:22:47.003057"
+        },
+        {
+          "exp_id": "20",
+          "family": "earnings_revision",
+          "status": "done",
+          "source_type": "llm",
+          "verdict_power": "prescreen",
+          "family_trial": "1",
+          "verdict": "NOT_SIG",
+          "done_at_utc8": "2026-07-19 20:13:42.003687"
+        },
+        {
+          "exp_id": "21",
+          "family": "goodwill_impair",
+          "status": "registered",
+          "source_type": "llm",
+          "verdict_power": "prescreen",
+          "family_trial": "1",
+          "verdict": "",
+          "done_at_utc8": ""
+        },
+        {
+          "exp_id": "22",
+          "family": "delist_warning_financial",
+          "status": "registered",
+          "source_type": "llm",
+          "verdict_power": "prescreen",
+          "family_trial": "1",
+          "verdict": "",
+          "done_at_utc8": ""
+        },
+        {
+          "exp_id": "23",
+          "family": "buyback_announce",
+          "status": "registered",
+          "source_type": "llm",
+          "verdict_power": "prescreen",
+          "family_trial": "1",
+          "verdict": "",
+          "done_at_utc8": ""
+        },
+        {
+          "exp_id": "24",
+          "family": "sox_spillover",
+          "status": "done",
+          "source_type": "human",
+          "verdict_power": "full",
+          "family_trial": "1",
+          "verdict": "NOT_SIG",
+          "done_at_utc8": "2026-07-28 23:25:53.284244"
+        },
+        {
+          "exp_id": "25",
+          "family": "preannounced_exhaustion",
+          "status": "registered",
+          "source_type": "human",
+          "verdict_power": "full",
+          "family_trial": "1",
+          "verdict": "",
+          "done_at_utc8": ""
+        },
+        {
+          "exp_id": "568",
+          "family": "delist_warning_financial",
+          "status": "done",
+          "source_type": "llm",
+          "verdict_power": "prescreen",
+          "family_trial": "2",
+          "verdict": "SIG",
+          "done_at_utc8": "2026-07-30 00:36:07.188912"
+        }
+      ],
+      "evidence_gates": [
+        {
+          "exp_id": 18,
+          "family": "audit_qualified",
+          "gate_state": "FAIL",
+          "metric_kind": "sample_audit",
+          "numerator": 12,
+          "denominator": 22,
+          "display_value": "12/22",
+          "blocking_fact": "ann_date首次披露语义不能由官方原件审计证明",
+          "authority_source": "taosha/docs/audit-qualified-dataclose-report-2026-07-31.md",
+          "experiment": "exp18 · audit_qualified",
+          "state_label": "失败后停止"
+        },
+        {
+          "exp_id": 21,
+          "family": "goodwill_impair",
+          "gate_state": "FAIL",
+          "metric_kind": "joint_sample_audit",
+          "numerator": 1,
+          "denominator": 23,
+          "display_value": "1/23",
+          "blocking_fact": "商誉专属减值金额与事件前PIT净资产联合证据不能闭合",
+          "authority_source": "taosha/docs/goodwill-impair-dataclose-report-2026-08-09.md",
+          "experiment": "exp21 · goodwill_impair",
+          "state_label": "失败后停止"
+        },
+        {
+          "exp_id": 23,
+          "family": "buyback_announce",
+          "gate_state": "FAIL",
+          "metric_kind": "joint_sample_audit",
+          "numerator": 15,
+          "denominator": 28,
+          "display_value": "15/28",
+          "blocking_fact": "首次披露与方案身份及可靠用途分类不能联合闭合",
+          "authority_source": "taosha/docs/buyback-announce-dataclose-report-2026-08-07.md",
+          "experiment": "exp23 · buyback_announce",
+          "state_label": "失败后停止"
+        },
+        {
+          "exp_id": 22,
+          "family": "delist_warning_financial",
+          "gate_state": "PAUSED",
+          "metric_kind": "route_progress",
+          "numerator": 51,
+          "denominator": 646,
+          "display_value": "51/646合法路由marker",
+          "blocking_fact": "官方公告分页集合漂移导致证据合同OPEN_FAIL_CLOSED且v1-v8保全后跨期暂停",
+          "authority_source": "taosha/docs/delist-warning-financial-cross-period-pause-ruling-2026-08-11.md",
+          "experiment": "exp22 · delist_warning_financial",
+          "state_label": "跨期暂停"
+        }
+      ],
+      "exp22_failure_chain": [
+        {
+          "version": "v1",
+          "read_count_or_pages": "3",
+          "checkpoint_valid_markers": "10",
+          "outcome": "FAIL",
+          "scope_note": "flat布局失败页3且证据保留",
+          "authority_source": "taosha/docs/delist-warning-financial-announcement-index-implementation-2026-08-10.md"
+        },
+        {
+          "version": "v2",
+          "read_count_or_pages": "121",
+          "checkpoint_valid_markers": "10",
+          "outcome": "FAIL",
+          "scope_note": "annual_v2分页121页后仍不满足稳定全集合同",
+          "authority_source": "taosha/docs/delist-warning-financial-announcement-pagination-repair-delivery-2026-08-10.md"
+        },
+        {
+          "version": "v3",
+          "read_count_or_pages": "320",
+          "checkpoint_valid_markers": "10",
+          "outcome": "FAIL",
+          "scope_note": "bisect_v3读取320件后失败闭合",
+          "authority_source": "taosha/docs/delist-warning-financial-announcement-bisection-repair-delivery-2026-08-10.md"
+        },
+        {
+          "version": "v4",
+          "read_count_or_pages": "494",
+          "checkpoint_valid_markers": "10",
+          "outcome": "FAIL",
+          "scope_note": "bisect_v4单日多页读取494件后失败闭合",
+          "authority_source": "taosha/docs/delist-warning-financial-announcement-single-day-pagination-delivery-2026-08-10.md"
+        },
+        {
+          "version": "v5",
+          "read_count_or_pages": "3469",
+          "checkpoint_valid_markers": "17",
+          "outcome": "FAIL",
+          "scope_note": "bisect_v5双读后IncompleteRead且禁止重试到一致",
+          "authority_source": "taosha/docs/delist-warning-financial-announcement-incomplete-read-retry-delivery-2026-08-10.md"
+        },
+        {
+          "version": "v6",
+          "read_count_or_pages": "13982",
+          "checkpoint_valid_markers": "51",
+          "outcome": "FAIL",
+          "scope_note": "bisect_v6跨会话分页视图漂移",
+          "authority_source": "taosha/docs/delist-warning-financial-announcement-session-stickiness-delivery-2026-08-11.md"
+        },
+        {
+          "version": "v7",
+          "read_count_or_pages": "359",
+          "checkpoint_valid_markers": "51",
+          "outcome": "FAIL",
+          "scope_note": "bisect_v7同遍跨页公告ID重复与页总量漂移",
+          "authority_source": "taosha/docs/delist-warning-financial-announcement-page-view-drift-hardening-2026-08-11.md"
+        },
+        {
+          "version": "v8",
+          "read_count_or_pages": "359",
+          "checkpoint_valid_markers": "51",
+          "outcome": "FAIL",
+          "scope_note": "bisect_v8保留官方历史总量下界35但仍跨页重复;metadata退出1",
+          "authority_source": "taosha/docs/delist-warning-financial-announcement-source-disposition-2026-08-11.md"
+        }
+      ]
+    }
+  },
+  "sources": [
+    {
+      "id": "cycle-end-review-snapshot",
+      "label": "阿里云台账与闭卷校准只读快照，连同权威数据闭合与暂停档",
+      "path": "taosha/docs/cycle-end-review-draft-2026-08-12/calibration_results.csv",
+      "query": {
+        "engine": "PostgreSQL + repository evidence",
+        "language": "SQL",
+        "executed_at": "2026-08-09 22:14:05.537694+08",
+        "sql": "\\set ON_ERROR_STOP on\n\\pset tuples_only on\n\\pset format unaligned\n\\pset fieldsep '|'\n\nSHOW transaction_read_only;\n\nSELECT 'SNAPSHOT_TIME', to_char(clock_timestamp() AT TIME ZONE 'Asia/Shanghai', 'YYYY-MM-DD HH24:MI:SS.US');\n\nSELECT\n    'LEDGER',\n    exp_id,\n    family,\n    status,\n    source_type,\n    verdict_power,\n    family_trial,\n    COALESCE(result_json->>'verdict', ''),\n    COALESCE(to_char(done_at AT TIME ZONE 'Asia/Shanghai', 'YYYY-MM-DD HH24:MI:SS.US'), '')\nFROM experiment\nORDER BY exp_id;\n\nSELECT\n    'METRIC',\n    exp_id,\n    result_json->>'verdict',\n    result_json->>'n_events_total',\n    result_json->>'n_valid',\n    result_json#>>'{car,main_window,n}',\n    result_json#>>'{car,main_window,caar}',\n    result_json#>>'{car,main_window,adj_bmp_car}',\n    result_json#>>'{n_eff_rho,rho_bar}',\n    result_json#>>'{n_eff_rho,kish}',\n    result_json#>>'{n_eff_rho,kp}',\n    result_json#>>'{rejections,reject_ratio}',\n    result_json#>>'{industry_coverage,unknown_pct}'\nFROM experiment\nWHERE exp_id IN (8, 10, 11, 12, 13, 14, 16, 17, 19, 20, 24, 568)\nORDER BY done_at;\n\nSELECT 'STATUS', status, count(*)\nFROM experiment\nGROUP BY status\nORDER BY status;\n",
+        "description": "只读抽取正式结果与台账；停点来自权威数据闭合和暂停档。结果与研发状态分列。",
+        "tables_used": [
+          "taosha.experiment"
+        ],
+        "filters": [
+          "default_transaction_read_only=on",
+          "result snapshot=2026-08-09 22:14:05.537694+08",
+          "status snapshot=2026-08-12 08:32:43+08 read-only ledger + STATE entry 155"
+        ],
+        "metric_definitions": [
+          "正式真实done=done且family不等于synthetic_smoke",
+          "方向命中=密封方向与主窗CAAR符号一致",
+          "四条证据停点各按自身证据合同解释，不横向比较通过率"
+        ]
+      }
+    }
+  ]
+}
